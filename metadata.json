@@ -1,0 +1,6 @@
+{
+  "name": "Chezmoi ERP - Multilocal Offline-First",
+  "description": "ERP/CRM Multilocal Offline-First pour Chezmoi Immobilier (Bénin) : Recensement foncier terrain GPS & photos, synchronisation Drift/SQLite vers VPS Node.js, facturation e-MECeF et interface moderne Arche Real Estate.",
+  "requestFramePermissions": ["geolocation", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

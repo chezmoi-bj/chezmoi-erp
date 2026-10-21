@@ -1,0 +1,230 @@
+import React from 'react';
+import { 
+  Building2, 
+  Wifi, 
+  WifiOff, 
+  RefreshCw, 
+  Smartphone, 
+  Monitor, 
+  Settings as SettingsIcon, 
+  MapPin, 
+  Users, 
+  CreditCard, 
+  Code2, 
+  Layers,
+  UserCheck
+} from 'lucide-react';
+import { ChezmoiLogo } from './ChezmoiLogo';
+import { UserAccount } from '../types';
+
+interface HeaderProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  isOnline: boolean;
+  toggleNetwork: () => void;
+  pendingSyncCount: number;
+  triggerSync: () => void;
+  isSyncing: boolean;
+  viewMode: 'desktop' | 'mobile';
+  setViewMode: (mode: 'desktop' | 'mobile') => void;
+  openSettings: () => void;
+  openLoginModal: () => void;
+  currentUser: UserAccount;
+}
+
+export const Header: React.FC<HeaderProps> = ({
+  activeTab,
+  setActiveTab,
+  isOnline,
+  toggleNetwork,
+  pendingSyncCount,
+  triggerSync,
+  isSyncing,
+  viewMode,
+  setViewMode,
+  openSettings,
+  openLoginModal,
+  currentUser,
+}) => {
+  const tabs = [
+    { id: 'dashboard', label: 'Tableau de bord', icon: Building2 },
+    { id: 'census', label: 'Recensement terrain', icon: MapPin },
+    { id: 'sync', label: 'File de synchronisation (Drift)', icon: RefreshCw, badge: pendingSyncCount },
+    { id: 'accounting', label: 'Facturation & dépenses (e-MECeF)', icon: CreditCard },
+    { id: 'hr', label: 'Agents & RH', icon: Users },
+    { id: 'ged', label: 'GED foncière', icon: Layers },
+    { id: 'code', label: 'Code & schémas', icon: Code2 },
+  ];
+
+  return (
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 lg:px-8 py-2.5 transition-all">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
+        
+        {/* Brand & Official Chezmoi Logo */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          <ChezmoiLogo size={38} />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-black text-slate-900 tracking-tight text-base sm:text-lg">chezmoi</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FA3055] text-white font-black tracking-wider">
+                .bj ERP
+              </span>
+            </div>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block">
+              Multilocal offline-first (Flutter + Node.js)
+            </p>
+          </div>
+        </div>
+
+        {/* Center Navigation Pills (Desktop) */}
+        <nav className="hidden lg:flex items-center gap-1 bg-[#F4F6F5] p-1 rounded-full border border-slate-200/70" aria-label="Navigation principale">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#FA3055] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-[#FA3055] hover:bg-slate-200/50'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : ''}`} />
+                <span>{tab.label}</span>
+                {typeof tab.badge === 'number' && tab.badge > 0 && (
+                  <span className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                    isActive ? 'bg-white text-[#FA3055]' : 'bg-[#FA3055] text-white'
+                  }`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Right Action Bar */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          
+          {/* Network Simulator Toggle */}
+          <button
+            onClick={toggleNetwork}
+            title={isOnline ? 'Cliquer pour simuler le mode hors-ligne' : 'Cliquer pour réactiver la connexion Internet'}
+            className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all border cursor-pointer ${
+              isOnline
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
+                : 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse hover:bg-rose-100'
+            }`}
+          >
+            {isOnline ? (
+              <>
+                <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="hidden sm:inline">Cloud en ligne</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3.5 h-3.5 text-rose-600" />
+                <span>Hors-ligne</span>
+              </>
+            )}
+          </button>
+
+          {/* Quick Manual Sync Button */}
+          <button
+            onClick={triggerSync}
+            disabled={!isOnline || isSyncing}
+            title="Forcer la synchronisation vers le Cloud Hostinger (MySQL)"
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              isSyncing
+                ? 'bg-amber-50 text-amber-700 border-amber-300 cursor-wait'
+                : !isOnline
+                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                : 'bg-white text-slate-700 border-slate-200 hover:border-[#FA3055]/30 hover:bg-[#F4F6F5] cursor-pointer shadow-2xs'
+            }`}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-600' : 'text-[#FA3055]'}`} />
+            <span className="hidden xl:inline">{isSyncing ? 'Sync...' : 'Sync'}</span>
+          </button>
+
+          {/* Viewport Frame Toggle */}
+          <div className="hidden sm:flex items-center bg-[#F4F6F5] p-0.5 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setViewMode('desktop')}
+              title="Vue écran PC"
+              className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                viewMode === 'desktop' ? 'bg-white text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Monitor className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('mobile')}
+              title="Vue mobile agent terrain"
+              className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                viewMode === 'mobile' ? 'bg-white text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Settings modal trigger */}
+          <button
+            onClick={openSettings}
+            title="Paramètres API (WhatsApp, Gmail, Docs, WordPress, Gemini, e-MECeF)"
+            className="p-1.5 rounded-full text-slate-600 hover:text-[#FA3055] hover:bg-[#F4F6F5] cursor-pointer transition-colors"
+          >
+            <SettingsIcon className="w-4 h-4" />
+          </button>
+
+          {/* Current User Profile Thumbnail (Clickable to switch or edit account) */}
+          <button
+            onClick={openLoginModal}
+            title="Changer de compte ou modifier le profil (Super Admin, Comptable, Secrétaire, Agent)"
+            className="flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200/60"
+          >
+            <img
+              src={currentUser.avatar}
+              alt={currentUser.name}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-[#FA3055]/30 flex-shrink-0"
+            />
+            <div className="hidden xl:block text-left text-xs leading-tight">
+              <p className="font-bold text-slate-900 truncate max-w-[120px]">{currentUser.name}</p>
+              <p className="text-[10px] text-[#FA3055] font-semibold">{currentUser.role.replace('_', ' ')}</p>
+            </div>
+            <UserCheck className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* Mobile sub-navigation bar */}
+      <div className="lg:hidden flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto no-scrollbar">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${
+                isActive ? 'bg-[#FA3055] text-white' : 'bg-[#F4F6F5] text-slate-600'
+              }`}
+            >
+              <Icon className="w-3 h-3" />
+              <span>{tab.label}</span>
+              {typeof tab.badge === 'number' && tab.badge > 0 && (
+                <span className="px-1 rounded-full text-[9px] bg-white text-[#FA3055] font-bold">
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </header>
+  );
+};
