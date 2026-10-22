@@ -28,6 +28,7 @@ import {
   toggleUser2FA,
   verifyEmailAccount
 } from './src/server/db';
+import { sendOtpEmail } from './src/server/mailer';
 
 dotenv.config();
 
@@ -278,6 +279,11 @@ async function startServer() {
       const maskedEmail = `${name.substring(0, 2)}***${name.substring(name.length - 1)}@${domain}`;
 
       console.log(`[AUTH OTP] Code généré pour ${user.name} (${user.email}) : [${otpCode}] (2FA: ${user.twoFactorEnabled ? 'OUI' : 'NON'})`);
+
+      // Expédition de l'e-mail avec le code OTP via Hostinger SMTP (Template GitHub)
+      sendOtpEmail(user.email, user.name, otpCode).catch(err => {
+        console.error('[Hostinger SMTP] Erreur expédition code OTP:', err?.message || err);
+      });
 
       res.json({
         success: true,

@@ -83,43 +83,8 @@ export async function initDatabase(): Promise<boolean> {
     lastDbError = null;
     console.log(`[Hostinger MySQL] Connecté avec succès à la base "${dbName}" sur ${dbHost}:${dbPort} !`);
 
-    // Synchronisation du compte Administrateur Central (SMB) en base MySQL
-    try {
-      const initSql = `
-        INSERT INTO users (
-          id, name, email, avatar, phone, role, job_title, department_name, 
-          base_salary, commission_rate, hire_date, contract_type, city, 
-          assigned_zone, rating, properties_count, pending_sync_count, 
-          total_commissions, status, email_verified, two_factor_enabled, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-          name = VALUES(name),
-          role = VALUES(role),
-          avatar = VALUES(avatar),
-          status = 'ACTIF',
-          email_verified = 1;
-      `;
-      await pool.query(initSql, [
-        CENTRAL_ADMIN_SMB.id,
-        CENTRAL_ADMIN_SMB.name,
-        CENTRAL_ADMIN_SMB.email,
-        CENTRAL_ADMIN_SMB.avatar,
-        CENTRAL_ADMIN_SMB.phone,
-        CENTRAL_ADMIN_SMB.role,
-        CENTRAL_ADMIN_SMB.jobTitle,
-        CENTRAL_ADMIN_SMB.departmentName,
-        0, 0, '2026-01-01', 'CDI', 'Cotonou', 'National (Bénin)', 5, 0, 0, 0,
-        'ACTIF', 1, 0, Date.now(), Date.now()
-      ]);
-      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) synchronisé en BDD.`);
-    } catch (e: any) {
-      console.warn('[Hostinger MySQL] Avertissement init admin SMB en BDD:', e?.message);
-    }
-
-    // Déclenchement de l'envoi de l'e-mail de confirmation d'activation SMB via Nodemailer
-    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
-      console.error('[Nodemailer] Erreur envoi activation admin:', err);
-    });
+    // Initialisation et auto-migration des tables + vérification du compte Administrateur Central (SMB)
+    await ensureTablesAndAdmin(pool);
 
     return true;
   } catch (err: any) {
@@ -129,10 +94,173 @@ export async function initDatabase(): Promise<boolean> {
 
     // Envoi de l'e-mail de confirmation en mode In-Memory également
     sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
-      console.error('[Nodemailer] Erreur envoi activation admin:', err);
+      console.error('[Hostinger SMTP] Erreur envoi activation admin:', err);
     });
 
     return false;
+  }
+}
+
+/**
+ * Crée les tables nécessaires si elles n'existent pas et vérifie la présence de l'Administrateur Central (SMB)
+ */
+async function ensureTablesAndAdmin(pool: mysql.Pool) {
+  try {
+    // 1. Table users (avec colonnes de sécurité & validation)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(64) NOT NULL,
+        name VARCHAR(191) NOT NULL,
+        email VARCHAR(191) NOT NULL,
+        password_hash VARCHAR(255) DEFAULT NULL,
+        avatar TEXT DEFAULT NULL,
+        phone VARCHAR(64) NOT NULL,
+        role VARCHAR(32) NOT NULL DEFAULT 'AGENT_RECENSEUR',
+        job_title VARCHAR(191) NOT NULL,
+        department_name VARCHAR(191) NOT NULL,
+        base_salary DECIMAL(14, 2) NOT NULL DEFAULT 0.00,
+        commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
+        hire_date VARCHAR(32) NOT NULL,
+        contract_type VARCHAR(64) NOT NULL DEFAULT 'CDI',
+        city VARCHAR(100) NOT NULL DEFAULT 'Cotonou',
+        assigned_zone VARCHAR(191) DEFAULT NULL,
+        rating DECIMAL(3, 2) NOT NULL DEFAULT 5.00,
+        properties_count INT NOT NULL DEFAULT 0,
+        pending_sync_count INT NOT NULL DEFAULT 0,
+        total_commissions DECIMAL(14, 2) NOT NULL DEFAULT 0.00,
+        status VARCHAR(32) NOT NULL DEFAULT 'EN_ATTENTE_VALIDATION',
+        cnss_number VARCHAR(64) DEFAULT NULL,
+        email_verified TINYINT(1) NOT NULL DEFAULT 0,
+        verification_token VARCHAR(255) DEFAULT NULL,
+        two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_users_email (email)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Auto-migration non-bloquante pour anciennes tables MySQL existantes sur Hostinger
+    const columnMigrations = [
+      'ALTER TABLE users ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0',
+      'ALTER TABLE users ADD COLUMN verification_token VARCHAR(255) DEFAULT NULL',
+      'ALTER TABLE users ADD COLUMN two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0',
+      'ALTER TABLE users ADD COLUMN total_commissions DECIMAL(14, 2) NOT NULL DEFAULT 0.00',
+    ];
+    for (const mig of columnMigrations) {
+      try {
+        await pool.query(mig);
+      } catch {
+        // Colonne déjà présente, pas d'erreur
+      }
+    }
+
+    // 2. Table properties
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS properties (
+        id VARCHAR(64) NOT NULL,
+        code_reference VARCHAR(64) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT DEFAULT NULL,
+        listing_type VARCHAR(64) NOT NULL,
+        category VARCHAR(64) NOT NULL,
+        department VARCHAR(64) DEFAULT NULL,
+        city VARCHAR(100) NOT NULL,
+        arrondissement VARCHAR(100) DEFAULT NULL,
+        district VARCHAR(100) NOT NULL,
+        address TEXT NOT NULL,
+        price_amount DECIMAL(14, 2) NOT NULL,
+        price_usd DECIMAL(14, 2) DEFAULT NULL,
+        area_sq_meters DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        rooms_count INT NOT NULL DEFAULT 0,
+        bedrooms_count INT NOT NULL DEFAULT 0,
+        bathrooms_count INT NOT NULL DEFAULT 0,
+        coordinates_lat DECIMAL(10, 8) DEFAULT NULL,
+        coordinates_lng DECIMAL(11, 8) DEFAULT NULL,
+        coordinates_accuracy DECIMAL(8, 2) DEFAULT NULL,
+        coordinates_address_approx TEXT DEFAULT NULL,
+        coordinates_captured_at BIGINT DEFAULT NULL,
+        owner_data JSON DEFAULT NULL,
+        photos JSON DEFAULT NULL,
+        assigned_agent_id VARCHAR(64) NOT NULL,
+        assigned_agent_name VARCHAR(191) NOT NULL,
+        sync_status VARCHAR(32) NOT NULL DEFAULT 'synced',
+        sync_error TEXT DEFAULT NULL,
+        legal_status VARCHAR(64) NOT NULL DEFAULT 'EN_COURS',
+        is_featured TINYINT(1) NOT NULL DEFAULT 0,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT NOT NULL,
+        server_sync_timestamp BIGINT NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_properties_code (code_reference)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 3. Table cash_transactions
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cash_transactions (
+        id VARCHAR(64) NOT NULL,
+        code VARCHAR(64) NOT NULL,
+        type VARCHAR(32) NOT NULL,
+        category VARCHAR(64) NOT NULL,
+        amount DECIMAL(14, 2) NOT NULL,
+        description TEXT NOT NULL,
+        agent_or_client VARCHAR(191) NOT NULL,
+        payment_mode VARCHAR(64) NOT NULL DEFAULT 'ESPECES',
+        date VARCHAR(32) NOT NULL,
+        emecef_invoice_ref VARCHAR(120) DEFAULT NULL,
+        beneficiary_employee_id VARCHAR(64) DEFAULT NULL,
+        salary_details JSON DEFAULT NULL,
+        created_at BIGINT NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_cash_code (code)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 4. Exigence 1: Vérifier si le compte administrateur central (SMB) existe. S'il n'existe pas, l'insérer automatiquement :
+    const [adminRows] = await pool.query<mysql.RowDataPacket[]>(
+      'SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1',
+      [CENTRAL_ADMIN_SMB.email.toLowerCase()]
+    );
+
+    if (!adminRows || adminRows.length === 0) {
+      console.log(`[Hostinger MySQL] Administrateur central SMB (${CENTRAL_ADMIN_SMB.email}) introuvable. Insertion automatique...`);
+      await pool.query(
+        `INSERT INTO users (
+          id, name, email, avatar, phone, role, job_title, department_name, 
+          base_salary, commission_rate, hire_date, contract_type, city, 
+          assigned_zone, rating, properties_count, pending_sync_count, 
+          total_commissions, status, email_verified, two_factor_enabled, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          CENTRAL_ADMIN_SMB.id,
+          CENTRAL_ADMIN_SMB.name,
+          CENTRAL_ADMIN_SMB.email,
+          CENTRAL_ADMIN_SMB.avatar,
+          CENTRAL_ADMIN_SMB.phone,
+          CENTRAL_ADMIN_SMB.role,
+          CENTRAL_ADMIN_SMB.jobTitle,
+          CENTRAL_ADMIN_SMB.departmentName,
+          0, 0, '2026-01-01', 'CDI', 'Cotonou', 'National (Bénin)', 10, 0, 0, 0,
+          'ACTIF', 1, 0, Date.now(), Date.now()
+        ]
+      );
+      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) inséré avec succès (Rôle: Super Admin, Statut: Vérifié / Actif).`);
+    } else {
+      await pool.query(
+        `UPDATE users SET role = 'SUPER_ADMIN', status = 'ACTIF', email_verified = 1, avatar = ? WHERE LOWER(email) = ?`,
+        [CENTRAL_ADMIN_SMB.avatar, CENTRAL_ADMIN_SMB.email.toLowerCase()]
+      );
+      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) vérifié et actif.`);
+    }
+
+    // Déclenchement de l'envoi de l'e-mail de confirmation d'activation SMB via Hostinger SMTP
+    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
+      console.error('[Hostinger SMTP] Erreur envoi activation admin:', err);
+    });
+
+  } catch (err: any) {
+    console.error('[Hostinger MySQL] Erreur ensureTablesAndAdmin:', err?.message);
   }
 }
 
@@ -657,6 +785,38 @@ function normalizeIdentifier(val: string): string {
 
 export async function findUserByIdentifier(rawIdentifier: string): Promise<UserAccount | null> {
   const norm = normalizeIdentifier(rawIdentifier);
+  const isSMB = norm === 'chezmoi.benin@gmail.com' || norm === normalizeIdentifier(CENTRAL_ADMIN_SMB.phone);
+
+  if (isSMB) {
+    if (isMySqlConnected && pool) {
+      try {
+        await pool.query(
+          `INSERT INTO users (
+            id, name, email, avatar, phone, role, job_title, department_name, 
+            base_salary, commission_rate, hire_date, contract_type, city, 
+            assigned_zone, rating, properties_count, pending_sync_count, 
+            total_commissions, status, email_verified, two_factor_enabled, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE status = 'ACTIF', email_verified = 1, role = 'SUPER_ADMIN'`,
+          [
+            CENTRAL_ADMIN_SMB.id,
+            CENTRAL_ADMIN_SMB.name,
+            CENTRAL_ADMIN_SMB.email,
+            CENTRAL_ADMIN_SMB.avatar,
+            CENTRAL_ADMIN_SMB.phone,
+            CENTRAL_ADMIN_SMB.role,
+            CENTRAL_ADMIN_SMB.jobTitle,
+            CENTRAL_ADMIN_SMB.departmentName,
+            0, 0, '2026-01-01', 'CDI', 'Cotonou', 'National (Bénin)', 10, 0, 0, 0,
+            'ACTIF', 1, 0, Date.now(), Date.now()
+          ]
+        );
+      } catch (err) {
+        console.warn('[Hostinger MySQL] Auto-insertion SMB à la volée:', err);
+      }
+    }
+    return CENTRAL_ADMIN_SMB;
+  }
 
   if (isMySqlConnected && pool) {
     try {
