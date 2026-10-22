@@ -556,3 +556,134 @@ export async function updateSettings(newSettings: Record<string, any>): Promise<
   memoryStore.settings = { ...memoryStore.settings, ...newSettings };
   return memoryStore.settings;
 }
+
+// ----------------------------------------------------------------------------
+// AUTHENTIFICATION OTP & DOUBLE AUTHENTIFICATION (2FA)
+// ----------------------------------------------------------------------------
+
+interface OtpEntry {
+  code: string;
+  expiresAt: number;
+  attempts: number;
+}
+
+const otpMemoryStore = new Map<string, OtpEntry>();
+
+function normalizeIdentifier(val: string): string {
+  const trimmed = val.trim().toLowerCase();
+  if (trimmed.includes('@')) return trimmed;
+  return trimmed.replace(/[\s\-\(\)\.]/g, '');
+}
+
+export async function findUserByIdentifier(rawIdentifier: string): Promise<UserAccount | null> {
+  const norm = normalizeIdentifier(rawIdentifier);
+
+  if (isMySqlConnected && pool) {
+    try {
+      const cleanPhone = norm.replace(/\D/g, '');
+      const sql = `
+        SELECT * FROM users 
+        WHERE LOWER(email) = ? 
+           OR REPLACE(REPLACE(phone, ' ', ''), '+', '') LIKE ?
+        LIMIT 1
+      `;
+      const [rows] = await pool.query<mysql.RowDataPacket[]>(sql, [norm, `%${cleanPhone.slice(-8)}%`]);
+      if (rows && rows.length > 0) {
+        const r: any = rows[0];
+        return {
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          avatar: r.avatar || '',
+          phone: r.phone,
+          role: r.role,
+          jobTitle: r.job_title,
+          departmentName: r.department_name,
+          baseSalary: Number(r.base_salary),
+          commissionRate: Number(r.commission_rate),
+          hireDate: r.hire_date,
+          contractType: r.contract_type,
+          city: r.city,
+          assignedZone: r.assigned_zone || '',
+          rating: Number(r.rating),
+          propertiesCount: Number(r.properties_count),
+          pendingSyncCount: Number(r.pending_sync_count),
+          totalCommissions: Number(r.total_commissions),
+          status: r.status,
+          cnssNumber: r.cnss_number || undefined,
+          twoFactorEnabled: Boolean(r.two_factor_enabled || false)
+        };
+      }
+    } catch (err) {
+      console.error('[MySQL Error] findUserByIdentifier:', err);
+    }
+  }
+
+  // Fallback mémoire
+  const found = memoryStore.users.find(u => {
+    const userEmailNorm = normalizeIdentifier(u.email);
+    const userPhoneNorm = normalizeIdentifier(u.phone);
+    if (norm.includes('@')) {
+      return userEmailNorm === norm;
+    }
+    const cleanNorm = norm.replace(/\D/g, '');
+    const cleanUserPhone = userPhoneNorm.replace(/\D/g, '');
+    return cleanUserPhone.endsWith(cleanNorm.slice(-8)) || cleanNorm.endsWith(cleanUserPhone.slice(-8));
+  });
+
+  return found || null;
+}
+
+export function storeOtp(identifier: string, code: string, ttlMs = 300000): void {
+  const key = normalizeIdentifier(identifier);
+  otpMemoryStore.set(key, {
+    code,
+    expiresAt: Date.now() + ttlMs,
+    attempts: 0
+  });
+}
+
+export function verifyOtp(identifier: string, inputCode: string): { valid: boolean; reason?: string } {
+  const key = normalizeIdentifier(identifier);
+  const entry = otpMemoryStore.get(key);
+  if (!entry) {
+    return { valid: false, reason: 'Aucun code OTP actif. Veuillez demander un nouveau code.' };
+  }
+
+  if (Date.now() > entry.expiresAt) {
+    otpMemoryStore.delete(key);
+    return { valid: false, reason: 'Le code OTP a expiré (durée de validité 5 minutes).' };
+  }
+
+  entry.attempts += 1;
+  if (entry.attempts > 5) {
+    otpMemoryStore.delete(key);
+    return { valid: false, reason: 'Nombre maximal de tentatives dépassé. Veuillez redemander un code.' };
+  }
+
+  if (entry.code.trim() !== inputCode.trim()) {
+    return { valid: false, reason: 'Code OTP incorrect. Veuillez vérifier le code reçu.' };
+  }
+
+  // Code valide : consommer le code
+  otpMemoryStore.delete(key);
+  return { valid: true };
+}
+
+export async function toggleUser2FA(userId: string, enabled: boolean): Promise<UserAccount | null> {
+  const user = memoryStore.users.find(u => u.id === userId);
+  if (user) {
+    user.twoFactorEnabled = enabled;
+  }
+
+  if (isMySqlConnected && pool) {
+    try {
+      await pool.query('UPDATE users SET two_factor_enabled = ? WHERE id = ?', [enabled ? 1 : 0, userId]);
+    } catch (err) {
+      console.error('[MySQL Error] toggleUser2FA:', err);
+    }
+  }
+
+  return user || null;
+}
+

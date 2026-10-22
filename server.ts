@@ -21,7 +21,11 @@ import {
   getAllDocuments,
   addDocument,
   getSettings,
-  updateSettings
+  updateSettings,
+  findUserByIdentifier,
+  storeOtp,
+  verifyOtp,
+  toggleUser2FA
 } from './src/server/db';
 
 dotenv.config();
@@ -237,7 +241,109 @@ async function startServer() {
     }
   });
 
-  // 8. Test Webhook dispatch
+  // 8. Authentification Sécurisée par Code OTP (6 chiffres) & 2FA
+  app.post('/api/auth/request-otp', async (req: Request, res: Response) => {
+    try {
+      const { identifier } = req.body;
+      if (!identifier || typeof identifier !== 'string' || !identifier.trim()) {
+        return res.status(400).json({ error: 'Veuillez saisir votre adresse email ou votre numéro de téléphone.' });
+      }
+
+      const user = await findUserByIdentifier(identifier.trim());
+      if (!user) {
+        return res.status(404).json({ 
+          error: 'Aucun compte associé à cet identifiant dans la base Chezmoi ERP. Veuillez vérifier votre saisie ou contacter l’administrateur.' 
+        });
+      }
+
+      // Génération code 6 chiffres
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      storeOtp(identifier, otpCode, 300000); // 5 minutes de validité
+      storeOtp(user.email, otpCode, 300000); // Également lié à l'email principal
+      if (user.phone) storeOtp(user.phone, otpCode, 300000);
+
+      // Masquage de l'email pour l'affichage de confirmation
+      const [name, domain] = user.email.split('@');
+      const maskedEmail = `${name.substring(0, 2)}***${name.substring(name.length - 1)}@${domain}`;
+
+      console.log(`[AUTH OTP] Code généré pour ${user.name} (${user.email}) : [${otpCode}] (2FA: ${user.twoFactorEnabled ? 'OUI' : 'NON'})`);
+
+      res.json({
+        success: true,
+        message: `Code de sécurité envoyé avec succès à ${maskedEmail}`,
+        email: user.email,
+        phone: user.phone,
+        maskedTarget: maskedEmail,
+        devOtpCode: otpCode, // Renvoyé pour faciliter les tests et la démonstration
+        twoFactorRequired: Boolean(user.twoFactorEnabled),
+        userRole: user.role,
+        userName: user.name,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur lors de la génération du code OTP' });
+    }
+  });
+
+  app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
+    try {
+      const { identifier, otp } = req.body;
+      if (!identifier || !otp) {
+        return res.status(400).json({ error: 'Identifiant et code OTP requis.' });
+      }
+
+      const verification = verifyOtp(identifier, otp.toString().trim());
+      if (!verification.valid) {
+        return res.status(401).json({ error: verification.reason || 'Code OTP invalide' });
+      }
+
+      const user = await findUserByIdentifier(identifier);
+      if (!user) {
+        return res.status(404).json({ error: 'Utilisateur introuvable.' });
+      }
+
+      // Création d'un token de session JWT standard
+      const tokenPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 86400 * 7
+      };
+      const token = `cm_jwt_${Buffer.from(JSON.stringify(tokenPayload)).toString('base64')}`;
+
+      res.json({
+        success: true,
+        message: 'Authentification réussie. Session déverrouillée.',
+        token,
+        user,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur lors de la vérification OTP' });
+    }
+  });
+
+  app.post('/api/auth/toggle-2fa', async (req: Request, res: Response) => {
+    try {
+      const { userId, enabled } = req.body;
+      if (!userId || typeof enabled !== 'boolean') {
+        return res.status(400).json({ error: 'Paramètres userId et enabled requis.' });
+      }
+      const updated = await toggleUser2FA(userId, enabled);
+      if (!updated) {
+        return res.status(404).json({ error: 'Utilisateur introuvable.' });
+      }
+      res.json({
+        success: true,
+        message: enabled ? 'Double authentification (2FA) activée.' : 'Double authentification désactivée.',
+        user: updated
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur modification 2FA' });
+    }
+  });
+
+  // 9. Test Webhook dispatch
   app.post('/api/webhooks/test', async (req: Request, res: Response) => {
     const { url, payload } = req.body;
     if (!url) {

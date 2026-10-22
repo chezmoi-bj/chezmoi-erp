@@ -126,6 +126,13 @@ export interface UserAccount {
   totalCommissions: number;
   status: 'ACTIF' | 'EN_MISSION' | 'CONGE' | 'SUSPENDU';
   cnssNumber?: string;
+  twoFactorEnabled?: boolean;
+}
+
+export interface AuthSession {
+  token: string;
+  user: UserAccount;
+  expiresAt: number;
 }
 
 export type AgentRecenseur = UserAccount;

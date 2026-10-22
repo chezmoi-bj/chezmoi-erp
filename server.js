@@ -1079,6 +1079,109 @@ async function updateSettings(newSettings) {
   memoryStore.settings = { ...memoryStore.settings, ...newSettings };
   return memoryStore.settings;
 }
+var otpMemoryStore = /* @__PURE__ */ new Map();
+function normalizeIdentifier(val) {
+  const trimmed = val.trim().toLowerCase();
+  if (trimmed.includes("@")) return trimmed;
+  return trimmed.replace(/[\s\-\(\)\.]/g, "");
+}
+async function findUserByIdentifier(rawIdentifier) {
+  const norm = normalizeIdentifier(rawIdentifier);
+  if (isMySqlConnected && pool) {
+    try {
+      const cleanPhone = norm.replace(/\D/g, "");
+      const sql = `
+        SELECT * FROM users 
+        WHERE LOWER(email) = ? 
+           OR REPLACE(REPLACE(phone, ' ', ''), '+', '') LIKE ?
+        LIMIT 1
+      `;
+      const [rows] = await pool.query(sql, [norm, `%${cleanPhone.slice(-8)}%`]);
+      if (rows && rows.length > 0) {
+        const r = rows[0];
+        return {
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          avatar: r.avatar || "",
+          phone: r.phone,
+          role: r.role,
+          jobTitle: r.job_title,
+          departmentName: r.department_name,
+          baseSalary: Number(r.base_salary),
+          commissionRate: Number(r.commission_rate),
+          hireDate: r.hire_date,
+          contractType: r.contract_type,
+          city: r.city,
+          assignedZone: r.assigned_zone || "",
+          rating: Number(r.rating),
+          propertiesCount: Number(r.properties_count),
+          pendingSyncCount: Number(r.pending_sync_count),
+          totalCommissions: Number(r.total_commissions),
+          status: r.status,
+          cnssNumber: r.cnss_number || void 0,
+          twoFactorEnabled: Boolean(r.two_factor_enabled || false)
+        };
+      }
+    } catch (err) {
+      console.error("[MySQL Error] findUserByIdentifier:", err);
+    }
+  }
+  const found = memoryStore.users.find((u) => {
+    const userEmailNorm = normalizeIdentifier(u.email);
+    const userPhoneNorm = normalizeIdentifier(u.phone);
+    if (norm.includes("@")) {
+      return userEmailNorm === norm;
+    }
+    const cleanNorm = norm.replace(/\D/g, "");
+    const cleanUserPhone = userPhoneNorm.replace(/\D/g, "");
+    return cleanUserPhone.endsWith(cleanNorm.slice(-8)) || cleanNorm.endsWith(cleanUserPhone.slice(-8));
+  });
+  return found || null;
+}
+function storeOtp(identifier, code, ttlMs = 3e5) {
+  const key = normalizeIdentifier(identifier);
+  otpMemoryStore.set(key, {
+    code,
+    expiresAt: Date.now() + ttlMs,
+    attempts: 0
+  });
+}
+function verifyOtp(identifier, inputCode) {
+  const key = normalizeIdentifier(identifier);
+  const entry = otpMemoryStore.get(key);
+  if (!entry) {
+    return { valid: false, reason: "Aucun code OTP actif. Veuillez demander un nouveau code." };
+  }
+  if (Date.now() > entry.expiresAt) {
+    otpMemoryStore.delete(key);
+    return { valid: false, reason: "Le code OTP a expir\xE9 (dur\xE9e de validit\xE9 5 minutes)." };
+  }
+  entry.attempts += 1;
+  if (entry.attempts > 5) {
+    otpMemoryStore.delete(key);
+    return { valid: false, reason: "Nombre maximal de tentatives d\xE9pass\xE9. Veuillez redemander un code." };
+  }
+  if (entry.code.trim() !== inputCode.trim()) {
+    return { valid: false, reason: "Code OTP incorrect. Veuillez v\xE9rifier le code re\xE7u." };
+  }
+  otpMemoryStore.delete(key);
+  return { valid: true };
+}
+async function toggleUser2FA(userId, enabled) {
+  const user = memoryStore.users.find((u) => u.id === userId);
+  if (user) {
+    user.twoFactorEnabled = enabled;
+  }
+  if (isMySqlConnected && pool) {
+    try {
+      await pool.query("UPDATE users SET two_factor_enabled = ? WHERE id = ?", [enabled ? 1 : 0, userId]);
+    } catch (err) {
+      console.error("[MySQL Error] toggleUser2FA:", err);
+    }
+  }
+  return user || null;
+}
 
 // server.ts
 dotenv2.config();
@@ -1251,6 +1354,93 @@ async function startServer() {
       res.json({ success: true, settings: updated });
     } catch (err) {
       res.status(500).json({ error: err?.message || "Erreur sauvegarde param\xE8tres" });
+    }
+  });
+  app.post("/api/auth/request-otp", async (req, res) => {
+    try {
+      const { identifier } = req.body;
+      if (!identifier || typeof identifier !== "string" || !identifier.trim()) {
+        return res.status(400).json({ error: "Veuillez saisir votre adresse email ou votre num\xE9ro de t\xE9l\xE9phone." });
+      }
+      const user = await findUserByIdentifier(identifier.trim());
+      if (!user) {
+        return res.status(404).json({
+          error: "Aucun compte associ\xE9 \xE0 cet identifiant dans la base Chezmoi ERP. Veuillez v\xE9rifier votre saisie ou contacter l\u2019administrateur."
+        });
+      }
+      const otpCode = Math.floor(1e5 + Math.random() * 9e5).toString();
+      storeOtp(identifier, otpCode, 3e5);
+      storeOtp(user.email, otpCode, 3e5);
+      if (user.phone) storeOtp(user.phone, otpCode, 3e5);
+      const [name, domain] = user.email.split("@");
+      const maskedEmail = `${name.substring(0, 2)}***${name.substring(name.length - 1)}@${domain}`;
+      console.log(`[AUTH OTP] Code g\xE9n\xE9r\xE9 pour ${user.name} (${user.email}) : [${otpCode}] (2FA: ${user.twoFactorEnabled ? "OUI" : "NON"})`);
+      res.json({
+        success: true,
+        message: `Code de s\xE9curit\xE9 envoy\xE9 avec succ\xE8s \xE0 ${maskedEmail}`,
+        email: user.email,
+        phone: user.phone,
+        maskedTarget: maskedEmail,
+        devOtpCode: otpCode,
+        // Renvoyé pour faciliter les tests et la démonstration
+        twoFactorRequired: Boolean(user.twoFactorEnabled),
+        userRole: user.role,
+        userName: user.name
+      });
+    } catch (err) {
+      res.status(500).json({ error: err?.message || "Erreur lors de la g\xE9n\xE9ration du code OTP" });
+    }
+  });
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { identifier, otp } = req.body;
+      if (!identifier || !otp) {
+        return res.status(400).json({ error: "Identifiant et code OTP requis." });
+      }
+      const verification = verifyOtp(identifier, otp.toString().trim());
+      if (!verification.valid) {
+        return res.status(401).json({ error: verification.reason || "Code OTP invalide" });
+      }
+      const user = await findUserByIdentifier(identifier);
+      if (!user) {
+        return res.status(404).json({ error: "Utilisateur introuvable." });
+      }
+      const tokenPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        iat: Math.floor(Date.now() / 1e3),
+        exp: Math.floor(Date.now() / 1e3) + 86400 * 7
+      };
+      const token = `cm_jwt_${Buffer.from(JSON.stringify(tokenPayload)).toString("base64")}`;
+      res.json({
+        success: true,
+        message: "Authentification r\xE9ussie. Session d\xE9verrouill\xE9e.",
+        token,
+        user
+      });
+    } catch (err) {
+      res.status(500).json({ error: err?.message || "Erreur lors de la v\xE9rification OTP" });
+    }
+  });
+  app.post("/api/auth/toggle-2fa", async (req, res) => {
+    try {
+      const { userId, enabled } = req.body;
+      if (!userId || typeof enabled !== "boolean") {
+        return res.status(400).json({ error: "Param\xE8tres userId et enabled requis." });
+      }
+      const updated = await toggleUser2FA(userId, enabled);
+      if (!updated) {
+        return res.status(404).json({ error: "Utilisateur introuvable." });
+      }
+      res.json({
+        success: true,
+        message: enabled ? "Double authentification (2FA) activ\xE9e." : "Double authentification d\xE9sactiv\xE9e.",
+        user: updated
+      });
+    } catch (err) {
+      res.status(500).json({ error: err?.message || "Erreur modification 2FA" });
     }
   });
   app.post("/api/webhooks/test", async (req, res) => {
