@@ -123,10 +123,12 @@ export interface UserAccount {
   rating: number;
   propertiesCount: number;
   pendingSyncCount: number;
-  totalCommissions: number;
-  status: 'ACTIF' | 'EN_MISSION' | 'CONGE' | 'SUSPENDU';
+  totalCommissions?: number;
+  status: 'ACTIF' | 'EN_MISSION' | 'CONGE' | 'SUSPENDU' | 'EN_ATTENTE_VALIDATION' | 'PENDING';
   cnssNumber?: string;
   twoFactorEnabled?: boolean;
+  emailVerified?: boolean;
+  verificationToken?: string;
 }
 
 export interface AuthSession {

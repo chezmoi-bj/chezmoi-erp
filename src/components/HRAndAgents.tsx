@@ -576,7 +576,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 
                   <div className="flex justify-between text-xs pt-2 border-t border-slate-200 text-slate-600">
                     <span>Commissions débloquées :</span>
-                    <strong className="text-slate-900">{formatMoney(agent.totalCommissions)}</strong>
+                    <strong className="text-slate-900">{formatMoney(agent.totalCommissions || 0)}</strong>
                   </div>
                 </div>
               );

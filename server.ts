@@ -25,7 +25,8 @@ import {
   findUserByIdentifier,
   storeOtp,
   verifyOtp,
-  toggleUser2FA
+  toggleUser2FA,
+  verifyEmailAccount
 } from './src/server/db';
 
 dotenv.config();
@@ -256,6 +257,16 @@ async function startServer() {
         });
       }
 
+      // Exigence 3: Le compte ne peut se connecter et accéder à son espace qu'après validation de l'e-mail
+      if (user.status === 'EN_ATTENTE_VALIDATION' || user.emailVerified === false) {
+        return res.status(403).json({
+          error: 'Ce compte est actuellement en attente de validation. Veuillez valider votre adresse e-mail avec le code reçu avant de vous connecter.',
+          pendingVerification: true,
+          email: user.email,
+          userName: user.name
+        });
+      }
+
       // Génération code 6 chiffres
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       storeOtp(identifier, otpCode, 300000); // 5 minutes de validité
@@ -301,6 +312,14 @@ async function startServer() {
         return res.status(404).json({ error: 'Utilisateur introuvable.' });
       }
 
+      if (user.status === 'EN_ATTENTE_VALIDATION' || user.emailVerified === false) {
+        return res.status(403).json({
+          error: 'Ce compte est en attente de validation e-mail. Veuillez confirmer votre adresse avant de vous connecter.',
+          pendingVerification: true,
+          email: user.email
+        });
+      }
+
       // Création d'un token de session JWT standard
       const tokenPayload = {
         sub: user.id,
@@ -320,6 +339,54 @@ async function startServer() {
       });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Erreur lors de la vérification OTP' });
+    }
+  });
+
+  // Validation par email (API code ou lien web)
+  app.post('/api/auth/verify-email', async (req: Request, res: Response) => {
+    try {
+      const { code, email } = req.body;
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ error: 'Code de validation requis.' });
+      }
+      const result = await verifyEmailAccount(code, email);
+      if (!result.success) {
+        return res.status(400).json({ error: result.message });
+      }
+      res.json({
+        success: true,
+        message: result.message,
+        user: result.user
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur lors de la vérification de l\'adresse e-mail' });
+    }
+  });
+
+  app.get('/api/auth/verify-email', async (req: Request, res: Response) => {
+    try {
+      const token = (req.query.token || req.query.code) as string;
+      const email = req.query.email as string | undefined;
+      if (!token) {
+        return res.status(400).send('Jeton ou code de validation manquant.');
+      }
+      const result = await verifyEmailAccount(token, email);
+      if (!result.success) {
+        return res.status(400).send(`
+          <html>
+            <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #0b0f17; color: #fff;">
+              <div style="background: #151c28; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 32px; text-align: center; max-width: 440px;">
+                <h2 style="color: #f91942; margin-top: 0;">Validation Impossible</h2>
+                <p style="color: #94a3b8;">${result.message}</p>
+                <a href="/" style="display: inline-block; margin-top: 16px; padding: 10px 20px; background: #f91942; color: #fff; text-decoration: none; border-radius: 8px;">Retour à l'accueil Chezmoi</a>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+      res.redirect('/?email_verified=true');
+    } catch (err: any) {
+      res.status(500).send('Erreur lors de la validation.');
     }
   });
 

@@ -39,14 +39,18 @@ CREATE TABLE `users` (
   `properties_count` INT NOT NULL DEFAULT 0,
   `pending_sync_count` INT NOT NULL DEFAULT 0,
   `total_commissions` DECIMAL(14, 2) NOT NULL DEFAULT 0.00,
-  `status` ENUM('ACTIF', 'EN_MISSION', 'CONGE', 'SUSPENDU') NOT NULL DEFAULT 'ACTIF',
+  `status` ENUM('ACTIF', 'EN_MISSION', 'CONGE', 'SUSPENDU', 'EN_ATTENTE_VALIDATION', 'PENDING') NOT NULL DEFAULT 'EN_ATTENTE_VALIDATION',
   `cnss_number` VARCHAR(64) DEFAULT NULL,
+  `email_verified` BOOLEAN NOT NULL DEFAULT FALSE,
+  `verification_token` VARCHAR(255) DEFAULT NULL,
+  `two_factor_enabled` BOOLEAN NOT NULL DEFAULT FALSE,
   `created_at` BIGINT NOT NULL,
   `updated_at` BIGINT NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_users_email` (`email`),
   KEY `idx_users_role` (`role`),
-  KEY `idx_users_city` (`city`)
+  KEY `idx_users_city` (`city`),
+  KEY `idx_users_verified` (`email_verified`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
@@ -233,19 +237,25 @@ CREATE TABLE `system_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- DONNÉES INITIALES (SEEDING OFFICIEL CHEZMOI BÉNIN)
+-- DONNÉES INITIALES : COMPTE ADMINISTRATEUR CENTRAL (SMB)
 -- ============================================================================
 
-INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `avatar`, `phone`, `role`, `job_title`, `department_name`, `base_salary`, `commission_rate`, `hire_date`, `contract_type`, `city`, `assigned_zone`, `rating`, `properties_count`, `pending_sync_count`, `total_commissions`, `status`, `cnss_number`, `created_at`, `updated_at`) VALUES
-('usr_01', 'Gilles Houessou', 'admin@chezmoi.bj', '$2a$12$e80y6mE8g...', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', '+229 97 00 11 22', 'SUPER_ADMIN', 'Directeur Général & Fondateur', 'Direction Générale', 950000.00, 15.00, '2023-01-15', 'CDI', 'Cotonou', 'National (Bénin)', 4.95, 12, 0, 4800000.00, 'ACTIF', 'CNSS-BJ-893421', 1705276800000, 1705276800000),
-('usr_02', 'Amina Bio', 'rh@chezmoi.bj', '$2a$12$e80y6mE8g...', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', '+229 96 11 22 33', 'RH', 'Responsable Ressources Humaines', 'RH & Recrutement', 450000.00, 2.00, '2023-06-01', 'CDI', 'Cotonou', 'Siège Cotonou', 4.90, 0, 0, 250000.00, 'ACTIF', 'CNSS-BJ-914205', 1705276800000, 1705276800000),
-('usr_03', 'Koffi Dossou', 'compta@chezmoi.bj', '$2a$12$e80y6mE8g...', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', '+229 95 22 33 44', 'COMPTABLE', 'Chef Comptable & Fiscalité', 'Finance & e-MECeF', 500000.00, 3.00, '2023-04-10', 'CDI', 'Cotonou', 'Siège Cotonou', 4.88, 0, 0, 420000.00, 'ACTIF', 'CNSS-BJ-741258', 1705276800000, 1705276800000),
-('usr_04', 'Sèna Agboton', 'secretaire@chezmoi.bj', '$2a$12$e80y6mE8g...', 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', '+229 94 33 44 55', 'SECRETAIRE', 'Secrétaire de Direction & Accueil', 'Accueil & GED', 250000.00, 1.50, '2024-02-01', 'CDD', 'Cotonou', 'Siège Cotonou', 4.80, 0, 0, 120000.00, 'ACTIF', 'CNSS-BJ-652301', 1705276800000, 1705276800000),
-('usr_05', 'Fidèle Kpanou', 'fidele.k@chezmoi.bj', '$2a$12$e80y6mE8g...', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', '+229 97 44 55 66', 'AGENT_RECENSEUR', 'Agent Terrain Principal', 'Opérations Foncières', 200000.00, 10.00, '2024-01-10', 'CDI', 'Abomey-Calavi', 'Zone Calavi & Godomey', 4.90, 8, 0, 1450000.00, 'ACTIF', 'CNSS-BJ-369852', 1705276800000, 1705276800000),
-('usr_06', 'Clarisse Houenou', 'clarisse.h@chezmoi.bj', '$2a$12$e80y6mE8g...', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', '+229 96 55 66 77', 'AGENT_RECENSEUR', 'Agente Recenseuse', 'Opérations Foncières', 180000.00, 10.00, '2024-03-01', 'MANDATAIRE_INDEPENDANT', 'Cotonou', 'Haie Vive & Cadjèhoun', 4.85, 4, 1, 980000.00, 'ACTIF', 'CNSS-BJ-147258', 1705276800000, 1705276800000);
+INSERT INTO `users` (
+  `id`, `name`, `email`, `password_hash`, `avatar`, `phone`, `role`, 
+  `job_title`, `department_name`, `base_salary`, `commission_rate`, 
+  `hire_date`, `contract_type`, `city`, `assigned_zone`, `rating`, 
+  `properties_count`, `pending_sync_count`, `total_commissions`, 
+  `status`, `cnss_number`, `email_verified`, `verification_token`, `two_factor_enabled`, `created_at`, `updated_at`
+) VALUES (
+  'user_smb_central', 'SMB', 'chezmoi.benin@gmail.com', NULL, 
+  '/assets/aistudio/1_e24ebf1b.png', '+229 97 00 00 01', 'SUPER_ADMIN', 
+  'Administrateur Central', 'Direction Générale Chezmoi Bénin', 0.00, 0.00, 
+  '2026-01-01', 'CDI', 'Cotonou', 'National (Bénin)', 5.00, 
+  0, 0, 0.00, 
+  'ACTIF', 'CNSS-2026-001', 1, NULL, 0, 1769000000000, 1769000000000
+) ON DUPLICATE KEY UPDATE 
+  `name` = VALUES(`name`),
+  `role` = VALUES(`role`),
+  `status` = 'ACTIF',
+  `email_verified` = 1;
 
-INSERT INTO `cash_transactions` (`id`, `code`, `type`, `category`, `amount`, `description`, `agentOrClient`, `payment_mode`, `date`, `emecef_invoice_ref`, `beneficiary_employee_id`, `salary_details`, `created_at`) VALUES
-('tx_01', 'REC-2026-001', 'ENTREE', 'COMMISSION_VENTE', 4500000.00, 'Honoraires vente duplex Haie Vive (TF 1420 Cotonou)', 'Mme Viviane Adebo', 'VIREMENT', '2026-10-18 10:30', 'EMCF-2026-B892', NULL, NULL, 1760783400000),
-('tx_02', 'DEP-2026-088', 'SORTIE', 'SALAIRE_REMUNERATION', 350000.00, 'Salaire mensuel et primes mission - Octobre 2026', 'Fidèle Kpanou (Agent terrain)', 'VIREMENT', '2026-10-17 14:00', 'BS-2026-10-02', 'usr_05', '{\"month\": \"Octobre 2026\", \"baseAmount\": 200000, \"commissionAmount\": 150000, \"bonusAmount\": 0, \"deductions\": 0}', 1760709600000),
-('tx_03', 'REC-2026-002', 'ENTREE', 'LOYER_ENCAISSE', 750000.00, 'Loyer mensuel Immeuble Agla (3 appartements)', 'Locataires Agla', 'MOBILE_MONEY', '2026-10-15 09:15', 'EMCF-2026-C104', NULL, NULL, 1760519700000),
-('tx_04', 'DEP-2026-089', 'SORTIE', 'DEPLACEMENT', 45000.00, 'Carburant et frais déplacement équipes recensement Calavi', 'Fidèle Kpanou', 'ESPECES', '2026-10-14 16:45', NULL, NULL, NULL, 1760460300000);

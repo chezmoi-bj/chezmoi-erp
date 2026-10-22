@@ -27,7 +27,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   });
 
   const [step, setStep] = useState<'identifier' | 'otp'>('identifier');
-  const [identifier, setIdentifier] = useState<string>('direction@chezmoi.bj');
+  const [identifier, setIdentifier] = useState<string>('chezmoi.benin@gmail.com');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +37,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [countdown, setCountdown] = useState<number>(300);
   const [showRoleSelector, setShowRoleSelector] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
+  const [verificationCodeInput, setVerificationCodeInput] = useState<string>('');
+  const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -84,6 +87,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     };
   }, []);
 
+  // Détection d'une validation d'e-mail par URL
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('email_verified') === 'true') {
+        setVerificationSuccess('Votre compte a été vérifié avec succès ! Vous pouvez maintenant vous connecter.');
+        // Clean URL without refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch {
+      // Ignored in non-browser environments
+    }
+  }, []);
+
   // Persistance du thème
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -121,6 +138,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
     setLoading(true);
     setError(null);
+    setVerificationSuccess(null);
 
     try {
       const response = await fetch('/api/auth/request-otp', {
@@ -132,9 +150,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.pendingVerification) {
+          setPendingVerificationEmail(data.email || identToSend);
+        }
         throw new Error(data.error || 'Identifiant non reconnu.');
       }
 
+      setPendingVerificationEmail(null);
       setDevOtpCode(data.devOtpCode);
       setMaskedTarget(data.maskedTarget || data.email || identToSend);
       setIs2FARequired(Boolean(data.twoFactorRequired));
@@ -143,6 +165,47 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       setOtpDigits(['', '', '', '', '', '']);
     } catch (err: any) {
       setError(err?.message || 'Erreur lors de la vérification.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Validation directe par code reçu par e-mail
+  const handleValidateAccountCode = async () => {
+    if (!verificationCodeInput.trim()) {
+      setError('Veuillez entrer le code de validation reçu par e-mail.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const targetEmail = pendingVerificationEmail || identifier;
+      const res = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: verificationCodeInput.trim(),
+          email: targetEmail
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Code invalide ou expiré.');
+      }
+
+      setVerificationSuccess('Compte validé avec succès ! Déverrouillage en cours...');
+      setPendingVerificationEmail(null);
+      setVerificationCodeInput('');
+
+      // Déclenchement automatique de la connexion OTP
+      setTimeout(() => {
+        handleRequestOtp(targetEmail);
+      }, 700);
+    } catch (err: any) {
+      setError(err?.message || 'Erreur lors de la validation du compte.');
     } finally {
       setLoading(false);
     }
@@ -331,6 +394,50 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 : `Code temporaire transmis à ${maskedTarget}`}
             </p>
           </div>
+
+          {/* Verification Success Banner */}
+          {verificationSuccess && (
+            <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs flex items-center gap-2.5">
+              <Check className="w-4 h-4 flex-shrink-0 text-emerald-500" />
+              <span className="font-medium leading-relaxed">{verificationSuccess}</span>
+            </div>
+          )}
+
+          {/* Pending Account Verification Block */}
+          {pendingVerificationEmail && (
+            <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-amber-400">Compte en attente de validation</p>
+                  <p className={`mt-0.5 ${isDark ? 'text-zinc-300' : 'text-slate-600'} leading-relaxed`}>
+                    Un e-mail contenant votre code de confirmation a été envoyé à <strong>{pendingVerificationEmail}</strong>. Veuillez saisir ce code ci-dessous :
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={verificationCodeInput}
+                  onChange={(e) => setVerificationCodeInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Code à 6 chiffres"
+                  className={`flex-1 px-3 py-2 rounded-xl text-center text-sm font-mono tracking-widest font-bold outline-hidden border ${
+                    isDark ? 'bg-[#14171B] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={handleValidateAccountCode}
+                  disabled={loading || verificationCodeInput.length < 6}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF2B53] to-[#D8072E] text-white text-xs font-bold hover:brightness-105 disabled:opacity-50 transition-all cursor-pointer shadow-xs"
+                >
+                  {loading ? 'Validation...' : 'Valider'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (

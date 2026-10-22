@@ -17,7 +17,8 @@ import {
   Car, 
   Coffee, 
   Sparkles,
-  Info
+  Info,
+  Building2
 } from 'lucide-react';
 import { AgentRecenseur, PropertyRecord } from '../types';
 import { BENIN_TERRITORIES } from '../data/beninTerritories';
@@ -332,9 +333,49 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
         {/* RIGHT AREA: Featured Properties, Metric Curve & 3D Floor Plan (9 cols) */}
         {/* ========================================================================= */}
         <div className="lg:col-span-9 space-y-5">
-          
-          {/* Top Row: Horizontal Carousel of Property Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {!featured ? (
+            <div className="bg-white rounded-3xl p-10 border border-slate-200/80 shadow-2xs text-center space-y-6">
+              <div className="w-16 h-16 rounded-3xl bg-[#FA3055]/10 text-[#FA3055] mx-auto flex items-center justify-center">
+                <Building2 className="w-8 h-8" />
+              </div>
+              <div className="max-w-lg mx-auto">
+                <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+                  Base foncière de production prête
+                </h3>
+                <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                  Toutes les données de test ont été purgées. Aucun recensement foncier n'est enregistré pour le moment. Vous pouvez démarrer la collecte terrain ou synchroniser l'application mobile SQLite Drift.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={onOpenCensus}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Nouveau recensement terrain</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-100 text-left max-w-2xl mx-auto">
+                <div className="p-4 rounded-2xl bg-[#F9FAF9] border border-slate-100">
+                  <p className="text-xs font-bold text-slate-800">Recensement GPS</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Coordonnées WGS84 précises et photos géoréférencées.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#F9FAF9] border border-slate-100">
+                  <p className="text-xs font-bold text-slate-800">Mode Hors-Ligne</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Stockage local Drift puis synchronisation vers MySQL.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#F9FAF9] border border-slate-100">
+                  <p className="text-xs font-bold text-slate-800">Validation Admin</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Contrôle central par SMB (Super Admin).</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Top Row: Horizontal Carousel of Property Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {displayedProperties.slice(0, 4).map((prop, idx) => {
               const isFeaturedChezmoi = idx === 0;
 
@@ -765,6 +806,8 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
             </div>
 
           </div>
+          </>
+          )}
 
         </div>
 

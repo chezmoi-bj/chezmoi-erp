@@ -75,19 +75,28 @@ export default function App() {
   const [payslips, setPayslips] = useState<PayslipRecord[]>(INITIAL_PAYSLIPS);
 
   // File de synchronisation Drift SQLite locale
-  const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([
-    {
-      id: 'sync_initial_01',
-      entityType: 'property',
-      entityId: 'prop_04',
-      action: 'create',
-      payload: INITIAL_PROPERTIES[3],
-      localTimestamp: Date.now() - 3600000 * 2,
-      syncStatus: 'pending',
-      retryCount: 0,
-      maxRetries: 5,
-    },
-  ]);
+  const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([]);
+
+  // Chargement des données fraîches depuis le backend (MySQL / Mémoire)
+  useEffect(() => {
+    fetch('/api/users')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setUsers(data);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/properties')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setProperties(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Synchronisation du rôle lors du chargement ou changement de session
   useEffect(() => {
@@ -183,8 +192,29 @@ export default function App() {
   };
 
   // Gestion des utilisateurs et rôles
-  const handleAddUser = (newUser: UserAccount) => {
-    setUsers([...users, newUser]);
+  const handleAddUser = async (newUser: UserAccount) => {
+    const isCentralAdmin = newUser.email.toLowerCase() === 'chezmoi.benin@gmail.com';
+    const pendingUser: UserAccount = {
+      ...newUser,
+      status: isCentralAdmin ? 'ACTIF' : 'EN_ATTENTE_VALIDATION',
+      emailVerified: isCentralAdmin,
+    };
+    setUsers((prev) => [...prev, pendingUser]);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingUser)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setUsers((prev) => prev.map(u => u.id === data.user.id ? data.user : u));
+        }
+      }
+    } catch (err) {
+      console.error('Erreur synchronisation nouvel utilisateur:', err);
+    }
   };
 
   const handleUpdateUser = (updatedUser: UserAccount) => {

@@ -14,8 +14,13 @@ import {
   INITIAL_TRANSACTIONS, 
   INITIAL_LEAVE_REQUESTS, 
   INITIAL_PAYSLIPS, 
-  INITIAL_DOCUMENTS 
+  INITIAL_DOCUMENTS,
+  CENTRAL_ADMIN_SMB
 } from '../data/mockData';
+import { 
+  sendAdminInitializationEmail, 
+  sendNewAccountVerificationEmail 
+} from './mailer';
 
 dotenv.config();
 
@@ -77,11 +82,56 @@ export async function initDatabase(): Promise<boolean> {
     isMySqlConnected = true;
     lastDbError = null;
     console.log(`[Hostinger MySQL] Connecté avec succès à la base "${dbName}" sur ${dbHost}:${dbPort} !`);
+
+    // Synchronisation du compte Administrateur Central (SMB) en base MySQL
+    try {
+      const initSql = `
+        INSERT INTO users (
+          id, name, email, avatar, phone, role, job_title, department_name, 
+          base_salary, commission_rate, hire_date, contract_type, city, 
+          assigned_zone, rating, properties_count, pending_sync_count, 
+          total_commissions, status, email_verified, two_factor_enabled, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+          name = VALUES(name),
+          role = VALUES(role),
+          avatar = VALUES(avatar),
+          status = 'ACTIF',
+          email_verified = 1;
+      `;
+      await pool.query(initSql, [
+        CENTRAL_ADMIN_SMB.id,
+        CENTRAL_ADMIN_SMB.name,
+        CENTRAL_ADMIN_SMB.email,
+        CENTRAL_ADMIN_SMB.avatar,
+        CENTRAL_ADMIN_SMB.phone,
+        CENTRAL_ADMIN_SMB.role,
+        CENTRAL_ADMIN_SMB.jobTitle,
+        CENTRAL_ADMIN_SMB.departmentName,
+        0, 0, '2026-01-01', 'CDI', 'Cotonou', 'National (Bénin)', 5, 0, 0, 0,
+        'ACTIF', 1, 0, Date.now(), Date.now()
+      ]);
+      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) synchronisé en BDD.`);
+    } catch (e: any) {
+      console.warn('[Hostinger MySQL] Avertissement init admin SMB en BDD:', e?.message);
+    }
+
+    // Déclenchement de l'envoi de l'e-mail de confirmation d'activation SMB via Nodemailer
+    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
+      console.error('[Nodemailer] Erreur envoi activation admin:', err);
+    });
+
     return true;
   } catch (err: any) {
     isMySqlConnected = false;
     lastDbError = err?.message || String(err);
     console.warn(`[Hostinger MySQL] Impossible de joindre MySQL (${lastDbError}). Bascule sur le stockage mémoire locale.`);
+
+    // Envoi de l'e-mail de confirmation en mode In-Memory également
+    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
+      console.error('[Nodemailer] Erreur envoi activation admin:', err);
+    });
+
     return false;
   }
 }
@@ -430,7 +480,9 @@ export async function getAllUsers(): Promise<UserAccount[]> {
         pendingSyncCount: Number(r.pending_sync_count),
         totalCommissions: Number(r.total_commissions),
         status: r.status,
-        cnssNumber: r.cnss_number || undefined
+        cnssNumber: r.cnss_number || undefined,
+        emailVerified: r.email_verified !== undefined ? Boolean(r.email_verified) : true,
+        verificationToken: r.verification_token || undefined,
       }));
     } catch (err) {
       console.error('[MySQL Error] getAllUsers:', err);
@@ -441,6 +493,30 @@ export async function getAllUsers(): Promise<UserAccount[]> {
 
 export async function upsertUser(user: UserAccount): Promise<UserAccount> {
   const now = Date.now();
+  const isSMB = user.email.toLowerCase() === 'chezmoi.benin@gmail.com';
+  
+  // Vérification s'il s'agit d'un nouvel utilisateur
+  const existingInMemory = memoryStore.users.find(u => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
+  const isNewUser = !existingInMemory;
+
+  if (isNewUser) {
+    if (isSMB) {
+      user.status = 'ACTIF';
+      user.emailVerified = true;
+    } else {
+      // Exigence 3: Tout nouveau compte créé doit passer par le statut "en attente de validation"
+      user.status = 'EN_ATTENTE_VALIDATION';
+      user.emailVerified = false;
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      user.verificationToken = verificationCode;
+
+      // Déclenchement automatique de l'envoi de l'e-mail de confirmation via Nodemailer
+      sendNewAccountVerificationEmail(user.email, user.name, verificationCode, verificationCode).catch(e => {
+        console.error('[Nodemailer] Erreur envoi validation nouveau compte:', e);
+      });
+    }
+  }
+
   if (isMySqlConnected && pool) {
     try {
       const sql = `
@@ -448,8 +524,8 @@ export async function upsertUser(user: UserAccount): Promise<UserAccount> {
           id, name, email, avatar, phone, role, job_title, department_name, 
           base_salary, commission_rate, hire_date, contract_type, city, 
           assigned_zone, rating, properties_count, pending_sync_count, 
-          total_commissions, status, cnss_number, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          total_commissions, status, cnss_number, email_verified, verification_token, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           name = VALUES(name),
           phone = VALUES(phone),
@@ -462,6 +538,8 @@ export async function upsertUser(user: UserAccount): Promise<UserAccount> {
           assigned_zone = VALUES(assigned_zone),
           status = VALUES(status),
           cnss_number = VALUES(cnss_number),
+          email_verified = VALUES(email_verified),
+          verification_token = VALUES(verification_token),
           updated_at = VALUES(updated_at)
       `;
       await pool.query(sql, [
@@ -485,6 +563,8 @@ export async function upsertUser(user: UserAccount): Promise<UserAccount> {
         user.totalCommissions,
         user.status,
         user.cnssNumber || null,
+        user.emailVerified ? 1 : 0,
+        user.verificationToken || null,
         now,
         now
       ]);
@@ -611,7 +691,9 @@ export async function findUserByIdentifier(rawIdentifier: string): Promise<UserA
           totalCommissions: Number(r.total_commissions),
           status: r.status,
           cnssNumber: r.cnss_number || undefined,
-          twoFactorEnabled: Boolean(r.two_factor_enabled || false)
+          twoFactorEnabled: Boolean(r.two_factor_enabled || false),
+          emailVerified: r.email_verified !== undefined ? Boolean(r.email_verified) : true,
+          verificationToken: r.verification_token || undefined
         };
       }
     } catch (err) {
@@ -685,5 +767,93 @@ export async function toggleUser2FA(userId: string, enabled: boolean): Promise<U
   }
 
   return user || null;
+}
+
+export async function verifyEmailAccount(tokenOrCode: string, email?: string): Promise<{ success: boolean; user?: UserAccount; message: string }> {
+  const cleanCode = tokenOrCode.trim();
+  const cleanEmail = email ? normalizeIdentifier(email) : '';
+
+  // Look in memory
+  const user = memoryStore.users.find(u => {
+    const codeMatch = u.verificationToken && u.verificationToken.trim() === cleanCode;
+    if (cleanEmail) {
+      return codeMatch && normalizeIdentifier(u.email) === cleanEmail;
+    }
+    return Boolean(codeMatch);
+  });
+
+  if (user) {
+    user.status = 'ACTIF';
+    user.emailVerified = true;
+    user.verificationToken = undefined;
+
+    if (isMySqlConnected && pool) {
+      try {
+        await pool.query('UPDATE users SET status = ?, email_verified = ?, verification_token = NULL WHERE id = ?', ['ACTIF', 1, user.id]);
+      } catch (err) {
+        console.error('[MySQL Error] verifyEmailAccount:', err);
+      }
+    }
+    return { success: true, user, message: 'Votre compte a été validé avec succès ! Vous pouvez maintenant vous connecter.' };
+  }
+
+  // Look in MySQL if connected
+  if (isMySqlConnected && pool) {
+    try {
+      let sql = 'SELECT * FROM users WHERE verification_token = ?';
+      const params: any[] = [cleanCode];
+      if (cleanEmail) {
+        sql += ' AND LOWER(email) = ?';
+        params.push(cleanEmail);
+      }
+      sql += ' LIMIT 1';
+
+      const [rows] = await pool.query<mysql.RowDataPacket[]>(sql, params);
+      if (rows && rows.length > 0) {
+        const r: any = rows[0];
+        await pool.query('UPDATE users SET status = ?, email_verified = ?, verification_token = NULL WHERE id = ?', ['ACTIF', 1, r.id]);
+        
+        const memU = memoryStore.users.find(u => u.id === r.id);
+        if (memU) {
+          memU.status = 'ACTIF';
+          memU.emailVerified = true;
+          memU.verificationToken = undefined;
+        }
+
+        const validUser: UserAccount = memU || {
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          avatar: r.avatar || '',
+          phone: r.phone,
+          role: r.role,
+          jobTitle: r.job_title,
+          departmentName: r.department_name,
+          baseSalary: Number(r.base_salary),
+          commissionRate: Number(r.commission_rate),
+          hireDate: r.hire_date,
+          contractType: r.contract_type,
+          city: r.city,
+          assignedZone: r.assigned_zone || '',
+          rating: Number(r.rating),
+          propertiesCount: Number(r.properties_count),
+          pendingSyncCount: Number(r.pending_sync_count),
+          totalCommissions: Number(r.total_commissions),
+          status: 'ACTIF',
+          emailVerified: true
+        };
+
+        return {
+          success: true,
+          user: validUser,
+          message: 'Votre compte a été validé avec succès ! Vous pouvez maintenant vous connecter.'
+        };
+      }
+    } catch (err) {
+      console.error('[MySQL Error] verifyEmailAccount SQL lookup:', err);
+    }
+  }
+
+  return { success: false, message: 'Code ou lien de validation introuvable ou expiré.' };
 }
 
