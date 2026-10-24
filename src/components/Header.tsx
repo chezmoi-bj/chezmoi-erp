@@ -13,7 +13,9 @@ import {
   Layers,
   UserCheck,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { ChezmoiLogo } from './ChezmoiLogo';
 import { UserAccount } from '../types';
@@ -33,6 +35,8 @@ interface HeaderProps {
   openProfileModal: () => void;
   onLogout: () => void;
   currentUser: UserAccount;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -49,6 +53,8 @@ export const Header: React.FC<HeaderProps> = ({
   openProfileModal,
   onLogout,
   currentUser,
+  theme = 'light',
+  onToggleTheme,
 }) => {
   // Liste nettoyée des onglets principaux (Sans sync ni code)
   const allTabs = [
@@ -81,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block">
-              Multilocal offline-first (Hostinger MySQL)
+              Plateforme Immobilière & Foncière
             </p>
           </div>
         </div>
@@ -124,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
             {isOnline ? (
               <>
                 <Wifi className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden sm:inline">MySQL En Ligne</span>
+                <span className="hidden sm:inline">En ligne</span>
               </>
             ) : (
               <>
@@ -138,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={triggerSync}
             disabled={!isOnline || isSyncing}
-            title="Synchroniser le cache local SQLite (Drift) vers Hostinger MySQL"
+            title="Synchroniser les données"
             className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
               isSyncing
                 ? 'bg-amber-50 text-amber-700 border-amber-300 cursor-wait'
@@ -181,6 +187,21 @@ export const Header: React.FC<HeaderProps> = ({
               className="p-1.5 rounded-full text-slate-600 hover:text-[#FA3055] hover:bg-[#F4F6F5] cursor-pointer transition-colors"
             >
               <SettingsIcon className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Theme Toggle Button (Sombre / Clair) */}
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              title={theme === 'dark' ? 'Basculer en mode clair' : 'Basculer en mode sombre'}
+              className="p-1.5 rounded-full text-slate-600 hover:text-[#FA3055] hover:bg-[#F4F6F5] cursor-pointer transition-colors"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-500" />
+              )}
             </button>
           )}
 

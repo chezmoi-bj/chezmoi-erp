@@ -3,18 +3,123 @@
 @layer base {
   *, ::before, ::after {
     font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-sizing: border-box;
   }
   
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #F8FAFC;
+    background-image: radial-gradient(rgba(15, 23, 42, 0.08) 1.25px, transparent 1.25px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
     color: #1E293B;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  html.dark body {
+    background-color: #0A0C0F;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1.25px, transparent 1.25px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
+    color: #E2E8F0;
   }
 
   ::selection {
-    background-color: #FA3055;
+    background-color: #F91942;
     color: #FFFFFF;
   }
+}
+
+/* ==========================================================================
+   PROPAGATION GLOBALE DU THÈME SOMBRE (ERP CHEZMOI)
+   S'applique uniformément à tous les modules, briques, tables et modales.
+   ========================================================================== */
+
+html.dark .bg-white {
+  background-color: #11141A !important;
+}
+
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: rgba(17, 20, 26, 0.94) !important;
+}
+
+html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-\[\#F4F6F5\],
+html.dark .bg-slate-50 {
+  background-color: #161A22 !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #1B202A !important;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #242A38 !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-300 {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #CBD5E1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94A3B8 !important;
+}
+
+html.dark input:not([type="checkbox"]):not([type="radio"]), 
+html.dark select, 
+html.dark textarea {
+  background-color: #151820 !important;
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+html.dark select option {
+  background-color: #151820;
+  color: #F8FAFC;
+}
+
+/* Modales & Fenêtres flottantes */
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Scrollbars discrètes */
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background-color: transparent;
 }
 
 @media print {
@@ -23,5 +128,6 @@
   }
   body {
     background-color: #FFFFFF !important;
+    color: #000000 !important;
   }
 }

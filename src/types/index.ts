@@ -61,6 +61,26 @@ export interface Coordinates {
   capturedAt: number;
 }
 
+export type MandateType = 
+  | 'COMMISSION_VENTE' 
+  | 'COMMISSION_LOCATION' 
+  | 'COMMISSION_LOCATION_MEUBLEE'
+  | 'EXCLUSIF' 
+  | 'SIMPLE' 
+  | 'GESTION_DIRECTE';
+
+export type PropertyLegalStatus =
+  | 'TITRE_FONCIER_PERSONNEL'
+  | 'CONVENTION_VENTE'
+  | 'HERITAGE'
+  | 'ATTESTATION_DETENTION_COUTUMIERE'
+  | 'ATTESTATION_RECASEMENT'
+  | 'TITRE_FONCIER_EN_COURS'
+  | 'TITRE_FONCIER'
+  | 'CONCESSION'
+  | 'EN_COURS'
+  | string;
+
 export interface OwnerInfo {
   id: string;
   fullName: string;
@@ -68,7 +88,7 @@ export interface OwnerInfo {
   phoneWhatsapp: string;
   email?: string;
   idCardNumber?: string;
-  mandateType: 'EXCLUSIF' | 'SIMPLE' | 'GESTION_DIRECTE';
+  mandateType: MandateType;
   mandateDurationMonths: number;
 }
 
@@ -93,6 +113,12 @@ export interface PropertyRecord {
   coordinates: Coordinates;
   owner: OwnerInfo;
   photos: PropertyPhoto[];
+  rentalRates?: {
+    daily?: number; // FCFA / jour
+    weekly?: number; // FCFA / semaine
+    monthly?: number; // FCFA / mois
+  };
+  otherDetails?: string; // Précisions additionnelles, conditions, commodités
   assignedAgentId: string;
   assignedAgentName: string;
   syncStatus: 'pending' | 'syncing' | 'synced' | 'conflict';
@@ -100,7 +126,7 @@ export interface PropertyRecord {
   createdAt: number;
   updatedAt: number;
   serverSyncTimestamp?: number;
-  legalStatus: 'TITRE_FONCIER' | 'ATTESTATION_RECASEMENT' | 'EN_COURS' | 'CONCESSION';
+  legalStatus: PropertyLegalStatus;
   isFeatured?: boolean;
 }
 
@@ -129,6 +155,20 @@ export interface UserAccount {
   twoFactorEnabled?: boolean;
   emailVerified?: boolean;
   verificationToken?: string;
+  verificationEmailSent?: boolean;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  targetPropertyId?: string;
+  propertyName?: string;
+  location?: string;
+  agentName?: string;
+  timestamp: number;
+  read: boolean;
+  type: 'NEW_PROPERTY_CENSUS' | 'SYSTEM' | 'SYNC';
 }
 
 export interface AuthSession {

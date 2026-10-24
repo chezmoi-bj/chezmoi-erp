@@ -7,36 +7,38 @@ import {
   AlertCircle, 
   Sun, 
   Moon, 
-  Lock,
-  ChevronDown
+  Lock
 } from 'lucide-react';
 import { UserAccount } from '../types';
-import { ROLE_DEFINITIONS } from '../utils/auth';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UserAccount, token: string) => void;
-  allUsers: UserAccount[];
+  allUsers?: UserAccount[];
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onLoginSuccess,
-  allUsers,
+  theme: propTheme,
+  onToggleTheme,
 }) => {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('chezmoi_auth_theme') as 'dark' | 'light') || 'dark';
+  const [localTheme, setLocalTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('chezmoi_theme') as 'dark' | 'light') || 
+           (localStorage.getItem('chezmoi_auth_theme') as 'dark' | 'light') || 'dark';
   });
+
+  const activeTheme = propTheme || localTheme;
+  const isDark = activeTheme === 'dark';
 
   const [step, setStep] = useState<'identifier' | 'otp'>('identifier');
   const [identifier, setIdentifier] = useState<string>('chezmoi.benin@gmail.com');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [devOtpCode, setDevOtpCode] = useState<string | null>(null);
   const [maskedTarget, setMaskedTarget] = useState<string>('');
   const [is2FARequired, setIs2FARequired] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(300);
-  const [showRoleSelector, setShowRoleSelector] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const [verificationCodeInput, setVerificationCodeInput] = useState<string>('');
   const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
@@ -51,27 +53,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F12
       if (e.key === 'F12') {
         e.preventDefault();
         return false;
       }
-      // Ctrl+Shift+I / Cmd+Option+I (Inspecter)
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
         e.preventDefault();
         return false;
       }
-      // Ctrl+Shift+J / Cmd+Option+J (Console)
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
         e.preventDefault();
         return false;
       }
-      // Ctrl+Shift+C / Cmd+Option+C (Inspecter élément)
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
         e.preventDefault();
         return false;
       }
-      // Ctrl+U / Cmd+U (Code source)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
         e.preventDefault();
         return false;
@@ -93,7 +90,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       const params = new URLSearchParams(window.location.search);
       if (params.get('email_verified') === 'true') {
         setVerificationSuccess('Votre compte a été vérifié avec succès ! Vous pouvez maintenant vous connecter.');
-        // Clean URL without refresh
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     } catch {
@@ -101,11 +97,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   }, []);
 
-  // Persistance du thème
+  // Bascule du thème avec synchronisation globale
   const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('chezmoi_auth_theme', nextTheme);
+    if (onToggleTheme) {
+      onToggleTheme();
+    } else {
+      const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+      setLocalTheme(nextTheme);
+      localStorage.setItem('chezmoi_theme', nextTheme);
+      localStorage.setItem('chezmoi_auth_theme', nextTheme);
+      document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+      document.documentElement.classList.toggle('light', nextTheme === 'light');
+    }
   };
 
   // Timer countdown OTP
@@ -157,7 +160,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       }
 
       setPendingVerificationEmail(null);
-      setDevOtpCode(data.devOtpCode);
       setMaskedTarget(data.maskedTarget || data.email || identToSend);
       setIs2FARequired(Boolean(data.twoFactorRequired));
       setCountdown(300);
@@ -294,22 +296,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     const s = secs % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
-
-  const handleQuickFill = (userEmail: string) => {
-    setIdentifier(userEmail);
-    setError(null);
-    setShowRoleSelector(false);
-  };
-
-  const handleAutoFillCode = () => {
-    if (!devOtpCode) return;
-    setOtpDigits(devOtpCode.split('').slice(0, 6));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    handleVerifyOtp(devOtpCode);
-  };
-
-  const isDark = theme === 'dark';
 
   return (
     <div 
@@ -501,50 +487,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   </>
                 )}
               </button>
-
-              {/* Subtle Account Switcher (Discreet helper without distraction) */}
-              <div className="mt-6 pt-5 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setShowRoleSelector(!showRoleSelector)}
-                  className={`w-full flex items-center justify-between py-1.5 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                    isDark 
-                      ? 'text-zinc-400 hover:text-zinc-200' 
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <span>Comptes pré-configurés</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showRoleSelector ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showRoleSelector && (
-                  <div className={`mt-2 p-1.5 rounded-xl border grid grid-cols-2 gap-1.5 animate-fadeIn ${
-                    isDark ? 'bg-[#13161A] border-white/10' : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    {allUsers.map((u) => {
-                      const roleInfo = ROLE_DEFINITIONS[u.role];
-                      const isSelected = identifier.toLowerCase() === u.email.toLowerCase();
-                      return (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => handleQuickFill(u.email)}
-                          className={`text-left p-2 rounded-lg text-[11px] transition-all cursor-pointer truncate ${
-                            isSelected
-                              ? 'bg-[#F91942]/15 text-[#F91942] border border-[#F91942]/30 font-semibold' 
-                              : isDark
-                              ? 'text-zinc-400 hover:text-white hover:bg-white/5'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-white'
-                          }`}
-                        >
-                          <div className="font-semibold truncate">{u.name}</div>
-                          <div className="text-[9px] opacity-75">{roleInfo.label}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
             </form>
           )}
 
@@ -558,25 +500,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 }`}>
                   <Lock className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>Double authentification (2FA) active</span>
-                </div>
-              )}
-
-              {/* Dev/Demo code quick-fill pill */}
-              {devOtpCode && (
-                <div className={`mb-5 p-2.5 rounded-xl border flex items-center justify-between text-xs ${
-                  isDark ? 'bg-[#14171A] border-[#F91942]/30' : 'bg-rose-50/70 border-rose-200'
-                }`}>
-                  <span className={`text-[11px] font-mono ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>
-                    Code test : <strong className="text-[#F91942] font-black">{devOtpCode}</strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAutoFillCode}
-                    className="px-2.5 py-1 rounded-md bg-gradient-to-r from-[#FF2B53] to-[#D8072E] hover:brightness-110 text-white font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1 shadow-xs"
-                  >
-                    {copied ? <Check className="w-3 h-3" /> : null}
-                    <span>{copied ? 'Validé' : 'Remplir'}</span>
-                  </button>
                 </div>
               )}
 

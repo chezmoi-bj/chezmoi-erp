@@ -8,6 +8,7 @@ import {
   Download 
 } from 'lucide-react';
 import { LegalDocument } from '../types';
+import { DocumentScanModal } from './DocumentScanModal';
 
 interface GEDModuleProps {
   documents: LegalDocument[];
@@ -21,6 +22,7 @@ export const GEDModule: React.FC<GEDModuleProps> = ({
   const [filterType, setFilterType] = useState<string>('ALL');
   const [search, setSearch] = useState('');
   const [selectedDoc, setSelectedDoc] = useState<LegalDocument | null>(documents[0] || null);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
 
   const filtered = documents.filter((doc) => {
     const matchesFilter = filterType === 'ALL' || doc.type === filterType;
@@ -53,20 +55,7 @@ export const GEDModule: React.FC<GEDModuleProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                const newDoc: LegalDocument = {
-                  id: `doc_${Date.now()}`,
-                  title: 'Convention de vente notariée Fidjrossè',
-                  type: 'CONVENTION_VENTE',
-                  propertyCode: 'CM-COT-2026-088',
-                  propertyName: 'Villa duplex Fidjrossè plage',
-                  ownerName: 'M. Dossou Bio',
-                  fileSize: '3.1 Mo (PDF certifié)',
-                  status: 'VALIDE',
-                  uploadedAt: 'Aujourd’hui',
-                };
-                onUploadDoc(newDoc);
-              }}
+              onClick={() => setIsScanModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
             >
               <Upload className="w-4 h-4 text-[#FA3055]" />
@@ -74,6 +63,16 @@ export const GEDModule: React.FC<GEDModuleProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Scan & Digitization Modal */}
+        <DocumentScanModal
+          isOpen={isScanModalOpen}
+          onClose={() => setIsScanModalOpen(false)}
+          onSaveDocument={(doc) => {
+            onUploadDoc(doc);
+            setSelectedDoc(doc);
+          }}
+        />
 
         {/* Search & Filter Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 mt-6 pt-5 border-t border-slate-100">

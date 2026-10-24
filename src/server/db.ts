@@ -7,7 +7,7 @@ import {
   LeaveRequest, 
   PayslipRecord, 
   LegalDocument 
-} from '../types';
+} from '../types/index.js';
 import { 
   INITIAL_PROPERTIES, 
   INITIAL_USERS, 
@@ -146,6 +146,8 @@ async function ensureTablesAndAdmin(pool: mysql.Pool) {
       'ALTER TABLE users ADD COLUMN verification_token VARCHAR(255) DEFAULT NULL',
       'ALTER TABLE users ADD COLUMN two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0',
       'ALTER TABLE users ADD COLUMN total_commissions DECIMAL(14, 2) NOT NULL DEFAULT 0.00',
+      'ALTER TABLE properties ADD COLUMN rental_rates JSON DEFAULT NULL',
+      'ALTER TABLE properties ADD COLUMN other_details TEXT DEFAULT NULL',
     ];
     for (const mig of columnMigrations) {
       try {
@@ -320,6 +322,8 @@ export async function getAllProperties(): Promise<PropertyRecord[]> {
         },
         owner: typeof r.owner_data === 'string' ? JSON.parse(r.owner_data) : (r.owner_data || {}),
         photos: typeof r.photos === 'string' ? JSON.parse(r.photos) : (r.photos || []),
+        rentalRates: r.rental_rates ? (typeof r.rental_rates === 'string' ? JSON.parse(r.rental_rates) : r.rental_rates) : undefined,
+        otherDetails: r.other_details || undefined,
         assignedAgentId: r.assigned_agent_id,
         assignedAgentName: r.assigned_agent_name,
         syncStatus: r.sync_status,
@@ -354,9 +358,9 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
           department, city, arrondissement, district, address, price_amount, 
           price_usd, area_sq_meters, rooms_count, bedrooms_count, bathrooms_count, 
           coordinates_lat, coordinates_lng, coordinates_accuracy, coordinates_address_approx, coordinates_captured_at,
-          owner_data, photos, assigned_agent_id, assigned_agent_name, sync_status, 
+          owner_data, photos, rental_rates, other_details, assigned_agent_id, assigned_agent_name, sync_status, 
           legal_status, is_featured, created_at, updated_at, server_sync_timestamp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           title = VALUES(title),
           description = VALUES(description),
@@ -379,6 +383,8 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
           coordinates_address_approx = VALUES(coordinates_address_approx),
           owner_data = VALUES(owner_data),
           photos = VALUES(photos),
+          rental_rates = VALUES(rental_rates),
+          other_details = VALUES(other_details),
           sync_status = 'synced',
           updated_at = VALUES(updated_at),
           server_sync_timestamp = VALUES(server_sync_timestamp)
@@ -409,6 +415,8 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
         record.coordinates?.capturedAt || now,
         JSON.stringify(record.owner || {}),
         JSON.stringify(record.photos || []),
+        record.rentalRates ? JSON.stringify(record.rentalRates) : null,
+        record.otherDetails || null,
         record.assignedAgentId,
         record.assignedAgentName,
         'synced',

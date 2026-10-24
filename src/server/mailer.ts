@@ -8,7 +8,20 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const LOGO_PATH = path.resolve(__dirname, '../../public/assets/aistudio/1_e24ebf1b.png');
+
+function getLogoPath(): string {
+  const candidates = [
+    path.resolve(process.cwd(), 'public/assets/aistudio/1_e24ebf1b.png'),
+    path.resolve(process.cwd(), 'public/chezmoi-logo.png'),
+    path.resolve(__dirname, '../../public/assets/aistudio/1_e24ebf1b.png'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
+
+const LOGO_PATH = getLogoPath();
 
 let transporter: Transporter | null = null;
 
@@ -53,7 +66,7 @@ async function getTransporter(): Promise<Transporter> {
 }
 
 /**
- * Générateur de template e-mail minimaliste et professionnel "façon GitHub"
+ * Générateur de template e-mail minimaliste et professionnel "façon GitHub" avec police Poppins
  */
 function buildGitHubStyleHtml(options: {
   title: string;
@@ -85,18 +98,17 @@ function buildGitHubStyleHtml(options: {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #f6f8fa;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-      color: #1f2328;
-      -webkit-font-smoothing: antialiased;
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    body, table, td, p, h1, h2, h3, a, span, strong, div {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f6f8fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; color: #1f2328;">
+<body style="margin: 0; padding: 0; background-color: #f6f8fa; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1f2328; -webkit-font-smoothing: antialiased;">
   
   <!-- Preheader text for preview in mail client -->
   <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; font-size: 1px; line-height: 1px; color: #f6f8fa;">
@@ -108,23 +120,29 @@ function buildGitHubStyleHtml(options: {
       <td align="center">
         
         <!-- Main Card "Façon GitHub" -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; background-color: #ffffff; border: 1px solid #d0d7de; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(31,35,40,0.06);">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; background-color: #ffffff; border: 1px solid #d0d7de; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(31,35,40,0.06);">
           
-          <!-- Header with centered logo -->
+          <!-- Header with centered Chezmoi Logo (proportionné et centré sans erreur) -->
           <tr>
-            <td align="center" style="padding: 32px 32px 20px 32px;">
-              <table border="0" cellspacing="0" cellpadding="0">
+            <td align="center" style="padding: 34px 32px 18px 32px; text-align: center;">
+              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto; text-align: center;">
                 <tr>
-                  <td align="center">
-                    <img src="cid:chezmoi-logo" alt="Chezmoi BJ" width="54" height="54" style="display: block; width: 54px; height: 54px; object-fit: contain; margin: 0 auto;" />
+                  <td align="center" style="text-align: center;">
+                    <img 
+                      src="cid:chezmoi-logo" 
+                      alt="Chezmoi BJ" 
+                      width="70" 
+                      height="70" 
+                      style="display: block; margin: 0 auto; width: 70px; height: 70px; max-width: 70px; max-height: 70px; object-fit: contain; border: 0; outline: none; text-align: center;" 
+                    />
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-top: 10px;">
-                    <span style="font-size: 17px; font-weight: 800; color: #1f2328; letter-spacing: -0.3px;">
+                  <td align="center" style="padding-top: 12px; text-align: center;">
+                    <span style="font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 800; color: #1f2328; letter-spacing: -0.3px;">
                       chezmoi<span style="color: #f91942;">.bj</span>
                     </span>
-                    ${badgeLabel ? `<span style="margin-left: 6px; font-size: 10px; font-weight: 700; background-color: rgba(249,25,66,0.1); color: #f91942; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(249,25,66,0.2); vertical-align: middle;">${badgeLabel}</span>` : ''}
+                    ${badgeLabel ? `<span style="display: inline-block; margin-left: 6px; font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 600; background-color: rgba(249,25,66,0.1); color: #f91942; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(249,25,66,0.2); vertical-align: middle;">${badgeLabel}</span>` : ''}
                   </td>
                 </tr>
               </table>
@@ -134,25 +152,25 @@ function buildGitHubStyleHtml(options: {
           <!-- Content Body -->
           <tr>
             <td style="padding: 10px 36px 36px 36px;">
-              <h2 style="margin: 0 0 14px 0; font-size: 19px; font-weight: 600; color: #1f2328; text-align: left; letter-spacing: -0.2px;">
+              <h2 style="margin: 0 0 14px 0; font-family: 'Poppins', sans-serif; font-size: 19px; font-weight: 600; color: #1f2328; text-align: left; letter-spacing: -0.2px;">
                 ${title}
               </h2>
 
-              <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.55; color: #353b43;">
+              <p style="margin: 0 0 16px 0; font-family: 'Poppins', sans-serif; font-size: 14px; line-height: 1.6; color: #353b43;">
                 Bonjour <strong>${recipientName}</strong>,
               </p>
 
-              <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.55; color: #353b43;">
+              <p style="margin: 0 0 20px 0; font-family: 'Poppins', sans-serif; font-size: 14px; line-height: 1.6; color: #353b43;">
                 ${bodyText}
               </p>
 
               ${code ? `
               <!-- GitHub Token Style Code Box -->
-              <div style="margin: 24px 0 24px 0; text-align: center;">
-                <div style="display: inline-block; background-color: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 14px 28px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 30px; font-weight: 700; letter-spacing: 9px; color: #1f2328; text-align: center;">
+              <div style="margin: 26px 0 26px 0; text-align: center;">
+                <div style="display: inline-block; background-color: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 15px 30px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 30px; font-weight: 700; letter-spacing: 9px; color: #1f2328; text-align: center;">
                   ${code}
                 </div>
-                <div style="margin-top: 8px; font-size: 11px; color: #656d76; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                <div style="margin-top: 8px; font-family: 'Poppins', sans-serif; font-size: 11px; color: #656d76;">
                   Code de sécurité à usage unique
                 </div>
               </div>
@@ -161,14 +179,14 @@ function buildGitHubStyleHtml(options: {
               ${actionUrl && actionText ? `
               <!-- Primary Action CTA -->
               <div style="margin: 24px 0; text-align: center;">
-                <a href="${actionUrl}" style="display: inline-block; background-color: #f91942; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 26px; border-radius: 6px; box-shadow: 0 2px 8px rgba(249,25,66,0.3); text-align: center;">
+                <a href="${actionUrl}" style="display: inline-block; font-family: 'Poppins', sans-serif; background-color: #f91942; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 26px; border-radius: 6px; box-shadow: 0 2px 8px rgba(249,25,66,0.3); text-align: center;">
                   ${actionText}
                 </a>
               </div>
               ` : ''}
 
               <!-- Security notice -->
-              <p style="margin: 24px 0 0 0; padding-top: 18px; border-top: 1px solid #eaeef2; font-size: 12px; line-height: 1.5; color: #656d76;">
+              <p style="margin: 24px 0 0 0; padding-top: 18px; border-top: 1px solid #eaeef2; font-family: 'Poppins', sans-serif; font-size: 12px; line-height: 1.6; color: #656d76;">
                 ${securityNote}
               </p>
             </td>
@@ -179,9 +197,9 @@ function buildGitHubStyleHtml(options: {
         <!-- Minimalist Footer (Charte Chezmoi BJ) -->
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; margin-top: 24px;">
           <tr>
-            <td align="center" style="font-size: 12px; color: #656d76; line-height: 1.5;">
-              <p style="margin: 0 0 4px 0; font-weight: 600; color: #f91942;">Chezmoi BJ • ERP & Cadastre Foncier</p>
-              <p style="margin: 0; color: #8c959f;">© Chezmoi BJ - Tous droits réservés</p>
+            <td align="center" style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #656d76; line-height: 1.6;">
+              <p style="margin: 0 0 4px 0; font-family: 'Poppins', sans-serif; font-weight: 600; color: #f91942;">Chezmoi BJ • Plateforme Foncière & Immobilière</p>
+              <p style="margin: 0; font-family: 'Poppins', sans-serif; color: #8c959f;">© Chezmoi BJ - Tous droits réservés</p>
             </td>
           </tr>
         </table>
@@ -205,6 +223,8 @@ function getEmailAttachments() {
         filename: 'chezmoi-logo.png',
         path: LOGO_PATH,
         cid: 'chezmoi-logo',
+        contentType: 'image/png',
+        contentDisposition: 'inline',
       },
     ];
   }
@@ -212,7 +232,7 @@ function getEmailAttachments() {
 }
 
 /**
- * 1. Envoie le code OTP de connexion par e-mail (Design GitHub)
+ * 1. Envoie le code OTP de connexion par e-mail (Design GitHub + Police Poppins)
  */
 export async function sendOtpEmail(email: string, name: string, otpCode: string): Promise<boolean> {
   try {

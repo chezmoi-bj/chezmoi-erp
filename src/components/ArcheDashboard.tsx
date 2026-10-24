@@ -321,11 +321,6 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
               })}
             </div>
 
-            {/* Offline-First sync notice */}
-            <div className="mt-4 p-3 rounded-2xl bg-[#FA3055]/5 border border-[#FA3055]/15 text-[11px] text-[#FA3055] leading-relaxed">
-              <span className="font-bold">Base SQLite Drift :</span> les recensements effectués par les agents sont stockés localement sur le smartphone avant synchronisation vers le Cloud Hostinger (MySQL).
-            </div>
-
           </div>
         </div>
 
@@ -338,38 +333,23 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
               <div className="w-16 h-16 rounded-3xl bg-[#FA3055]/10 text-[#FA3055] mx-auto flex items-center justify-center">
                 <Building2 className="w-8 h-8" />
               </div>
-              <div className="max-w-lg mx-auto">
+              <div className="max-w-md mx-auto">
                 <h3 className="text-xl font-bold text-slate-900 tracking-tight">
-                  Base foncière de production prête
+                  Portefeuille foncier
                 </h3>
                 <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                  Toutes les données de test ont été purgées. Aucun recensement foncier n'est enregistré pour le moment. Vous pouvez démarrer la collecte terrain ou synchroniser l'application mobile SQLite Drift.
+                  Aucun bien enregistré actuellement. Utilisez le bouton ci-dessous pour ajouter votre premier relevé de propriété.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <button
                   onClick={onOpenCensus}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>Nouveau recensement terrain</span>
                 </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-100 text-left max-w-2xl mx-auto">
-                <div className="p-4 rounded-2xl bg-[#F9FAF9] border border-slate-100">
-                  <p className="text-xs font-bold text-slate-800">Recensement GPS</p>
-                  <p className="text-[11px] text-slate-500 mt-1">Coordonnées WGS84 précises et photos géoréférencées.</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#F9FAF9] border border-slate-100">
-                  <p className="text-xs font-bold text-slate-800">Mode Hors-Ligne</p>
-                  <p className="text-[11px] text-slate-500 mt-1">Stockage local Drift puis synchronisation vers MySQL.</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#F9FAF9] border border-slate-100">
-                  <p className="text-xs font-bold text-slate-800">Validation Admin</p>
-                  <p className="text-[11px] text-slate-500 mt-1">Contrôle central par SMB (Super Admin).</p>
-                </div>
               </div>
             </div>
           ) : (

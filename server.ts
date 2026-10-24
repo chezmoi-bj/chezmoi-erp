@@ -95,6 +95,16 @@ async function startServer() {
     }
   });
 
+  app.put('/api/properties/:id', async (req: Request, res: Response) => {
+    try {
+      const updatedData = { ...req.body, id: req.params.id, updatedAt: Date.now() };
+      const saved = await upsertProperty(updatedData);
+      res.json({ success: true, property: saved });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur lors de la mise à jour du bien' });
+    }
+  });
+
   // 3. Synchronisation Offline Drift (SQLite) -> Backend MySQL
   app.post('/api/sync/push', async (req: Request, res: Response) => {
     try {
@@ -291,7 +301,6 @@ async function startServer() {
         email: user.email,
         phone: user.phone,
         maskedTarget: maskedEmail,
-        devOtpCode: otpCode, // Renvoyé pour faciliter les tests et la démonstration
         twoFactorRequired: Boolean(user.twoFactorEnabled),
         userRole: user.role,
         userName: user.name,

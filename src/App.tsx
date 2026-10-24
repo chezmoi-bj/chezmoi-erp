@@ -51,6 +51,21 @@ export default function App() {
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
 
+  // Theme global persistant (Sombre / Clair)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('chezmoi_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.classList.toggle('light', theme === 'light');
+    localStorage.setItem('chezmoi_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   // Onglet actif initialisé selon le rôle
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = loadSession();
@@ -191,6 +206,26 @@ export default function App() {
     }
   };
 
+  // Mise à jour de fiche de bien (Permissions: recenseur assigné, secrétaire, admin, super admin)
+  const handleUpdateProperty = async (updated: PropertyRecord) => {
+    setProperties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    if (selectedProperty?.id === updated.id) {
+      setSelectedProperty(updated);
+    }
+
+    if (isOnline) {
+      try {
+        await fetch(`/api/properties/${updated.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        });
+      } catch (err) {
+        console.error('Erreur synchronisation mise à jour bien:', err);
+      }
+    }
+  };
+
   // Gestion des utilisateurs et rôles
   const handleAddUser = async (newUser: UserAccount) => {
     const isCentralAdmin = newUser.email.toLowerCase() === 'chezmoi.benin@gmail.com';
@@ -273,6 +308,8 @@ export default function App() {
       <LoginPage
         onLoginSuccess={handleLoginSuccess}
         allUsers={users}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
     );
   }
@@ -367,7 +404,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans">
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+      theme === 'dark' ? 'dark text-[#E2E8F0]' : 'text-slate-800'
+    } bg-transparent`}>
       
       {/* Top Application Header - Cleaned & Perfectly Aligned */}
       <Header
@@ -384,6 +423,8 @@ export default function App() {
         openProfileModal={() => setIsProfileModalOpen(true)}
         onLogout={handleLogout}
         currentUser={currentUser}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content Area - Aligned exactly with max-w-7xl mx-auto */}
@@ -397,7 +438,7 @@ export default function App() {
             </div>
 
             {/* Inner screen */}
-            <div className="bg-[#F8FAFC] rounded-[32px] overflow-hidden min-h-[740px] max-h-[880px] overflow-y-auto p-3 sm:p-5 text-slate-800 w-full">
+            <div className={`${theme === 'dark' ? 'bg-[#12151B] text-[#E2E8F0]' : 'bg-[#F8FAFC] text-slate-800'} rounded-[32px] overflow-hidden min-h-[740px] max-h-[880px] overflow-y-auto p-3 sm:p-5 w-full`}>
               {renderActiveTabContent()}
             </div>
 
@@ -412,11 +453,13 @@ export default function App() {
         )}
       </main>
 
-      {/* Property Details Modal */}
+      {/* Property Details Modal with Live Edit Permission */}
       <PropertyDetailModal
         property={selectedProperty}
         onClose={() => setSelectedProperty(null)}
         currency={currency}
+        currentUser={currentUser}
+        onUpdateProperty={handleUpdateProperty}
       />
 
       {/* Settings Modal (WhatsApp, Gmail, Docs, WordPress, Gemini, e-MECeF, Maps) */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, 
   Camera, 
@@ -20,10 +20,12 @@ import {
   Eye,
   Plus,
   Search,
-  Check
+  Check,
+  Calendar,
+  Image as ImageIcon
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Coordinates, PropertyCategory, PropertyListingType, PropertyPhoto, PropertyRecord } from '../types';
+import { Coordinates, PhotoCategory, PropertyCategory, PropertyListingType, PropertyPhoto, PropertyRecord } from '../types';
 import { BENIN_TERRITORIES, searchTerritory, TerritorySearchResult } from '../data/beninTerritories';
 
 interface CensusFormProps {
@@ -60,7 +62,18 @@ export const CensusForm: React.FC<CensusFormProps> = ({
   const [listingType, setListingType] = useState<PropertyListingType>('VENTE');
   const [category, setCategory] = useState<PropertyCategory>('VILLA_DUPLEX');
   const [address, setAddress] = useState('2ème von après le carrefour Calvaire');
-  const [priceFCFA, setPriceFCFA] = useState<number>(120000000);
+  // Prix de vente / location principale (string pour permettre l'effacement complet sans blocage sur 0)
+  const [priceInput, setPriceInput] = useState<string>('120000000');
+
+  // Tarification flexible pour locations / meublés (journalier, hebdomadaire, mensuel)
+  const [enableMultipleRates, setEnableMultipleRates] = useState<boolean>(true);
+  const [rateDaily, setRateDaily] = useState<string>('35000');
+  const [rateWeekly, setRateWeekly] = useState<string>('200000');
+  const [rateMonthly, setRateMonthly] = useState<string>('650000');
+
+  // Champ de texte libre "Autres précisions"
+  const [otherDetails, setOtherDetails] = useState<string>('');
+
   const [areaSqMeters, setAreaSqMeters] = useState<number>(380);
   const [roomsCount, setRoomsCount] = useState<number>(6);
   const [bedroomsCount, setBedroomsCount] = useState<number>(4);
@@ -80,25 +93,15 @@ export const CensusForm: React.FC<CensusFormProps> = ({
   const [isLocating, setIsLocating] = useState(false);
   const [mapSatelliteZoom, setMapSatelliteZoom] = useState(16);
 
-  // 5. Photos catégorisées
-  const [photos, setPhotos] = useState<PropertyPhoto[]>([
-    {
-      id: 'p_demo_1',
-      category: 'FACADE',
-      url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80',
-      isMain: true,
-      caption: 'Façade extérieure & portail',
-      timestamp: Date.now(),
-    },
-    {
-      id: 'p_demo_2',
-      category: 'SALON',
-      url: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&auto=format&fit=crop&q=80',
-      isMain: false,
-      caption: 'Grand séjour principal',
-      timestamp: Date.now(),
-    },
-  ]);
+  // 5. Photos réelles (Caméra / Galerie)
+  const [photos, setPhotos] = useState<PropertyPhoto[]>([]);
+  
+  // Refs pour les sélecteurs de fichiers natifs
+  const facadeInputRef = useRef<HTMLInputElement | null>(null);
+  const salonInputRef = useRef<HTMLInputElement | null>(null);
+  const chambreInputRef = useRef<HTMLInputElement | null>(null);
+  const docInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [identityPhotoUrl, setIdentityPhotoUrl] = useState<string>('https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&auto=format&fit=crop&q=80');
 
   // Territory search state
@@ -199,27 +202,40 @@ export const CensusForm: React.FC<CensusFormProps> = ({
     }
   };
 
-  const handleSimulateCameraCapture = (categoryType: any) => {
-    const sampleUrls: Record<string, string> = {
-      FACADE: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80',
-      SALON: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&auto=format&fit=crop&q=80',
-      CHAMBRE: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=600&auto=format&fit=crop&q=80',
-      CUISINE: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80',
-      EXTERIEUR: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=80',
-      DOC_TITRE: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80',
-    };
+  // Gestion native de l'appareil photo et de la galerie du smartphone/PC
+  const handleNativeFileSelect = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    categoryType: PhotoCategory,
+    defaultCaption: string
+  ) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    const newPhoto: PropertyPhoto = {
-      id: `photo_${Date.now()}`,
-      category: categoryType,
-      url: sampleUrls[categoryType] || sampleUrls.FACADE,
-      isMain: photos.length === 0,
-      caption: `Photo terrain (${categoryType.toLowerCase()})`,
-      timestamp: Date.now(),
-      localPath: `app_storage/photos/local_${Date.now()}.jpg`,
-    };
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (!dataUrl) return;
 
-    setPhotos([...photos, newPhoto]);
+        const newPhoto: PropertyPhoto = {
+          id: `photo_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          category: categoryType,
+          url: dataUrl,
+          isMain: photos.length === 0,
+          caption: defaultCaption,
+          timestamp: Date.now(),
+        };
+
+        setPhotos((prev) => [...prev, newPhoto]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const triggerPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    ref.current?.click();
   };
 
   const handleDeletePhoto = (photoId: string) => {
@@ -232,6 +248,8 @@ export const CensusForm: React.FC<CensusFormProps> = ({
     const finalQuartier = customQuartier.trim() || selectedQuartier;
     const finalCity = currentCommuneObj ? currentCommuneObj.name : 'Cotonou';
     const finalArrond = currentArrondissementObj ? currentArrondissementObj.name : '';
+    const finalPrice = priceInput.trim() ? Number(priceInput) : 0;
+    const isRental = listingType === 'LOCATION' || listingType === 'LOCATION_MEUBLEE';
 
     const newRecord: PropertyRecord = {
       id: `prop_${Date.now()}`,
@@ -245,12 +263,18 @@ export const CensusForm: React.FC<CensusFormProps> = ({
       arrondissement: finalArrond,
       district: finalQuartier,
       address,
-      priceAmount: Number(priceFCFA),
-      priceUSD: Math.round(Number(priceFCFA) / 600),
+      priceAmount: finalPrice,
+      priceUSD: Math.round(finalPrice / 600),
       areaSqMeters: Number(areaSqMeters),
       roomsCount: Number(roomsCount),
       bedroomsCount: Number(bedroomsCount),
       bathroomsCount: Number(bathroomsCount),
+      rentalRates: (isRental || enableMultipleRates) ? {
+        daily: rateDaily ? Number(rateDaily) : undefined,
+        weekly: rateWeekly ? Number(rateWeekly) : undefined,
+        monthly: rateMonthly ? Number(rateMonthly) : undefined,
+      } : undefined,
+      otherDetails: otherDetails.trim() || undefined,
       coordinates: coordinates || {
         latitude: 6.3533,
         longitude: 2.4118,
@@ -277,6 +301,15 @@ export const CensusForm: React.FC<CensusFormProps> = ({
       legalStatus,
     };
 
+    // Synchronisation automatique et immédiate avec MySQL dès que connecté
+    if (isOnline) {
+      fetch('/api/properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRecord)
+      }).catch((err) => console.error('[AutoSync Error] Direct property push:', err));
+    }
+
     onSaveRecord(newRecord);
     confetti({ particleCount: 40, spread: 55, colors: ['#FA3055', '#1E293B', '#ffffff'] });
   };
@@ -284,35 +317,35 @@ export const CensusForm: React.FC<CensusFormProps> = ({
   return (
     <div className="w-full space-y-5 pb-16">
       
-      {/* Title & Offline Status Banner */}
+      {/* Title & Status Banner */}
       <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs w-full">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#FA3055] text-white">
-              Module de recensement terrain
+              Recensement de bien
             </span>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-2">
-              Fiche de recensement terrain (offline-first)
+              Fiche descriptive & cadastrale
             </h1>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              Agent terrain assigné : <strong className="text-slate-800">{assignedAgentName}</strong> • Taxonomie <span className="text-[#FA3055] font-bold">chezmoi.bj</span>
+              Agent référent : <strong className="text-slate-800">{assignedAgentName}</strong>
             </p>
           </div>
 
-          <div className={`px-4 py-2.5 rounded-2xl flex items-center gap-2 border text-xs font-semibold self-start sm:self-auto ${
+          <div className={`px-3.5 py-1.5 rounded-full flex items-center gap-1.5 border text-xs font-semibold self-start sm:self-auto ${
             isOnline
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-amber-50 text-amber-800 border-amber-300'
           }`}>
             {isOnline ? (
               <>
-                <Wifi className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span>Mode en ligne (sync directe)</span>
+                <Wifi className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                <span>En ligne</span>
               </>
             ) : (
               <>
-                <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                <span>Mode hors-ligne (stockage Drift/SQLite)</span>
+                <WifiOff className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                <span>Hors-ligne</span>
               </>
             )}
           </div>
@@ -680,16 +713,106 @@ export const CensusForm: React.FC<CensusFormProps> = ({
               </select>
             </div>
 
+            {/* Prix Principal - Édition et suppression fluide au clavier */}
             <div className="w-full">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Prix demandé (FCFA) *</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                <span>Prix demandé / Montant de vente ou loyer principal (FCFA) *</span>
+                <span className="text-xs font-mono font-bold text-[#FA3055]">
+                  {priceInput ? Number(priceInput).toLocaleString('fr-FR') + ' FCFA' : '0 FCFA'}
+                </span>
+              </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 required
-                min={1000}
-                value={priceFCFA}
-                onChange={(e) => setPriceFCFA(Number(e.target.value))}
-                className="w-full px-3.5 py-3 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-extrabold text-[#FA3055] focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
+                value={priceInput}
+                onChange={(e) => setPriceInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="Ex : 120000000"
+                className="w-full px-3.5 py-3 rounded-xl bg-[#F9FAF9] border border-slate-200 text-sm font-extrabold text-[#FA3055] focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
               />
+            </div>
+
+            {/* Option Tarification Multiple (Locations simples & Appartements meublés) */}
+            <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#FA3055]" />
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 block">
+                      Tarification flexible (Courtes & longues durées / Meublés)
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Permet d'afficher simultanément des forfaits journaliers, hebdomadaires et mensuels.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEnableMultipleRates(!enableMultipleRates)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-colors ${
+                    enableMultipleRates 
+                      ? 'bg-[#FA3055] text-white' 
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  }`}
+                >
+                  {enableMultipleRates ? 'Activée' : 'Désactivée'}
+                </button>
+              </div>
+
+              {enableMultipleRates && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="p-3 rounded-xl bg-white border border-slate-200">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Tarif journalier (FCFA / jour)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={rateDaily}
+                      onChange={(e) => setRateDaily(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Ex : 35000"
+                      className="w-full px-3 py-2 rounded-lg bg-[#F9FAF9] border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                      {rateDaily ? Number(rateDaily).toLocaleString('fr-FR') + ' FCFA / jour' : 'Non renseigné'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white border border-slate-200">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Tarif hebdomadaire (FCFA / semaine)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={rateWeekly}
+                      onChange={(e) => setRateWeekly(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Ex : 200000"
+                      className="w-full px-3 py-2 rounded-lg bg-[#F9FAF9] border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                      {rateWeekly ? Number(rateWeekly).toLocaleString('fr-FR') + ' FCFA / sem.' : 'Non renseigné'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white border border-slate-200">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Tarif mensuel (FCFA / mois)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={rateMonthly}
+                      onChange={(e) => setRateMonthly(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Ex : 650000"
+                      className="w-full px-3 py-2 rounded-lg bg-[#F9FAF9] border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                      {rateMonthly ? Number(rateMonthly).toLocaleString('fr-FR') + ' FCFA / mois' : 'Non renseigné'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="w-full">
@@ -724,11 +847,27 @@ export const CensusForm: React.FC<CensusFormProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-normal focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
               />
             </div>
+
+            {/* Champ de texte libre : Autres précisions */}
+            <div className="w-full">
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                <FileCheck className="w-3.5 h-3.5 text-[#FA3055]" />
+                <span>Autres précisions (conditions, commodités, meubles inclus, horaires...)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={otherDetails}
+                onChange={(e) => setOtherDetails(e.target.value)}
+                placeholder="Renseignez ici toute précision utile : mobilier inclus, accès goudronné, groupe électrogène de secours, modalités de caution, charges comprises, visites sur rendez-vous..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-normal focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
+              />
+            </div>
+
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* SECTION 5: PRISES DE VUE (CAMÉRA TERRAIN & PIÈCES) */}
+        {/* SECTION 5: PRISES DE VUE (APPAREIL PHOTO NATIF & GALERIE) */}
         {/* ========================================================================= */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 w-full">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -738,77 +877,143 @@ export const CensusForm: React.FC<CensusFormProps> = ({
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-900">
-                  Prises de vue (caméra terrain & pièces)
+                  Prises de vue réelles (Appareil photo & Galerie)
                 </h2>
-                <p className="text-[11px] text-slate-500">Capture directe ou choix depuis la galerie de l'appareil.</p>
+                <p className="text-[11px] text-slate-500">Capture directe avec la caméra du smartphone ou import depuis vos photos.</p>
               </div>
             </div>
-            <span className="text-[11px] font-semibold text-slate-500">{photos.length} photos</span>
+            <span className="text-[11px] font-bold text-[#FA3055] bg-[#FA3055]/10 px-2.5 py-1 rounded-full">{photos.length} photo{photos.length > 1 ? 's' : ''}</span>
           </div>
+
+          {/* Hidden native file inputs for real device capture */}
+          <input
+            type="file"
+            ref={facadeInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleNativeFileSelect(e, 'FACADE', 'Façade principale extérieure')}
+          />
+          <input
+            type="file"
+            ref={salonInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleNativeFileSelect(e, 'SALON', 'Grand séjour ou salon')}
+          />
+          <input
+            type="file"
+            ref={chambreInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleNativeFileSelect(e, 'CHAMBRE', 'Chambres ou dépendance')}
+          />
+          <input
+            type="file"
+            ref={docInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleNativeFileSelect(e, 'DOC_TITRE', 'Document du Titre Foncier / Convention')}
+          />
+          <input
+            type="file"
+            ref={galleryInputRef}
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleNativeFileSelect(e, 'EXTERIEUR', 'Photo complémentaire')}
+          />
 
           <div className="flex flex-col gap-4">
             
-            {/* Quick Camera Buttons - All wide and 1 column on mobile */}
-            <div className="flex flex-col gap-2 w-full">
-              <span className="text-xs font-bold text-slate-800">Prendre une photo avec l'appareil :</span>
+            {/* Real Camera & Gallery Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
               <button
                 type="button"
-                onClick={() => handleSimulateCameraCapture('FACADE')}
-                className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                onClick={() => triggerPicker(facadeInputRef)}
+                className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold text-xs flex items-center justify-between cursor-pointer transition-colors shadow-2xs group"
               >
-                <Camera className="w-4 h-4 text-[#FA3055]" />
-                <span>Prendre photo : Façade principale extérieure</span>
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-[#FA3055] group-hover:scale-110 transition-transform" />
+                  <span>Façade principale</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-medium">Caméra / Galerie</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleSimulateCameraCapture('SALON')}
-                className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                onClick={() => triggerPicker(salonInputRef)}
+                className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold text-xs flex items-center justify-between cursor-pointer transition-colors shadow-2xs group"
               >
-                <Camera className="w-4 h-4 text-[#FA3055]" />
-                <span>Prendre photo : Grand séjour ou salon</span>
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-[#FA3055] group-hover:scale-110 transition-transform" />
+                  <span>Salon & Séjour</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-medium">Caméra / Galerie</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleSimulateCameraCapture('CHAMBRE')}
-                className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                onClick={() => triggerPicker(chambreInputRef)}
+                className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold text-xs flex items-center justify-between cursor-pointer transition-colors shadow-2xs group"
               >
-                <Camera className="w-4 h-4 text-[#FA3055]" />
-                <span>Prendre photo : Chambres ou dépendance</span>
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-[#FA3055] group-hover:scale-110 transition-transform" />
+                  <span>Chambres & Pièces</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-medium">Caméra / Galerie</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleSimulateCameraCapture('DOC_TITRE')}
-                className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                onClick={() => triggerPicker(docInputRef)}
+                className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200 text-amber-900 font-bold text-xs flex items-center justify-between cursor-pointer transition-colors shadow-2xs group"
               >
-                <FileText className="w-4 h-4 text-amber-700" />
-                <span>Prendre photo : Document du Titre Foncier / Convention</span>
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform" />
+                  <span>Document & Titre Foncier</span>
+                </div>
+                <span className="text-[10px] text-amber-700 font-medium">Capture document</span>
               </button>
             </div>
 
-            {/* Photos Grid */}
-            <div className="space-y-2 pt-2">
-              <span className="text-xs font-bold text-slate-800">Photos enregistrées localement :</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {photos.map((p) => (
-                  <div key={p.id} className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 group">
-                    <img src={p.url} alt={p.caption} className="w-full h-40 object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-between p-3 text-white text-xs">
-                      <span className="font-semibold">{p.caption}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePhoto(p.id)}
-                        className="p-1.5 rounded-full bg-rose-600/80 hover:bg-rose-700 text-white cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+            {/* Import multiple photos button */}
+            <button
+              type="button"
+              onClick={() => triggerPicker(galleryInputRef)}
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            >
+              <Upload className="w-4 h-4 text-[#FA3055]" />
+              <span>Importer d'autres photos depuis la galerie (sélection multiple)</span>
+            </button>
+
+            {/* Photos Showcase Grid */}
+            {photos.length > 0 ? (
+              <div className="space-y-2 pt-2">
+                <span className="text-xs font-bold text-slate-800">Photos capturées ({photos.length}) :</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {photos.map((p) => (
+                    <div key={p.id} className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 group shadow-2xs">
+                      <img src={p.url} alt={p.caption} className="w-full h-36 object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent flex items-end justify-between p-2.5 text-white text-xs">
+                        <span className="font-semibold text-[11px] truncate max-w-[120px]">{p.caption}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePhoto(p.id)}
+                          className="p-1.5 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white cursor-pointer transition-transform hover:scale-110"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-6 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                <ImageIcon className="w-6 h-6 mx-auto mb-2 text-slate-300" />
+                <span>Aucune photo capturée pour l'instant. Utilisez les boutons ci-dessus pour prendre une photo en direct ou importer un fichier.</span>
+              </div>
+            )}
 
           </div>
         </div>
@@ -821,7 +1026,7 @@ export const CensusForm: React.FC<CensusFormProps> = ({
           >
             <Save className="w-5 h-5 flex-shrink-0" />
             <span className="whitespace-normal leading-tight text-center">
-              Enregistrer la fiche de recensement (Offline-First Drift)
+              Enregistrer la fiche de recensement
             </span>
           </button>
         </div>
