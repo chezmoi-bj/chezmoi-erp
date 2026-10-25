@@ -145,6 +145,8 @@ async function ensureTablesAndAdmin(pool: mysql.Pool) {
       'ALTER TABLE users ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0',
       'ALTER TABLE users ADD COLUMN verification_token VARCHAR(255) DEFAULT NULL',
       'ALTER TABLE users ADD COLUMN two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0',
+      'ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64) DEFAULT NULL',
+      'ALTER TABLE users ADD COLUMN verification_email_sent TINYINT(1) NOT NULL DEFAULT 0',
       'ALTER TABLE users ADD COLUMN total_commissions DECIMAL(14, 2) NOT NULL DEFAULT 0.00',
       'ALTER TABLE properties ADD COLUMN rental_rates JSON DEFAULT NULL',
       'ALTER TABLE properties ADD COLUMN other_details TEXT DEFAULT NULL',
@@ -617,8 +619,11 @@ export async function getAllUsers(): Promise<UserAccount[]> {
         totalCommissions: Number(r.total_commissions),
         status: r.status,
         cnssNumber: r.cnss_number || undefined,
+        twoFactorEnabled: Boolean(r.two_factor_enabled || false),
+        totpSecret: r.totp_secret || undefined,
         emailVerified: r.email_verified !== undefined ? Boolean(r.email_verified) : true,
         verificationToken: r.verification_token || undefined,
+        verificationEmailSent: Boolean(r.verification_email_sent || false),
       }));
     } catch (err) {
       console.error('[MySQL Error] getAllUsers:', err);
@@ -639,17 +644,20 @@ export async function upsertUser(user: UserAccount): Promise<UserAccount> {
     if (isSMB) {
       user.status = 'ACTIF';
       user.emailVerified = true;
+      user.verificationEmailSent = true;
     } else {
-      // Exigence 3: Tout nouveau compte créé doit passer par le statut "en attente de validation"
       user.status = 'EN_ATTENTE_VALIDATION';
       user.emailVerified = false;
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       user.verificationToken = verificationCode;
 
-      // Déclenchement automatique de l'envoi de l'e-mail de confirmation via Nodemailer
-      sendNewAccountVerificationEmail(user.email, user.name, verificationCode, verificationCode).catch(e => {
-        console.error('[Nodemailer] Erreur envoi validation nouveau compte:', e);
-      });
+      // Déclenchement automatique de l'e-mail de confirmation (GARANTI UNE SEULE FOIS)
+      if (!user.verificationEmailSent) {
+        user.verificationEmailSent = true;
+        sendNewAccountVerificationEmail(user.email, user.name, verificationCode, verificationCode).catch(e => {
+          console.error('[Nodemailer] Erreur envoi validation nouveau compte:', e);
+        });
+      }
     }
   }
 
@@ -920,15 +928,67 @@ export function verifyOtp(identifier: string, inputCode: string): { valid: boole
   return { valid: true };
 }
 
-export async function toggleUser2FA(userId: string, enabled: boolean): Promise<UserAccount | null> {
+export async function findUserById(userId: string): Promise<UserAccount | null> {
+  const inMem = memoryStore.users.find(u => u.id === userId);
+  if (inMem) return inMem;
+
+  if (isMySqlConnected && pool) {
+    try {
+      const [rows] = await pool.query<mysql.RowDataPacket[]>('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+      if (rows.length > 0) {
+        const r = rows[0];
+        return {
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          avatar: r.avatar,
+          phone: r.phone,
+          role: r.role,
+          jobTitle: r.job_title,
+          departmentName: r.department_name,
+          baseSalary: Number(r.base_salary),
+          commissionRate: Number(r.commission_rate),
+          hireDate: r.hire_date,
+          contractType: r.contract_type,
+          city: r.city,
+          assignedZone: r.assigned_zone || '',
+          rating: Number(r.rating),
+          propertiesCount: Number(r.properties_count),
+          pendingSyncCount: Number(r.pending_sync_count),
+          totalCommissions: Number(r.total_commissions),
+          status: r.status,
+          cnssNumber: r.cnss_number || undefined,
+          twoFactorEnabled: Boolean(r.two_factor_enabled || false),
+          totpSecret: r.totp_secret || undefined,
+          emailVerified: r.email_verified !== undefined ? Boolean(r.email_verified) : true,
+          verificationToken: r.verification_token || undefined,
+          verificationEmailSent: Boolean(r.verification_email_sent || false),
+        };
+      }
+    } catch (err) {
+      console.error('[MySQL Error] findUserById:', err);
+    }
+  }
+
+  return null;
+}
+
+export async function toggleUser2FA(userId: string, enabled: boolean, totpSecret?: string): Promise<UserAccount | null> {
   const user = memoryStore.users.find(u => u.id === userId);
   if (user) {
     user.twoFactorEnabled = enabled;
+    if (totpSecret !== undefined) {
+      user.totpSecret = totpSecret;
+    }
   }
 
   if (isMySqlConnected && pool) {
     try {
-      await pool.query('UPDATE users SET two_factor_enabled = ? WHERE id = ?', [enabled ? 1 : 0, userId]);
+      if (totpSecret) {
+        await pool.query('UPDATE users SET two_factor_enabled = ?, totp_secret = ? WHERE id = ?', [enabled ? 1 : 0, totpSecret, userId]);
+      } else {
+        await pool.query('UPDATE users SET two_factor_enabled = ? WHERE id = ?', [enabled ? 1 : 0, userId]);
+      }
     } catch (err) {
       console.error('[MySQL Error] toggleUser2FA:', err);
     }

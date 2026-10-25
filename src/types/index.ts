@@ -153,6 +153,7 @@ export interface UserAccount {
   status: 'ACTIF' | 'EN_MISSION' | 'CONGE' | 'SUSPENDU' | 'EN_ATTENTE_VALIDATION' | 'PENDING';
   cnssNumber?: string;
   twoFactorEnabled?: boolean;
+  totpSecret?: string;
   emailVerified?: boolean;
   verificationToken?: string;
   verificationEmailSent?: boolean;
@@ -186,6 +187,7 @@ export interface CashTransaction {
   category: 
     | 'COMMISSION_VENTE' 
     | 'COMMISSION_LOCATION' 
+    | 'COMMISSION_LOCATION_MEUBLEE'
     | 'FRAIS_RECENSEMENT' 
     | 'LOYER_ENCAISSE' 
     | 'SALAIRE_REMUNERATION'

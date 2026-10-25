@@ -39,7 +39,7 @@
    S'applique uniformément à tous les modules, briques, tables et modales.
    ========================================================================== */
 
-html.dark .bg-white {
+html.dark .bg-white:not(.dgi-paper-sheet):not(.dgi-paper-sheet *) {
   background-color: #11141A !important;
 }
 
@@ -51,37 +51,37 @@ html.dark .bg-white\/80 {
 
 html.dark .bg-\[\#F8FAFC\],
 html.dark .bg-\[\#F4F6F5\],
-html.dark .bg-slate-50 {
+html.dark .bg-slate-50:not(.dgi-paper-sheet *) {
   background-color: #161A22 !important;
 }
 
-html.dark .bg-slate-100 {
+html.dark .bg-slate-100:not(.dgi-paper-sheet *) {
   background-color: #1B202A !important;
 }
 
-html.dark .bg-slate-200 {
+html.dark .bg-slate-200:not(.dgi-paper-sheet *) {
   background-color: #242A38 !important;
 }
 
-html.dark .border-slate-100,
-html.dark .border-slate-200,
-html.dark .border-slate-200\/80,
-html.dark .border-slate-300 {
+html.dark .border-slate-100:not(.dgi-paper-sheet *),
+html.dark .border-slate-200:not(.dgi-paper-sheet *),
+html.dark .border-slate-200\/80:not(.dgi-paper-sheet *),
+html.dark .border-slate-300:not(.dgi-paper-sheet *) {
   border-color: rgba(255, 255, 255, 0.09) !important;
 }
 
-html.dark .text-slate-900,
-html.dark .text-slate-800 {
+html.dark .text-slate-900:not(.dgi-paper-sheet *),
+html.dark .text-slate-800:not(.dgi-paper-sheet *) {
   color: #F8FAFC !important;
 }
 
-html.dark .text-slate-700,
-html.dark .text-slate-600 {
+html.dark .text-slate-700:not(.dgi-paper-sheet *),
+html.dark .text-slate-600:not(.dgi-paper-sheet *) {
   color: #CBD5E1 !important;
 }
 
-html.dark .text-slate-500,
-html.dark .text-slate-400 {
+html.dark .text-slate-500:not(.dgi-paper-sheet *),
+html.dark .text-slate-400:not(.dgi-paper-sheet *) {
   color: #94A3B8 !important;
 }
 
@@ -118,6 +118,58 @@ html.dark ::-webkit-scrollbar-thumb {
   border-radius: 4px;
 }
 
+/* ==========================================================================
+   PRÉSERVATION DU PAPIER DE FACTURE OFFICIELLE DGI (Toujours blanc pur)
+   Permet d'avoir un aperçu fidèle à l'impression réelle A4 et ticket 80mm
+   ========================================================================== */
+html.dark #emecef-official-sheet,
+#emecef-official-sheet {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+html.dark #emecef-official-sheet .bg-slate-100 {
+  background-color: #F1F5F9 !important;
+}
+
+html.dark #emecef-official-sheet .bg-slate-50,
+html.dark #emecef-official-sheet .bg-slate-50\/80 {
+  background-color: #F8FAFC !important;
+}
+
+html.dark #emecef-official-sheet .text-slate-950,
+html.dark #emecef-official-sheet .text-slate-900,
+html.dark #emecef-official-sheet .text-slate-800 {
+  color: #0F172A !important;
+}
+
+html.dark #emecef-official-sheet .text-slate-700,
+html.dark #emecef-official-sheet .text-slate-600 {
+  color: #334155 !important;
+}
+
+html.dark #emecef-official-sheet .text-slate-500,
+html.dark #emecef-official-sheet .text-slate-400 {
+  color: #64748B !important;
+}
+
+html.dark #emecef-official-sheet .border-slate-400 {
+  border-color: #94A3B8 !important;
+}
+
+html.dark #emecef-official-sheet .border-slate-300 {
+  border-color: #CBD5E1 !important;
+}
+
+html.dark #emecef-official-sheet .border-slate-200 {
+  border-color: #E2E8F0 !important;
+}
+
+html.dark #emecef-official-sheet .border-slate-900,
+html.dark #emecef-official-sheet .border-slate-800 {
+  border-color: #0F172A !important;
+}
+
 html.dark ::-webkit-scrollbar-track {
   background-color: transparent;
 }
@@ -129,5 +181,9 @@ html.dark ::-webkit-scrollbar-track {
   body {
     background-color: #FFFFFF !important;
     color: #000000 !important;
+  }
+  .printable-invoice,
+  .printable-invoice * {
+    font-family: 'Courier New', Courier, monospace !important;
   }
 }

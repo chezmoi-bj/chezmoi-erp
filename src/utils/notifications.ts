@@ -100,7 +100,7 @@ export function createCensusNotification(
   };
 
   // Déclencher aussi la notification système native (OS / PWA)
-  triggerSystemNotification('Chezmoi ERP - Nouveau bien recensé', {
+  triggerSystemNotification('Chezmoi administration - Nouveau bien recensé', {
     body: notif.message,
     tag: property.id,
   });

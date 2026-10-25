@@ -30,7 +30,10 @@ const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
 const SMTP_USER = process.env.SMTP_USER || 'contact@chezmoi.bj';
 const SMTP_PASS = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '';
-const FROM_SENDER = process.env.SMTP_FROM || '"Chezmoi Administration" <contact@chezmoi.bj>';
+const FROM_SENDER = process.env.SMTP_FROM || '"Chezmoi administration" <contact@chezmoi.bj>';
+
+// Garde anti-doublon pour l'envoi d'e-mails de vérification (une seule fois par adresse)
+const sentVerificationEmails = new Set<string>();
 
 /**
  * Initialise le transporteur Nodemailer configuré pour Hostinger SMTP (Port 465 / SSL)
@@ -48,7 +51,7 @@ async function getTransporter(): Promise<Transporter> {
         pass: SMTP_PASS,
       },
       tls: {
-        rejectUnauthorized: false, // Évite les blocages de certificats intermédiaires
+        rejectUnauthorized: false,
       },
     });
     console.log(`[Hostinger SMTP] Transporteur configuré et actif : ${SMTP_HOST}:${SMTP_PORT} (${SMTP_USER})`);
@@ -59,14 +62,17 @@ async function getTransporter(): Promise<Transporter> {
       newline: 'unix',
       buffer: true,
     });
-    console.log('[Hostinger SMTP] Variable process.env.SMTP_PASS absente. Mode simulation actif (journaux console).');
+    console.log('[Hostinger SMTP] Mode simulation actif (journaux console).');
   }
 
   return transporter;
 }
 
 /**
- * Générateur de template e-mail minimaliste et professionnel "façon GitHub" avec police Poppins
+ * Générateur de template e-mail épuré et professionnel :
+ * - Combinaison exclusive : Poppins pour les titres importants et Roboto pour le corps des messages
+ * - Graisse modérée et équilibrée (non excessive)
+ * - Identité Chezmoi administration & Chezmoi immobilier
  */
 function buildGitHubStyleHtml(options: {
   title: string;
@@ -100,49 +106,66 @@ function buildGitHubStyleHtml(options: {
   <title>${title}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-    body, table, td, p, h1, h2, h3, a, span, strong, div {
-      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Roboto:wght@300;400;500&display=swap');
+    body, table, td, div {
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-weight: 400;
+    }
+    p, span, li, a {
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-weight: 400;
+    }
+    h1, h2, h3, h4, .brand-font {
+      font-family: 'Poppins', 'Roboto', sans-serif !important;
+      font-weight: 600 !important;
+      letter-spacing: -0.2px;
+    }
+    strong, b {
+      font-weight: 500 !important;
+      color: #0f172a;
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f6f8fa; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1f2328; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Roboto', Arial, sans-serif; color: #334155; -webkit-font-smoothing: antialiased;">
   
-  <!-- Preheader text for preview in mail client -->
-  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; font-size: 1px; line-height: 1px; color: #f6f8fa;">
+  <!-- Preheader text for mail client preview -->
+  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; font-size: 1px; line-height: 1px; color: #f8fafc;">
     ${preheader}
   </div>
 
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f6f8fa; padding: 40px 15px;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 15px;">
     <tr>
       <td align="center">
         
-        <!-- Main Card "Façon GitHub" -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; background-color: #ffffff; border: 1px solid #d0d7de; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(31,35,40,0.06);">
+        <!-- Main Card Minimaliste -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,23,42,0.05);">
           
-          <!-- Header with centered Chezmoi Logo (proportionné et centré sans erreur) -->
+          <!-- Header with centered Chezmoi Logo -->
           <tr>
-            <td align="center" style="padding: 34px 32px 18px 32px; text-align: center;">
+            <td align="center" style="padding: 32px 32px 16px 32px; text-align: center;">
               <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto; text-align: center;">
                 <tr>
                   <td align="center" style="text-align: center;">
                     <img 
                       src="cid:chezmoi-logo" 
-                      alt="Chezmoi BJ" 
-                      width="70" 
-                      height="70" 
-                      style="display: block; margin: 0 auto; width: 70px; height: 70px; max-width: 70px; max-height: 70px; object-fit: contain; border: 0; outline: none; text-align: center;" 
+                      alt="Chezmoi administration" 
+                      width="64" 
+                      height="64" 
+                      style="display: block; margin: 0 auto; width: 64px; height: 64px; max-width: 64px; max-height: 64px; object-fit: contain; border: 0; outline: none;" 
                     />
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-top: 12px; text-align: center;">
-                    <span style="font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 800; color: #1f2328; letter-spacing: -0.3px;">
-                      chezmoi<span style="color: #f91942;">.bj</span>
+                  <td align="center" style="padding-top: 10px; text-align: center;">
+                    <span class="brand-font" style="font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 600; color: #0f172a;">
+                      chezmoi<span style="color: #fa3055;">.bj</span>
                     </span>
-                    ${badgeLabel ? `<span style="display: inline-block; margin-left: 6px; font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 600; background-color: rgba(249,25,66,0.1); color: #f91942; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(249,25,66,0.2); vertical-align: middle;">${badgeLabel}</span>` : ''}
+                    <span style="display: inline-block; margin-left: 6px; font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 500; background-color: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 12px; vertical-align: middle;">
+                      administration
+                    </span>
+                    ${badgeLabel ? `<span style="display: inline-block; margin-left: 4px; font-family: 'Roboto', sans-serif; font-size: 10px; font-weight: 500; background-color: rgba(250,48,85,0.08); color: #fa3055; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(250,48,85,0.2); vertical-align: middle;">${badgeLabel}</span>` : ''}
                   </td>
                 </tr>
               </table>
@@ -151,27 +174,27 @@ function buildGitHubStyleHtml(options: {
 
           <!-- Content Body -->
           <tr>
-            <td style="padding: 10px 36px 36px 36px;">
-              <h2 style="margin: 0 0 14px 0; font-family: 'Poppins', sans-serif; font-size: 19px; font-weight: 600; color: #1f2328; text-align: left; letter-spacing: -0.2px;">
+            <td style="padding: 8px 36px 36px 36px;">
+              <h2 class="brand-font" style="margin: 0 0 14px 0; font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 600; color: #0f172a; text-align: left; line-height: 1.4;">
                 ${title}
               </h2>
 
-              <p style="margin: 0 0 16px 0; font-family: 'Poppins', sans-serif; font-size: 14px; line-height: 1.6; color: #353b43;">
+              <p style="margin: 0 0 14px 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.6; color: #334155;">
                 Bonjour <strong>${recipientName}</strong>,
               </p>
 
-              <p style="margin: 0 0 20px 0; font-family: 'Poppins', sans-serif; font-size: 14px; line-height: 1.6; color: #353b43;">
+              <p style="margin: 0 0 18px 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.6; color: #475569;">
                 ${bodyText}
               </p>
 
               ${code ? `
-              <!-- GitHub Token Style Code Box -->
-              <div style="margin: 26px 0 26px 0; text-align: center;">
-                <div style="display: inline-block; background-color: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 15px 30px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 30px; font-weight: 700; letter-spacing: 9px; color: #1f2328; text-align: center;">
+              <!-- Security Token Box (Équilibrée et sobre) -->
+              <div style="margin: 22px 0 22px 0; text-align: center;">
+                <div style="display: inline-block; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 28px; font-family: 'Courier New', Courier, monospace; font-size: 26px; font-weight: 600; letter-spacing: 6px; color: #0f172a; text-align: center;">
                   ${code}
                 </div>
-                <div style="margin-top: 8px; font-family: 'Poppins', sans-serif; font-size: 11px; color: #656d76;">
-                  Code de sécurité à usage unique
+                <div style="margin-top: 6px; font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 400; color: #64748b;">
+                  Code de sécurité à usage unique (5 minutes)
                 </div>
               </div>
               ` : ''}
@@ -179,14 +202,14 @@ function buildGitHubStyleHtml(options: {
               ${actionUrl && actionText ? `
               <!-- Primary Action CTA -->
               <div style="margin: 24px 0; text-align: center;">
-                <a href="${actionUrl}" style="display: inline-block; font-family: 'Poppins', sans-serif; background-color: #f91942; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 26px; border-radius: 6px; box-shadow: 0 2px 8px rgba(249,25,66,0.3); text-align: center;">
+                <a href="${actionUrl}" style="display: inline-block; font-family: 'Poppins', sans-serif; background-color: #fa3055; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500; padding: 11px 24px; border-radius: 6px; text-align: center;">
                   ${actionText}
                 </a>
               </div>
               ` : ''}
 
               <!-- Security notice -->
-              <p style="margin: 24px 0 0 0; padding-top: 18px; border-top: 1px solid #eaeef2; font-family: 'Poppins', sans-serif; font-size: 12px; line-height: 1.6; color: #656d76;">
+              <p style="margin: 22px 0 0 0; padding-top: 16px; border-top: 1px solid #f1f5f9; font-family: 'Roboto', sans-serif; font-size: 12px; font-weight: 400; line-height: 1.5; color: #64748b;">
                 ${securityNote}
               </p>
             </td>
@@ -194,12 +217,19 @@ function buildGitHubStyleHtml(options: {
 
         </table>
 
-        <!-- Minimalist Footer (Charte Chezmoi BJ) -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; margin-top: 24px;">
+        <!-- Pied de page officiel avec coordonnées légales DGI/RCCM -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; margin-top: 20px;">
           <tr>
-            <td align="center" style="font-family: 'Poppins', sans-serif; font-size: 12px; color: #656d76; line-height: 1.6;">
-              <p style="margin: 0 0 4px 0; font-family: 'Poppins', sans-serif; font-weight: 600; color: #f91942;">Chezmoi BJ • Plateforme Foncière & Immobilière</p>
-              <p style="margin: 0; font-family: 'Poppins', sans-serif; color: #8c959f;">© Chezmoi BJ - Tous droits réservés</p>
+            <td align="center" style="font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 400; color: #64748b; line-height: 1.6;">
+              <p style="margin: 0 0 3px 0; font-family: 'Poppins', sans-serif; font-weight: 500; color: #fa3055;">
+                Chezmoi administration • Chezmoi immobilier
+              </p>
+              <p style="margin: 0 0 2px 0; font-family: 'Roboto', sans-serif; font-size: 10px; color: #94a3b8;">
+                IFU : 0202361063128 • RCCM : RB/ABC/24 A 111099 • Bidossessi Adjrako, Abomey-Calavi
+              </p>
+              <p style="margin: 0; font-family: 'Roboto', sans-serif; font-size: 10px; color: #94a3b8;">
+                © Chezmoi administration - Tous droits réservés
+              </p>
             </td>
           </tr>
         </table>
@@ -232,7 +262,7 @@ function getEmailAttachments() {
 }
 
 /**
- * 1. Envoie le code OTP de connexion par e-mail (Design GitHub + Police Poppins)
+ * 1. Envoie le code OTP de connexion par e-mail
  */
 export async function sendOtpEmail(email: string, name: string, otpCode: string): Promise<boolean> {
   try {
@@ -240,26 +270,26 @@ export async function sendOtpEmail(email: string, name: string, otpCode: string)
 
     const htmlContent = buildGitHubStyleHtml({
       title: 'Code de vérification pour votre session',
-      preheader: `Votre code de sécurité Chezmoi ERP est : ${otpCode}`,
+      preheader: `Votre code de sécurité Chezmoi administration est : ${otpCode}`,
       recipientName: name,
-      bodyText: "Vous tentez de vous connecter à votre espace sécurisé sur Chezmoi ERP. Saisissez le code temporaire ci-dessous pour déverrouiller votre session :",
+      bodyText: "Vous tentez de vous connecter à votre espace sécurisé sur Chezmoi administration. Saisissez le code temporaire ci-dessous pour déverrouiller votre session :",
       code: otpCode,
-      securityNote: "Ce code de vérification expirera dans 5 minutes. Si vous n'avez pas demandé ce code, il se peut qu'un tiers tente d'accéder à votre compte. Aucun changement n'a été effectué.",
+      securityNote: "Ce code de vérification expirera dans 5 minutes. Si vous utilisez Google Authenticator, vous pouvez également saisir directement votre code TOTP.",
       badgeLabel: 'Authentification'
     });
 
     const info = await transport.sendMail({
       from: FROM_SENDER,
       to: email,
-      subject: `${otpCode} est votre code de sécurité Chezmoi ERP`,
+      subject: `${otpCode} est votre code de sécurité Chezmoi administration`,
       html: htmlContent,
       attachments: getEmailAttachments(),
     });
 
-    console.log(`[Hostinger SMTP] E-mail code OTP envoyé avec succès à ${email} (MessageId: ${info?.messageId || 'OK'})`);
+    console.log(`[Hostinger SMTP] E-mail OTP expédié à ${email} (MessageId: ${info?.messageId || 'OK'})`);
     return true;
   } catch (err: any) {
-    console.error(`[Hostinger SMTP Erreur] Échec d'envoi OTP à ${email}:`, err?.message);
+    console.error(`[Hostinger SMTP Erreur] Échec envoi OTP à ${email}:`, err?.message);
     return false;
   }
 }
@@ -275,62 +305,75 @@ export async function sendAdminInitializationEmail(email: string, name: string):
       title: 'Compte Administrateur Central activé',
       preheader: `Le compte Super Admin principal (${email}) est configuré et actif.`,
       recipientName: name,
-      bodyText: "Votre compte <strong>Super Admin principal</strong> a été initialisé avec succès sur la base de production Chezmoi ERP. Vous disposez des pleins privilèges sur l'ensemble des modules fonciers, comptables (e-MECeF) et RH.",
-      securityNote: "Votre compte est sécurisé par l'authentification par code OTP à 6 chiffres. Vous pouvez activer la double authentification (2FA) dans les paramètres du profil.",
+      bodyText: "Votre compte <strong>Super Admin principal</strong> a été initialisé avec succès sur Chezmoi administration. Vous disposez des pleins privilèges sur l'ensemble des modules fonciers, comptables (e-MECeF) et RH.",
+      securityNote: "Votre compte est sécurisé par code OTP et supporte l'activation de Google Authenticator dans les paramètres du profil.",
       badgeLabel: 'Super Admin'
     });
 
     const info = await transport.sendMail({
       from: FROM_SENDER,
       to: email,
-      subject: `[Chezmoi ERP] Activation du Compte Administrateur Central (SMB)`,
+      subject: `[Chezmoi administration] Activation du Compte Administrateur Central (SMB)`,
       html: htmlContent,
       attachments: getEmailAttachments(),
     });
 
-    console.log(`[Hostinger SMTP] E-mail d'activation envoyé à l'administrateur central SMB (${email}).`);
+    console.log(`[Hostinger SMTP] E-mail activation SMB expédié à ${email}.`);
     return true;
   } catch (err: any) {
-    console.error(`[Hostinger SMTP Erreur] Échec envoi email SMB à ${email}:`, err?.message);
+    console.error(`[Hostinger SMTP Erreur] Échec activation SMB à ${email}:`, err?.message);
     return false;
   }
 }
 
 /**
- * 3. Envoie l'e-mail de validation pour tout nouveau compte créé (Statut EN_ATTENTE_VALIDATION)
+ * 3. Envoie l'e-mail de validation pour tout nouveau compte créé
+ * RÈGLE STRICTE : Déclenché QU'UNE SEULE ET UNIQUE FOIS par adresse e-mail.
+ * Comprend le lien de validation cliquable unique contenant le jeton.
  */
 export async function sendNewAccountVerificationEmail(
   email: string,
   name: string,
   token: string,
   code: string,
-  appUrl = 'http://localhost:3000'
+  appUrl = 'https://admin.chezmoi.bj'
 ): Promise<boolean> {
+  const normalizedEmail = email.trim().toLowerCase();
+  
+  // Anti-doublon strict en mémoire
+  if (sentVerificationEmails.has(normalizedEmail)) {
+    console.log(`[Hostinger SMTP] E-mail de validation déjà expédié précédemment pour ${normalizedEmail}. Envoi ignoré (unicité garantie).`);
+    return true;
+  }
+
   try {
     const transport = await getTransporter();
-    const verificationUrl = `${appUrl}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+    
+    // Lien de validation cliquable unique
+    const verificationUrl = `${appUrl}/verify-account?token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
 
     const htmlContent = buildGitHubStyleHtml({
       title: 'Validez votre adresse e-mail',
-      preheader: `Code de validation Chezmoi ERP : ${code}`,
+      preheader: `Confirmez votre compte Chezmoi administration`,
       recipientName: name,
-      bodyText: "Un nouveau compte collaborateur a été créé pour vous sur Chezmoi ERP. Conformément à la politique de sécurité, vous devez confirmer votre adresse e-mail pour activer votre compte :",
+      bodyText: "Un nouveau compte collaborateur a été créé pour vous sur la plateforme Chezmoi administration. Conformément aux règles de sécurité, veuillez confirmer votre adresse pour activer vos accès :",
       code: code,
       actionUrl: verificationUrl,
       actionText: 'Confirmer mon adresse e-mail',
-      securityNote: "Une fois votre adresse validée, vous pourrez vous connecter en saisissant votre identifiant et en recevant un code OTP temporaire.",
+      securityNote: "Vous pouvez soit cliquer sur le bouton ci-dessus pour valider instantanément votre compte, soit saisir le code à 6 chiffres sur la page de connexion.",
       badgeLabel: 'Validation requise'
     });
 
     const info = await transport.sendMail({
       from: FROM_SENDER,
       to: email,
-      subject: `[Chezmoi ERP] Confirmation de votre compte (${code})`,
+      subject: `[Chezmoi administration] Confirmation de votre compte (${code})`,
       html: htmlContent,
       attachments: getEmailAttachments(),
     });
 
-    console.log(`[Hostinger SMTP] E-mail de validation de nouveau compte envoyé à ${email} (Code: ${code})`);
+    sentVerificationEmails.add(normalizedEmail);
+    console.log(`[Hostinger SMTP] E-mail de validation expédié avec succès à ${email} (Unicité confirmée)`);
     return true;
   } catch (err: any) {
     console.error(`[Hostinger SMTP Erreur] Échec envoi validation à ${email}:`, err?.message);

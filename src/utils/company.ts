@@ -1,10 +1,12 @@
 /**
  * Informations Officielles et Légales de l'Entreprise
- * CHEZMOI IMMOBILIER SARL - République du Bénin
+ * Chezmoi immobilier - Chezmoi administration
+ * République du Bénin
  */
 
 export const CHEZMOI_LEGAL_INFO = {
-  companyName: 'CHEZMOI IMMOBILIER SARL',
+  appName: 'Chezmoi administration',
+  companyName: 'Chezmoi immobilier',
   tradeName: 'Chezmoi Bénin',
   brandName: 'chezmoi.bj',
   ifu: '0202361063128',

@@ -377,6 +377,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             }`}>
               {step === 'identifier' 
                 ? 'Accédez à votre espace sécurisé' 
+                : is2FARequired
+                ? 'Code OTP e-mail ou code Google Authenticator'
                 : `Code temporaire transmis à ${maskedTarget}`}
             </p>
           </div>
@@ -499,7 +501,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   isDark ? 'bg-[#F91942]/10 text-[#F91942] border border-[#F91942]/20' : 'bg-rose-50 text-[#F91942] border border-rose-200'
                 }`}>
                   <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>Double authentification (2FA) active</span>
+                  <span>2FA Active : Code OTP e-mail ou code Google Authenticator</span>
                 </div>
               )}
 

@@ -83,11 +83,11 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5">
               <span className="font-black text-slate-900 tracking-tight text-base sm:text-lg">chezmoi</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FA3055] text-white font-black tracking-wider">
-                .bj ERP
+                administration
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block">
-              Plateforme Immobilière & Foncière
+              Chezmoi administration • Plateforme Foncière
             </p>
           </div>
         </div>

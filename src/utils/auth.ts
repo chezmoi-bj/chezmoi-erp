@@ -1,7 +1,7 @@
 import { Role, UserAccount, AuthSession } from '../types';
 
 /**
- * Rôles disponibles dans Chezmoi ERP Bénin
+ * Rôles disponibles dans Chezmoi administration Bénin
  */
 export const ROLE_DEFINITIONS: Record<Role, {
   label: string;

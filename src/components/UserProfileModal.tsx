@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   ShieldCheck, 
@@ -14,7 +14,10 @@ import {
   Award,
   Layers,
   KeyRound,
-  ShieldAlert
+  ShieldAlert,
+  QrCode,
+  Copy,
+  Check
 } from 'lucide-react';
 import { UserAccount } from '../types';
 import { ROLE_DEFINITIONS } from '../utils/auth';
@@ -39,10 +42,68 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   );
   const [loading2FA, setLoading2FA] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [totpData, setTotpData] = useState<{
+    secret: string;
+    otpauthUri: string;
+    qrCodeDataUrl: string;
+  } | null>(null);
+  const [copiedKey, setCopiedKey] = useState<boolean>(false);
+
+  // Charger les données TOTP Google Authenticator si 2FA est activé
+  useEffect(() => {
+    if (isOpen && twoFactorEnabled) {
+      fetch(`/api/auth/2fa/setup?userId=${currentUser.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setTotpData({
+              secret: data.secret,
+              otpauthUri: data.otpauthUri,
+              qrCodeDataUrl: data.qrCodeDataUrl,
+            });
+          }
+        })
+        .catch(err => {
+          console.error('Erreur chargement setup 2FA:', err);
+        });
+    }
+  }, [isOpen, twoFactorEnabled, currentUser.id]);
 
   if (!isOpen) return null;
 
   const roleInfo = ROLE_DEFINITIONS[currentUser.role];
+
+  const fallbackCopyText = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    } catch (e) {
+      console.warn('Clipboard fallback:', e);
+    }
+  };
+
+  const handleCopySecret = (secret: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(secret).catch(() => {
+          fallbackCopyText(secret);
+        });
+      } else {
+        fallbackCopyText(secret);
+      }
+    } catch {
+      fallbackCopyText(secret);
+    }
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2500);
+  };
 
   const handleToggle2FA = async () => {
     const nextVal = !twoFactorEnabled;
@@ -50,12 +111,25 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setStatusMsg(null);
 
     try {
+      let secretToPersist = totpData?.secret;
+      
+      // Si on active 2FA et qu'on n'a pas encore le setup TOTP, le récupérer d'abord
+      if (nextVal && !secretToPersist) {
+        const setupRes = await fetch(`/api/auth/2fa/setup?userId=${currentUser.id}`);
+        const setupJson = await setupRes.json();
+        if (setupJson.success) {
+          secretToPersist = setupJson.secret;
+          setTotpData(setupJson);
+        }
+      }
+
       const res = await fetch('/api/auth/toggle-2fa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
           enabled: nextVal,
+          totpSecret: secretToPersist,
         }),
       });
 
@@ -66,10 +140,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       const updatedUser: UserAccount = {
         ...currentUser,
         twoFactorEnabled: nextVal,
+        totpSecret: secretToPersist,
       };
       onUpdateUser(updatedUser);
-      setStatusMsg(nextVal ? 'Double authentification (2FA) activée avec succès !' : '2FA désactivée.');
-      setTimeout(() => setStatusMsg(null), 3000);
+      setStatusMsg(
+        nextVal 
+          ? 'Double authentification (2FA) & Google Authenticator activés avec succès !' 
+          : 'Double authentification désactivée.'
+      );
+      setTimeout(() => setStatusMsg(null), 4000);
     } catch (err: any) {
       setStatusMsg(`Erreur : ${err?.message}`);
     } finally {
@@ -188,9 +267,86 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
 
           {statusMsg && (
-            <div className="mt-3 p-2 rounded-xl bg-white text-xs font-semibold text-slate-800 border border-slate-200 flex items-center gap-1.5">
+            <div className="mt-3 p-2.5 rounded-xl bg-white text-xs font-semibold text-slate-800 border border-slate-200 flex items-center gap-1.5 shadow-2xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
               <span>{statusMsg}</span>
+            </div>
+          )}
+
+          {/* Google Authenticator (TOTP) Setup Section */}
+          {twoFactorEnabled && (
+            <div className="mt-4 pt-4 border-t border-rose-100/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center flex-shrink-0">
+                    <QrCode className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-900">
+                    Google Authenticator (TOTP)
+                  </span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Couche active
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  <strong className="text-slate-900">Mode par défaut :</strong> Le code OTP envoyé par e-mail reste actif à chaque connexion. En scannant ce code QR dans <strong className="text-slate-900">Google Authenticator</strong>, vous pouvez également utiliser les codes à 6 chiffres générés par votre téléphone.
+                </p>
+
+                {totpData ? (
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 pt-1">
+                    <div className="w-28 h-28 p-1.5 bg-white rounded-xl border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs">
+                      <img
+                        src={totpData.qrCodeDataUrl}
+                        alt="QR Code Google Authenticator"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+
+                    <div className="flex-1 space-y-2 min-w-0 w-full sm:w-auto">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                          Clé secrète TOTP (saisie manuelle)
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-mono font-bold text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 truncate select-all flex-1">
+                            {totpData.secret}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => handleCopySecret(totpData.secret)}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0"
+                            title="Copier la clé"
+                          >
+                            {copiedKey ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-[11px] text-emerald-700">Copiée</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-slate-600" />
+                                <span className="text-[11px]">Copier</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-slate-400">
+                        Compatible avec Google Authenticator, Microsoft Authenticator et Twilio Authy.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center p-4">
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#FA3055]" />
+                    <span className="text-xs text-slate-500 ml-2">Génération de la clé TOTP...</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

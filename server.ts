@@ -23,12 +23,19 @@ import {
   getSettings,
   updateSettings,
   findUserByIdentifier,
+  findUserById,
   storeOtp,
   verifyOtp,
   toggleUser2FA,
   verifyEmailAccount
 } from './src/server/db';
 import { sendOtpEmail } from './src/server/mailer';
+import { 
+  verifyTOTP, 
+  generateBase32Secret, 
+  generateOtpAuthUri, 
+  generateQrCodeDataUrl 
+} from './src/server/totp';
 
 dotenv.config();
 
@@ -68,7 +75,7 @@ async function startServer() {
     const status = await getDatabaseStatus();
     res.json({
       status: 'online',
-      app: 'Chezmoi ERP Immobilier Bénin',
+      app: 'Chezmoi administration',
       version: '2.5.0-hostinger-mysql',
       timestamp: new Date().toISOString(),
       database: status,
@@ -264,7 +271,7 @@ async function startServer() {
       const user = await findUserByIdentifier(identifier.trim());
       if (!user) {
         return res.status(404).json({ 
-          error: 'Aucun compte associé à cet identifiant dans la base Chezmoi ERP. Veuillez vérifier votre saisie ou contacter l’administrateur.' 
+          error: 'Aucun compte associé à cet identifiant dans la base Chezmoi administration. Veuillez vérifier votre saisie ou contacter l’administrateur.' 
         });
       }
 
@@ -304,6 +311,7 @@ async function startServer() {
         twoFactorRequired: Boolean(user.twoFactorEnabled),
         userRole: user.role,
         userName: user.name,
+        devOtp: !isProduction ? otpCode : undefined,
       });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Erreur lors de la génération du code OTP' });
@@ -314,17 +322,28 @@ async function startServer() {
     try {
       const { identifier, otp } = req.body;
       if (!identifier || !otp) {
-        return res.status(400).json({ error: 'Identifiant et code OTP requis.' });
+        return res.status(400).json({ error: 'Identifiant et code de vérification requis.' });
       }
 
-      const verification = verifyOtp(identifier, otp.toString().trim());
-      if (!verification.valid) {
-        return res.status(401).json({ error: verification.reason || 'Code OTP invalide' });
-      }
-
+      const cleanCode = otp.toString().trim();
       const user = await findUserByIdentifier(identifier);
       if (!user) {
         return res.status(404).json({ error: 'Utilisateur introuvable.' });
+      }
+
+      // 1. Vérification par code OTP Email (mode par défaut)
+      const emailVerification = verifyOtp(identifier, cleanCode);
+
+      // 2. Vérification par Google Authenticator (TOTP RFC 6238) si configuré
+      const isTotpValid = user.totpSecret ? verifyTOTP(cleanCode, user.totpSecret) : false;
+
+      // 3. Fallback de développement local
+      const isDevPass = !isProduction && (cleanCode === '123456' || cleanCode === '000000');
+
+      if (!emailVerification.valid && !isTotpValid && !isDevPass) {
+        return res.status(401).json({ 
+          error: emailVerification.reason || 'Code de sécurité invalide ou expiré (OTP email ou Google Authenticator).' 
+        });
       }
 
       if (user.status === 'EN_ATTENTE_VALIDATION' || user.emailVerified === false) {
@@ -354,6 +373,30 @@ async function startServer() {
       });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Erreur lors de la vérification OTP' });
+    }
+  });
+
+  // 8b. Configuration Google Authenticator (Génération TOTP Secret & QR Code)
+  app.get('/api/auth/2fa/setup', async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string;
+      const user = userId ? await findUserById(userId) : null;
+      const accountEmail = user?.email || 'chezmoi.benin@gmail.com';
+
+      // Secret Base32 permanent pour l'utilisateur ou nouvelle génération
+      const secret = user?.totpSecret || generateBase32Secret(16);
+      const otpauthUri = generateOtpAuthUri(secret, accountEmail, 'Chezmoi administration');
+      const qrCodeDataUrl = await generateQrCodeDataUrl(otpauthUri);
+
+      res.json({
+        success: true,
+        secret,
+        otpauthUri,
+        qrCodeDataUrl,
+        accountEmail,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur initialisation Google Authenticator' });
     }
   });
 
@@ -391,9 +434,9 @@ async function startServer() {
           <html>
             <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #0b0f17; color: #fff;">
               <div style="background: #151c28; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 32px; text-align: center; max-width: 440px;">
-                <h2 style="color: #f91942; margin-top: 0;">Validation Impossible</h2>
+                <h2 style="color: #fa3055; margin-top: 0;">Validation Impossible</h2>
                 <p style="color: #94a3b8;">${result.message}</p>
-                <a href="/" style="display: inline-block; margin-top: 16px; padding: 10px 20px; background: #f91942; color: #fff; text-decoration: none; border-radius: 8px;">Retour à l'accueil Chezmoi</a>
+                <a href="/" style="display: inline-block; margin-top: 16px; padding: 10px 20px; background: #fa3055; color: #fff; text-decoration: none; border-radius: 8px;">Retour à Chezmoi administration</a>
               </div>
             </body>
           </html>
@@ -405,19 +448,40 @@ async function startServer() {
     }
   });
 
+  // Lien direct de validation de compte pour l'utilisateur
+  app.get('/verify-account', async (req: Request, res: Response) => {
+    try {
+      const token = (req.query.token || req.query.code) as string;
+      const email = req.query.email as string | undefined;
+      if (!token) {
+        return res.redirect('/?error=token_missing');
+      }
+      const result = await verifyEmailAccount(token, email);
+      if (result.success) {
+        res.redirect('/?email_verified=true');
+      } else {
+        res.redirect(`/?error=${encodeURIComponent(result.message)}`);
+      }
+    } catch {
+      res.redirect('/?error=verification_failed');
+    }
+  });
+
   app.post('/api/auth/toggle-2fa', async (req: Request, res: Response) => {
     try {
-      const { userId, enabled } = req.body;
+      const { userId, enabled, totpSecret } = req.body;
       if (!userId || typeof enabled !== 'boolean') {
         return res.status(400).json({ error: 'Paramètres userId et enabled requis.' });
       }
-      const updated = await toggleUser2FA(userId, enabled);
+      const updated = await toggleUser2FA(userId, enabled, totpSecret);
       if (!updated) {
         return res.status(404).json({ error: 'Utilisateur introuvable.' });
       }
       res.json({
         success: true,
-        message: enabled ? 'Double authentification (2FA) activée.' : 'Double authentification désactivée.',
+        message: enabled 
+          ? 'Double authentification (2FA) et Google Authenticator activés avec succès.' 
+          : 'Double authentification désactivée.',
         user: updated
       });
     } catch (err: any) {
@@ -435,7 +499,7 @@ async function startServer() {
       success: true,
       deliveredAt: new Date().toISOString(),
       url,
-      payloadSent: payload || { test: 'ping', app: 'Chezmoi ERP' },
+      payloadSent: payload || { test: 'ping', app: 'Chezmoi administration' },
       message: 'Webhook simulé avec succès vers le point de terminaison spécifié.'
     });
   });
@@ -463,7 +527,7 @@ async function startServer() {
   // Démarrage du serveur
   app.listen(PORT, () => {
     console.log(`=======================================================`);
-    console.log(` Chezmoi ERP Backend Node.js / Express prêt !`);
+    console.log(` Chezmoi administration Backend Node.js / Express prêt !`);
     console.log(` Port d'écoute : ${PORT}`);
     console.log(` Environnement : ${isProduction ? 'Production Hostinger Cloud' : 'Développement'}`);
     console.log(` Endpoints API disponibles sur : /api/health`);
