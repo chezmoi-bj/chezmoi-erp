@@ -94,4 +94,38 @@ describe('Vérification stricte du flux de gestion des collaborateurs et e-mails
     assert.ok(res.message.includes('déjà vérifié'));
   });
 
+  test('findUserByIdentifier retrouve les comptes enregistrés sans exception ni filtre restrictif', async () => {
+    const { findUserByIdentifier } = await import('./db');
+
+    // 1. Recherche par email exact
+    const u1 = await findUserByIdentifier('didier.aballo40@gmail.com');
+    assert.ok(u1, 'Doit retrouver Kokou/Didier Aballo par email');
+    assert.strictEqual(u1?.email, 'didier.aballo40@gmail.com');
+
+    // 2. Recherche insensible à la casse et aux espaces
+    const u2 = await findUserByIdentifier('   DiDiEr.Aballo40@GMAIL.COM   ');
+    assert.ok(u2, 'Doit retrouver par email avec casse différente et espaces');
+
+    // 3. Recherche Gmail avec alias de points
+    const u3 = await findUserByIdentifier('didieraballo40@gmail.com');
+    assert.ok(u3, 'Doit retrouver par alias Gmail sans points');
+
+    // 4. Recherche par numéro de téléphone béninois (formats variés)
+    const uPhone1 = await findUserByIdentifier('+229 90 12 34 56');
+    assert.ok(uPhone1, 'Doit retrouver par numéro avec indicatif');
+    assert.strictEqual(uPhone1?.email, 'didier.aballo40@gmail.com');
+
+    const uPhone2 = await findUserByIdentifier('90123456');
+    assert.ok(uPhone2, 'Doit retrouver par numéro court national 8 chiffres');
+
+    // 5. Recherche du compte Super Admin central SMB
+    const uSmb = await findUserByIdentifier('chezmoi.benin@gmail.com');
+    assert.ok(uSmb, 'Doit retrouver le compte SMB');
+    assert.strictEqual(uSmb?.role, 'SUPER_ADMIN');
+
+    // 6. Recherche du compte Sean Agency
+    const uSean = await findUserByIdentifier('sean.co.agency@gmail.com');
+    assert.ok(uSean, 'Doit retrouver Sean Agency');
+  });
+
 });

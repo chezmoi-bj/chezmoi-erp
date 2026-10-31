@@ -1,5 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { 
   PropertyRecord, 
   UserAccount, 
@@ -37,10 +39,40 @@ let pool: mysql.Pool | null = null;
 let isMySqlConnected = false;
 let lastDbError: string | null = null;
 
-// Mémoire de secours (Fallback automatique pour le dev local quand MySQL distant Hostinger n'est pas encore configuré)
+const CACHE_FILE = path.resolve(process.cwd(), '.data/memory_store.json');
+
+function loadPersistedUsers(): UserAccount[] {
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      const raw = fs.readFileSync(CACHE_FILE, 'utf-8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.users) && data.users.length > 0) {
+        const map = new Map<string, UserAccount>();
+        INITIAL_USERS.forEach(u => map.set(u.id, u));
+        data.users.forEach((u: UserAccount) => map.set(u.id, u));
+        return Array.from(map.values());
+      }
+    }
+  } catch (err) {
+    console.warn('[Store Cache] Erreur chargement store persistant:', err);
+  }
+  return [...INITIAL_USERS];
+}
+
+export function savePersistedUsers(): void {
+  try {
+    const dir = path.dirname(CACHE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(CACHE_FILE, JSON.stringify({ users: memoryStore.users }, null, 2));
+  } catch (err) {
+    console.warn('[Store Cache] Erreur sauvegarde store persistant:', err);
+  }
+}
+
+// Mémoire de secours (Fallback automatique avec persistance fichier pour le dev local)
 export const memoryStore = {
   properties: [...INITIAL_PROPERTIES],
-  users: [...INITIAL_USERS],
+  users: loadPersistedUsers(),
   transactions: [...INITIAL_TRANSACTIONS],
   leaveRequests: [...INITIAL_LEAVE_REQUESTS],
   payslips: [...INITIAL_PAYSLIPS],
@@ -715,6 +747,7 @@ export async function createCollaborator(user: UserAccount): Promise<UserAccount
   }
 
   memoryStore.users.push(newCollaborator);
+  savePersistedUsers();
   return newCollaborator;
 }
 
@@ -877,6 +910,7 @@ export async function updateCollaboratorProfile(userId: string, updates: Partial
   } else {
     memoryStore.users.push(updatedUser);
   }
+  savePersistedUsers();
 
   // Expédition exclusive de l'e-mail de notification d'information (SANS OTP, SANS BOUTON BLOQUANT)
   sendProfileUpdatedNotificationEmail(
@@ -977,7 +1011,11 @@ function normalizeIdentifier(val: string): string {
 }
 
 export async function findUserByIdentifier(rawIdentifier: string): Promise<UserAccount | null> {
-  const norm = normalizeIdentifier(rawIdentifier);
+  if (!rawIdentifier || typeof rawIdentifier !== 'string') return null;
+  const clean = rawIdentifier.trim();
+  if (!clean) return null;
+
+  const norm = clean.toLowerCase();
   const isSMB = norm === 'chezmoi.benin@gmail.com' || norm === normalizeIdentifier(CENTRAL_ADMIN_SMB.phone);
 
   if (isSMB) {
@@ -1011,16 +1049,48 @@ export async function findUserByIdentifier(rawIdentifier: string): Promise<UserA
     return CENTRAL_ADMIN_SMB;
   }
 
+  // 1. Recherche exhaustive MySQL (SANS aucun filtre restrictif sur status ou validation)
   if (isMySqlConnected && pool) {
     try {
-      const cleanPhone = norm.replace(/\D/g, '');
-      const sql = `
-        SELECT * FROM users 
-        WHERE LOWER(email) = ? 
-           OR REPLACE(REPLACE(phone, ' ', ''), '+', '') LIKE ?
-        LIMIT 1
-      `;
-      const [rows] = await pool.query<mysql.RowDataPacket[]>(sql, [norm, `%${cleanPhone.slice(-8)}%`]);
+      const isEmail = clean.includes('@');
+      const cleanDigits = clean.replace(/\D/g, '');
+      
+      let rows: mysql.RowDataPacket[] = [];
+
+      if (isEmail) {
+        // Recherche prioritaire par e-mail exact insensible à la casse
+        const [r] = await pool.query<mysql.RowDataPacket[]>(
+          'SELECT * FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) LIMIT 1',
+          [clean]
+        );
+        rows = r;
+      }
+
+      if (rows.length === 0 && cleanDigits.length >= 8) {
+        // Recherche par numéro de téléphone (8 derniers chiffres béninois)
+        const last8 = cleanDigits.slice(-8);
+        const [r] = await pool.query<mysql.RowDataPacket[]>(
+          `SELECT * FROM users 
+           WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '+', ''), '-', ''), '(', ''), ')', '') LIKE ? 
+           LIMIT 1`,
+          [`%${last8}%`]
+        );
+        rows = r;
+      }
+
+      if (rows.length === 0) {
+        // Recherche souple par nom complet, email ou identifiant
+        const [r] = await pool.query<mysql.RowDataPacket[]>(
+          `SELECT * FROM users 
+           WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) 
+              OR LOWER(TRIM(email)) = LOWER(TRIM(?)) 
+              OR id = ? 
+           LIMIT 1`,
+          [clean, clean, clean]
+        );
+        rows = r;
+      }
+
       if (rows && rows.length > 0) {
         const r: any = rows[0];
         return {
@@ -1032,19 +1102,20 @@ export async function findUserByIdentifier(rawIdentifier: string): Promise<UserA
           role: r.role,
           jobTitle: r.job_title,
           departmentName: r.department_name,
-          baseSalary: Number(r.base_salary),
-          commissionRate: Number(r.commission_rate),
+          baseSalary: Number(r.base_salary || 0),
+          commissionRate: Number(r.commission_rate || 0),
           hireDate: r.hire_date,
           contractType: r.contract_type,
           city: r.city,
           assignedZone: r.assigned_zone || '',
-          rating: Number(r.rating),
-          propertiesCount: Number(r.properties_count),
-          pendingSyncCount: Number(r.pending_sync_count),
-          totalCommissions: Number(r.total_commissions),
+          rating: Number(r.rating || 5),
+          propertiesCount: Number(r.properties_count || 0),
+          pendingSyncCount: Number(r.pending_sync_count || 0),
+          totalCommissions: Number(r.total_commissions || 0),
           status: r.status,
           cnssNumber: r.cnss_number || undefined,
           twoFactorEnabled: Boolean(r.two_factor_enabled || false),
+          totpSecret: r.totp_secret || undefined,
           emailVerified: r.email_verified !== undefined ? Boolean(r.email_verified) : true,
           verificationToken: r.verification_token || undefined
         };
@@ -1054,19 +1125,70 @@ export async function findUserByIdentifier(rawIdentifier: string): Promise<UserA
     }
   }
 
-  // Fallback mémoire
+  // 2. Recherche complète en mémoire (SANS aucun filtre restrictif sur status ou validation)
+  const cleanDigits = clean.replace(/\D/g, '');
   const found = memoryStore.users.find(u => {
-    const userEmailNorm = normalizeIdentifier(u.email);
-    const userPhoneNorm = normalizeIdentifier(u.phone);
-    if (norm.includes('@')) {
-      return userEmailNorm === norm;
+    if (!u) return false;
+
+    // Correspondance E-mail exacte (insensible à la casse et aux espaces)
+    if (u.email && u.email.trim().toLowerCase() === norm) {
+      return true;
     }
-    const cleanNorm = norm.replace(/\D/g, '');
-    const cleanUserPhone = userPhoneNorm.replace(/\D/g, '');
-    return cleanUserPhone.endsWith(cleanNorm.slice(-8)) || cleanNorm.endsWith(cleanUserPhone.slice(-8));
+
+    // Correspondance Gmail sans points (ex: didier.aballo40 vs didieraballo40)
+    if (norm.includes('@') && u.email && u.email.includes('@')) {
+      const [uUser, uDomain] = u.email.trim().toLowerCase().split('@');
+      const [qUser, qDomain] = norm.split('@');
+      if (uDomain === qDomain && uUser.replace(/\./g, '') === qUser.replace(/\./g, '')) {
+        return true;
+      }
+    }
+
+    // Correspondance Téléphone (8 derniers chiffres ou comparaison directe)
+    if (cleanDigits.length >= 8 && u.phone) {
+      const uPhoneDigits = u.phone.replace(/\D/g, '');
+      if (uPhoneDigits && (uPhoneDigits.endsWith(cleanDigits.slice(-8)) || cleanDigits.endsWith(uPhoneDigits.slice(-8)))) {
+        return true;
+      }
+    }
+
+    // Correspondance par Nom
+    if (u.name && u.name.trim().toLowerCase() === norm) {
+      return true;
+    }
+
+    // Correspondance par ID
+    if (u.id === clean) {
+      return true;
+    }
+
+    return false;
   });
 
   return found || null;
+}
+
+/**
+ * Valide et active un compte utilisateur suite à la saisie réussie de l'OTP
+ */
+export async function activateUserAccount(userId: string): Promise<UserAccount | null> {
+  const user = memoryStore.users.find(u => u.id === userId);
+  if (user) {
+    user.status = 'ACTIF';
+    user.emailVerified = true;
+    user.verificationToken = undefined;
+    savePersistedUsers();
+  }
+
+  if (isMySqlConnected && pool) {
+    try {
+      await pool.query('UPDATE users SET status = "ACTIF", email_verified = 1, verification_token = NULL WHERE id = ?', [userId]);
+    } catch (err) {
+      console.error('[MySQL Error] activateUserAccount:', err);
+    }
+  }
+
+  return user || null;
 }
 
 export function storeOtp(identifier: string, code: string, ttlMs = 300000): void {

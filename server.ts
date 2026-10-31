@@ -29,7 +29,8 @@ import {
   storeOtp,
   verifyOtp,
   toggleUser2FA,
-  verifyEmailAccount
+  verifyEmailAccount,
+  activateUserAccount
 } from './src/server/db';
 import { sendOtpEmail } from './src/server/mailer';
 import { 
@@ -308,15 +309,8 @@ async function startServer() {
         });
       }
 
-      // Exigence 3: Le compte ne peut se connecter et accéder à son espace qu'après validation de l'e-mail
-      if (user.status === 'EN_ATTENTE_VALIDATION' || user.emailVerified === false) {
-        return res.status(403).json({
-          error: 'Ce compte est actuellement en attente de validation. Veuillez valider votre adresse e-mail avec le code reçu avant de vous connecter.',
-          pendingVerification: true,
-          email: user.email,
-          userName: user.name
-        });
-      }
+      // Étape 1 fluide : S'il existe en base, passage immédiat à l'étape suivante (saisie du code OTP / 2FA)
+      // sans blocage restrictif préalable sur le statut ou la validation
 
       // Génération code 6 chiffres
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -379,20 +373,15 @@ async function startServer() {
         });
       }
 
-      if (user.status === 'EN_ATTENTE_VALIDATION' || user.emailVerified === false) {
-        return res.status(403).json({
-          error: 'Ce compte est en attente de validation e-mail. Veuillez confirmer votre adresse avant de vous connecter.',
-          pendingVerification: true,
-          email: user.email
-        });
-      }
+      // La validation du code reçu par e-mail ou TOTP authentifie et active définitivement le compte
+      const activeUser = await activateUserAccount(user.id) || user;
 
       // Création d'un token de session JWT standard
       const tokenPayload = {
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
+        sub: activeUser.id,
+        email: activeUser.email,
+        role: activeUser.role,
+        name: activeUser.name,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 86400 * 7
       };
@@ -402,7 +391,7 @@ async function startServer() {
         success: true,
         message: 'Authentification réussie. Session déverrouillée.',
         token,
-        user,
+        user: activeUser,
       });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Erreur lors de la vérification OTP' });
