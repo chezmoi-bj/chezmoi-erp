@@ -10,17 +10,20 @@ import {
   MapPin, 
   CheckCircle2, 
   RefreshCw,
-  Sparkles,
   Award,
   Layers,
   KeyRound,
   ShieldAlert,
   QrCode,
   Copy,
-  Check
+  Check,
+  Smartphone,
+  AlertCircle
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { UserAccount } from '../types';
 import { ROLE_DEFINITIONS } from '../utils/auth';
+import { apiFetch } from '../utils/api';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -41,118 +44,160 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     Boolean(currentUser.twoFactorEnabled)
   );
   const [loading2FA, setLoading2FA] = useState<boolean>(false);
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState<{ text: string; isError?: boolean } | null>(null);
   const [totpData, setTotpData] = useState<{
     secret: string;
     otpauthUri: string;
     qrCodeDataUrl: string;
+    accountEmail: string;
   } | null>(null);
   const [copiedKey, setCopiedKey] = useState<boolean>(false);
 
-  // Charger les données TOTP Google Authenticator si 2FA est activé
+  // Étape d'association TOTP
+  const [isPairingStep, setIsPairingStep] = useState<boolean>(false);
+  const [verificationCode, setVerificationCode] = useState<string>('');
+  const [pairingLoading, setPairingLoading] = useState<boolean>(false);
+
   useEffect(() => {
-    if (isOpen && twoFactorEnabled) {
-      fetch(`/api/auth/2fa/setup?userId=${currentUser.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setTotpData({
-              secret: data.secret,
-              otpauthUri: data.otpauthUri,
-              qrCodeDataUrl: data.qrCodeDataUrl,
-            });
-          }
-        })
-        .catch(err => {
-          console.error('Erreur chargement setup 2FA:', err);
-        });
+    if (isOpen) {
+      setTwoFactorEnabled(Boolean(currentUser.twoFactorEnabled));
+      // Si 2FA est déjà activé, précharger les données du secret
+      if (currentUser.twoFactorEnabled) {
+        loadTotpSetup();
+      }
+    } else {
+      setIsPairingStep(false);
+      setVerificationCode('');
+      setStatusMsg(null);
     }
-  }, [isOpen, twoFactorEnabled, currentUser.id]);
+  }, [isOpen, currentUser.twoFactorEnabled, currentUser.id]);
+
+  const loadTotpSetup = async () => {
+    try {
+      const res = await apiFetch(`/api/auth/2fa/setup?userId=${currentUser.id}`);
+      if (res.ok && res.secret) {
+        setTotpData({
+          secret: res.secret,
+          otpauthUri: res.otpauthUri,
+          qrCodeDataUrl: res.qrCodeDataUrl,
+          accountEmail: res.accountEmail || currentUser.email,
+        });
+      }
+    } catch (err) {
+      console.error('Erreur chargement setup TOTP:', err);
+    }
+  };
 
   if (!isOpen) return null;
 
   const roleInfo = ROLE_DEFINITIONS[currentUser.role];
 
-  const fallbackCopyText = (text: string) => {
-    try {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-9999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-    } catch (e) {
-      console.warn('Clipboard fallback:', e);
-    }
-  };
-
   const handleCopySecret = (secret: string) => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(secret).catch(() => {
-          fallbackCopyText(secret);
-        });
+        navigator.clipboard.writeText(secret).catch(() => {});
       } else {
-        fallbackCopyText(secret);
+        const textArea = document.createElement('textarea');
+        textArea.value = secret;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
       }
     } catch {
-      fallbackCopyText(secret);
+      // Ignorer fallback
     }
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2500);
   };
 
-  const handleToggle2FA = async () => {
-    const nextVal = !twoFactorEnabled;
-    setLoading2FA(true);
+  // Déclencheur du Toggle 2FA
+  const handleToggleClick = async () => {
+    if (!twoFactorEnabled) {
+      // Pour ACTIVER : On ne valide pas à l'aveugle, on lance l'association TOTP (QR Code + vérification code)
+      setIsPairingStep(true);
+      setStatusMsg(null);
+      if (!totpData) {
+        setLoading2FA(true);
+        await loadTotpSetup();
+        setLoading2FA(false);
+      }
+    } else {
+      // Pour DÉSACTIVER : Désactivation directe
+      setLoading2FA(true);
+      setStatusMsg(null);
+      try {
+        const res = await apiFetch('/api/auth/toggle-2fa', {
+          method: 'POST',
+          body: JSON.stringify({
+            userId: currentUser.id,
+            enabled: false,
+          }),
+        });
+
+        if (!res.ok) throw new Error(res.error || 'Erreur lors de la désactivation');
+
+        setTwoFactorEnabled(false);
+        setIsPairingStep(false);
+        const updated = { ...currentUser, twoFactorEnabled: false };
+        onUpdateUser(updated);
+        setStatusMsg({ text: 'Double authentification désactivée avec succès.' });
+      } catch (err: any) {
+        setStatusMsg({ text: err?.message || 'Erreur lors de la désactivation.', isError: true });
+      } finally {
+        setLoading2FA(false);
+      }
+    }
+  };
+
+  // Soumission et validation du code à 6 chiffres pour valider l'association TOTP
+  const handleVerifyAndActivateTotp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!verificationCode.trim() || verificationCode.trim().length !== 6) {
+      setStatusMsg({ text: 'Veuillez saisir les 6 chiffres affichés dans votre application.', isError: true });
+      return;
+    }
+
+    if (!totpData?.secret) {
+      setStatusMsg({ text: 'Données de configuration manquantes. Veuillez recharger.', isError: true });
+      return;
+    }
+
+    setPairingLoading(true);
     setStatusMsg(null);
 
     try {
-      let secretToPersist = totpData?.secret;
-      
-      // Si on active 2FA et qu'on n'a pas encore le setup TOTP, le récupérer d'abord
-      if (nextVal && !secretToPersist) {
-        const setupRes = await fetch(`/api/auth/2fa/setup?userId=${currentUser.id}`);
-        const setupJson = await setupRes.json();
-        if (setupJson.success) {
-          secretToPersist = setupJson.secret;
-          setTotpData(setupJson);
-        }
-      }
-
-      const res = await fetch('/api/auth/toggle-2fa', {
+      const res = await apiFetch('/api/auth/2fa/verify-activate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
-          enabled: nextVal,
-          totpSecret: secretToPersist,
+          secret: totpData.secret,
+          code: verificationCode.trim(),
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur modification 2FA');
+      if (!res.ok) {
+        throw new Error(res.error || 'Code invalide ou expiré. Vérifiez votre heure.');
+      }
 
-      setTwoFactorEnabled(nextVal);
-      const updatedUser: UserAccount = {
+      setTwoFactorEnabled(true);
+      setIsPairingStep(false);
+      setVerificationCode('');
+      const updated: UserAccount = {
         ...currentUser,
-        twoFactorEnabled: nextVal,
-        totpSecret: secretToPersist,
+        twoFactorEnabled: true,
+        totpSecret: totpData.secret,
       };
-      onUpdateUser(updatedUser);
-      setStatusMsg(
-        nextVal 
-          ? 'Double authentification (2FA) & Google Authenticator activés avec succès !' 
-          : 'Double authentification désactivée.'
-      );
-      setTimeout(() => setStatusMsg(null), 4000);
+      onUpdateUser(updated);
+      confetti({ particleCount: 40, spread: 60, colors: ['#FA3055', '#10B981'] });
+      setStatusMsg({ text: 'Google Authenticator activé et vérifié avec succès pour ce compte !' });
     } catch (err: any) {
-      setStatusMsg(`Erreur : ${err?.message}`);
+      setStatusMsg({ text: err?.message || 'Code erroné ou expiré.', isError: true });
     } finally {
-      setLoading2FA(false);
+      setPairingLoading(false);
     }
   };
 
@@ -160,7 +205,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
       <div className="bg-white rounded-[32px] max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative my-6">
         
-        {/* Close button */}
+        {/* Bouton de fermeture */}
         <button
           onClick={onClose}
           className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition-colors"
@@ -169,7 +214,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <X className="w-4 h-4" />
         </button>
 
-        {/* Modal Header */}
+        {/* En-tête de la modale */}
         <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
           <div className="w-12 h-12 rounded-2xl bg-[#FA3055]/10 text-[#FA3055] flex items-center justify-center flex-shrink-0 font-bold">
             <User className="w-6 h-6" />
@@ -184,7 +229,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
         </div>
 
-        {/* User Card */}
+        {/* Fiche Profil Collaborateur */}
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 mb-5">
           <div className="flex items-center gap-3.5 mb-3">
             <img
@@ -225,12 +270,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-              <span className="font-semibold text-emerald-700">Session active vérifiée</span>
+              <span className="font-semibold text-emerald-700">Session authentifiée</span>
             </div>
           </div>
         </div>
 
-        {/* 2FA Toggle Section */}
+        {/* Section Double Authentification (2FA) */}
         <div className="bg-gradient-to-br from-slate-50 to-rose-50/30 rounded-2xl p-4 border border-slate-200 mb-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2.5">
@@ -238,20 +283,27 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Double Authentification (2FA)
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                  Exige systématiquement un code OTP à 6 chiffres par email lors de chaque connexion à la plateforme.
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                    Double Authentification (2FA)
+                  </h4>
+                  {twoFactorEnabled && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Actif (Google Authenticator)
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                  Exige un code de validation TOTP à 6 chiffres généré par Google Authenticator ou une application compatible lors de chaque connexion.
                 </p>
               </div>
             </div>
 
-            {/* Toggle Switch */}
+            {/* Switch Toggle */}
             <button
               type="button"
-              onClick={handleToggle2FA}
-              disabled={loading2FA}
+              onClick={handleToggleClick}
+              disabled={loading2FA || pairingLoading}
               role="switch"
               aria-checked={twoFactorEnabled}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
@@ -266,38 +318,43 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </button>
           </div>
 
+          {/* Messages de statut */}
           {statusMsg && (
-            <div className="mt-3 p-2.5 rounded-xl bg-white text-xs font-semibold text-slate-800 border border-slate-200 flex items-center gap-1.5 shadow-2xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-              <span>{statusMsg}</span>
+            <div className={`mt-3 p-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-2xs border ${
+              statusMsg.isError 
+                ? 'bg-rose-50 text-rose-800 border-rose-200' 
+                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            }`}>
+              {statusMsg.isError ? (
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              )}
+              <span>{statusMsg.text}</span>
             </div>
           )}
 
-          {/* Google Authenticator (TOTP) Setup Section */}
-          {twoFactorEnabled && (
-            <div className="mt-4 pt-4 border-t border-rose-100/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center flex-shrink-0">
-                    <QrCode className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-900">
-                    Google Authenticator (TOTP)
-                  </span>
+          {/* Étape d'association Google Authenticator (TOTP) */}
+          {isPairingStep && !twoFactorEnabled && (
+            <div className="mt-4 pt-4 border-t border-rose-100 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center flex-shrink-0">
+                  <Smartphone className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Couche active
-                </span>
+                <h5 className="text-xs font-bold text-slate-900">
+                  Association de Google Authenticator
+                </h5>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  <strong className="text-slate-900">Mode par défaut :</strong> Le code OTP envoyé par e-mail reste actif à chaque connexion. En scannant ce code QR dans <strong className="text-slate-900">Google Authenticator</strong>, vous pouvez également utiliser les codes à 6 chiffres générés par votre téléphone.
+                  1. Ouvrez <strong>Google Authenticator</strong> ou <strong>Authy</strong> sur votre smartphone.<br />
+                  2. Scannez le code QR ci-dessous (ou saisissez manuellement la clé secrète).
                 </p>
 
                 {totpData ? (
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 pt-1">
-                    <div className="w-28 h-28 p-1.5 bg-white rounded-xl border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
+                    <div className="w-32 h-32 p-2 bg-white rounded-xl border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs">
                       <img
                         src={totpData.qrCodeDataUrl}
                         alt="QR Code Google Authenticator"
@@ -305,53 +362,100 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       />
                     </div>
 
-                    <div className="flex-1 space-y-2 min-w-0 w-full sm:w-auto">
-                      <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                          Clé secrète TOTP (saisie manuelle)
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs font-mono font-bold text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 truncate select-all flex-1">
-                            {totpData.secret}
-                          </code>
-                          <button
-                            type="button"
-                            onClick={() => handleCopySecret(totpData.secret)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0"
-                            title="Copier la clé"
-                          >
-                            {copiedKey ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                <span className="text-[11px] text-emerald-700">Copiée</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5 text-slate-600" />
-                                <span className="text-[11px]">Copier</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
+                    <div className="flex-1 space-y-2 min-w-0 w-full">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Clé secrète (saisie manuelle)
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <code className="text-xs font-mono font-bold text-slate-900 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200 truncate select-all flex-1">
+                          {totpData.secret}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => handleCopySecret(totpData.secret)}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0"
+                          title="Copier"
+                        >
+                          {copiedKey ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="text-[11px] text-emerald-700">Copiée</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 text-slate-600" />
+                              <span className="text-[11px]">Copier</span>
+                            </>
+                          )}
+                        </button>
                       </div>
-
-                      <p className="text-[10px] text-slate-400">
-                        Compatible avec Google Authenticator, Microsoft Authenticator et Twilio Authy.
-                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center p-4">
                     <RefreshCw className="w-4 h-4 animate-spin text-[#FA3055]" />
-                    <span className="text-xs text-slate-500 ml-2">Génération de la clé TOTP...</span>
+                    <span className="text-xs text-slate-500 ml-2">Génération du QR Code...</span>
                   </div>
                 )}
+
+                {/* Saisie du code à 6 chiffres pour valider l'activation */}
+                <form onSubmit={handleVerifyAndActivateTotp} className="pt-2 border-t border-slate-100 space-y-2.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Saisissez le code à 6 chiffres généré par votre application :
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      inputMode="numeric"
+                      placeholder="123456"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                      className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-mono text-center text-lg font-bold tracking-widest text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#FA3055]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={pairingLoading || verificationCode.length !== 6}
+                      className="px-4 py-2 rounded-xl bg-[#FA3055] hover:bg-[#E02045] disabled:opacity-50 text-white font-bold text-xs shadow-xs cursor-pointer transition-all flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      {pairingLoading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                      <span>Valider & activer</span>
+                    </button>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsPairingStep(false)}
+                      className="text-[11px] text-slate-400 hover:text-slate-600 cursor-pointer underline"
+                    >
+                      Annuler la configuration
+                    </button>
+                  </div>
+                </form>
               </div>
+            </div>
+          )}
+
+          {/* Affichage des clés en mode actif si nécessaire */}
+          {twoFactorEnabled && totpData && !isPairingStep && (
+            <div className="mt-3 pt-3 border-t border-rose-100/60 flex items-center justify-between text-xs">
+              <span className="text-slate-500">Clé configurée : <code className="font-mono text-slate-700">{totpData.secret.substring(0, 8)}...</code></span>
+              <button
+                type="button"
+                onClick={() => setIsPairingStep(true)}
+                className="text-[#FA3055] font-semibold hover:underline cursor-pointer"
+              >
+                Afficher le QR Code
+              </button>
             </div>
           )}
         </div>
 
-        {/* Permissions & Roles Matrix */}
+        {/* Matrice des droits & rôles */}
         <div className="mb-6 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
           <div className="flex items-center justify-between mb-1">
             <span className="font-bold text-slate-800">Modules autorisés pour votre rôle :</span>
@@ -359,36 +463,27 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
           <p className="text-[11px] text-slate-500 mb-2">{roleInfo.description}</p>
           <div className="flex flex-wrap gap-1.5">
-            {roleInfo.allowedTabs.map((tabId) => (
-              <span
-                key={tabId}
-                className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-bold text-slate-700 capitalize"
-              >
-                {tabId === 'dashboard' ? 'Tableau de bord' :
-                 tabId === 'census' ? 'Recensement' :
-                 tabId === 'accounting' ? 'Facturation (e-MECeF)' :
-                 tabId === 'hr' ? 'Agents & RH' :
-                 tabId === 'ged' ? 'GED foncière' : tabId}
+            {roleInfo.allowedTabs.map(tab => (
+              <span key={tab} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-semibold text-slate-700 capitalize">
+                {tab === 'accounting' ? 'Facturation e-MECeF' : tab}
               </span>
             ))}
           </div>
         </div>
 
-        {/* Actions : Déconnexion & Fermer */}
-        <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+        {/* Boutons du bas */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
           <button
-            type="button"
             onClick={onLogout}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span>Se déconnecter</span>
+            <span>Déconnexion</span>
           </button>
 
           <button
-            type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs cursor-pointer transition-colors"
           >
             Fermer
           </button>

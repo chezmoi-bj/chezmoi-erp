@@ -38,8 +38,10 @@ import {
   clearSession, 
   isRoleAuthorizedForTab, 
   getDefaultTabForRole,
-  ROLE_DEFINITIONS 
+  ROLE_DEFINITIONS,
+  canAccessSystemSettings 
 } from './utils/auth';
+import { apiFetch } from './utils/api';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
 export default function App() {
@@ -92,22 +94,20 @@ export default function App() {
   // File de synchronisation Drift SQLite locale
   const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([]);
 
-  // Chargement des données fraîches depuis le backend (MySQL / Mémoire)
+  // Chargement des données fraîches depuis le backend (MySQL / Mémoire) via apiFetch résilient
   useEffect(() => {
-    fetch('/api/users')
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setUsers(data);
+    apiFetch('/api/users')
+      .then((res) => {
+        if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+          setUsers(res.data);
         }
       })
       .catch(() => {});
 
-    fetch('/api/properties')
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProperties(data);
+    apiFetch('/api/properties')
+      .then((res) => {
+        if (res.ok && Array.isArray(res.data)) {
+          setProperties(res.data);
         }
       })
       .catch(() => {});
@@ -215,9 +215,8 @@ export default function App() {
 
     if (isOnline) {
       try {
-        await fetch(`/api/properties/${updated.id}`, {
+        await apiFetch(`/api/properties/${updated.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updated),
         });
       } catch (err) {
@@ -236,29 +235,33 @@ export default function App() {
     };
     setUsers((prev) => [...prev, pendingUser]);
     try {
-      const res = await fetch('/api/users', {
+      const res = await apiFetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pendingUser)
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          setUsers((prev) => prev.map(u => u.id === data.user.id ? data.user : u));
-        }
+      if (res.ok && res.user) {
+        setUsers((prev) => prev.map(u => u.id === res.user.id ? res.user : u));
       }
     } catch (err) {
       console.error('Erreur synchronisation nouvel utilisateur:', err);
     }
   };
 
-  const handleUpdateUser = (updatedUser: UserAccount) => {
-    setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+  const handleUpdateUser = async (updatedUser: UserAccount) => {
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     if (currentUser.id === updatedUser.id) {
       setCurrentUser(updatedUser);
       if (session) {
         saveSession(updatedUser, session.token);
       }
+    }
+    try {
+      await apiFetch(`/api/users/${updatedUser.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updatedUser),
+      });
+    } catch (err) {
+      console.error('Erreur synchronisation mise à jour collaborateur:', err);
     }
   };
 

@@ -10,6 +10,7 @@ import {
   Lock
 } from 'lucide-react';
 import { UserAccount } from '../types';
+import { apiFetch } from '../utils/api';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UserAccount, token: string) => void;
@@ -144,24 +145,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setVerificationSuccess(null);
 
     try {
-      const response = await fetch('/api/auth/request-otp', {
+      const response = await apiFetch('/api/auth/request-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: identToSend.trim() }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        if (data.pendingVerification) {
-          setPendingVerificationEmail(data.email || identToSend);
+        if (response.pendingVerification) {
+          setPendingVerificationEmail(response.email || identToSend);
         }
-        throw new Error(data.error || 'Identifiant non reconnu.');
+        throw new Error(response.error || 'Identifiant non reconnu.');
       }
 
       setPendingVerificationEmail(null);
-      setMaskedTarget(data.maskedTarget || data.email || identToSend);
-      setIs2FARequired(Boolean(data.twoFactorRequired));
+      setMaskedTarget(response.maskedTarget || response.email || identToSend);
+      setIs2FARequired(Boolean(response.twoFactorRequired));
       setCountdown(300);
       setStep('otp');
       setOtpDigits(['', '', '', '', '', '']);
@@ -184,18 +182,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
     try {
       const targetEmail = pendingVerificationEmail || identifier;
-      const res = await fetch('/api/auth/verify-email', {
+      const res = await apiFetch('/api/auth/verify-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code: verificationCodeInput.trim(),
           email: targetEmail
         })
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Code invalide ou expiré.');
+        throw new Error(res.error || 'Code invalide ou expiré.');
       }
 
       setVerificationSuccess('Compte validé avec succès ! Déverrouillage en cours...');
@@ -225,22 +221,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/verify-otp', {
+      const response = await apiFetch('/api/auth/verify-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           identifier: identifier.trim(),
           otp: fullOtp,
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Code de vérification invalide.');
+        throw new Error(response.error || 'Code de vérification invalide.');
       }
 
-      onLoginSuccess(data.user, data.token);
+      onLoginSuccess(response.user, response.token);
     } catch (err: any) {
       setError(err?.message || 'Code erroné ou expiré.');
     } finally {

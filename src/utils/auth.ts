@@ -20,8 +20,8 @@ export const ROLE_DEFINITIONS: Record<Role, {
   ADMIN: {
     label: 'Admin Opérations',
     badgeColor: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    description: 'Supervision des opérations foncières & recensement terrain',
-    allowedTabs: ['dashboard', 'census', 'ged'],
+    description: 'Supervision des opérations foncières, comptabilité e-MECeF & gestion terrain',
+    allowedTabs: ['dashboard', 'census', 'accounting', 'hr', 'ged'],
     defaultTab: 'dashboard',
   },
   COMPTABLE: {
@@ -178,4 +178,17 @@ export function clearSession(): void {
   } catch (e) {
     console.error('Erreur déconnexion:', e);
   }
+}
+
+/**
+ * Matrice stricte des permissions :
+ * - Paramètres du système : Strictement réservés au SUPER_ADMIN
+ * - Comptabilité / Facturation e-MECeF : Accessible à tous les Administrateurs (SUPER_ADMIN, ADMIN) et COMPTABLE
+ */
+export function canAccessSystemSettings(role: Role): boolean {
+  return role === 'SUPER_ADMIN';
+}
+
+export function canAccessAccountingModule(role: Role): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'COMPTABLE';
 }

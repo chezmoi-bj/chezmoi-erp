@@ -63,6 +63,7 @@ function getLogoPath() {
   return candidates[0];
 }
 var LOGO_PATH = getLogoPath();
+var BASE_APP_URL = (process.env.APP_URL || process.env.VITE_APP_URL || "https://admin.chezmoi.bj").replace(/\/+$/, "");
 var transporter = null;
 var SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
 var SMTP_PORT = Number(process.env.SMTP_PORT || 465);
@@ -70,14 +71,22 @@ var SMTP_USER = process.env.SMTP_USER || "contact@chezmoi.bj";
 var SMTP_PASS = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || "";
 var FROM_SENDER = process.env.SMTP_FROM || '"Chezmoi administration" <contact@chezmoi.bj>';
 var sentVerificationEmails = /* @__PURE__ */ new Set();
-async function getTransporter() {
-  if (transporter) return transporter;
+function createHostingerTransporter() {
   if (SMTP_PASS) {
-    transporter = nodemailer.createTransport({
+    const t = nodemailer.createTransport({
       host: SMTP_HOST,
       port: SMTP_PORT,
       secure: SMTP_PORT === 465,
-      // SSL / Secure
+      // SSL
+      pool: true,
+      // Utilisation d'un pool persistant pour éviter de fermer les sockets
+      maxConnections: 5,
+      maxMessages: 100,
+      connectionTimeout: 15e3,
+      // 15 secondes
+      greetingTimeout: 15e3,
+      socketTimeout: 3e4,
+      // 30 secondes
       auth: {
         user: SMTP_USER,
         pass: SMTP_PASS
@@ -86,16 +95,48 @@ async function getTransporter() {
         rejectUnauthorized: false
       }
     });
-    console.log(`[Hostinger SMTP] Transporteur configur\xE9 et actif : ${SMTP_HOST}:${SMTP_PORT} (${SMTP_USER})`);
-  } else {
-    transporter = nodemailer.createTransport({
-      streamTransport: true,
-      newline: "unix",
-      buffer: true
-    });
-    console.log("[Hostinger SMTP] Mode simulation actif (journaux console).");
+    console.log(`[Hostinger SMTP Pool] Transporteur initialis\xE9 : ${SMTP_HOST}:${SMTP_PORT} (${SMTP_USER})`);
+    return t;
+  }
+  const devT = nodemailer.createTransport({
+    streamTransport: true,
+    newline: "unix",
+    buffer: true
+  });
+  console.log("[Hostinger SMTP] Mode simulation local actif.");
+  return devT;
+}
+async function getTransporter() {
+  if (!transporter) {
+    transporter = createHostingerTransporter();
   }
   return transporter;
+}
+async function sendMailWithRetry(mailOptions, maxRetries = 3) {
+  let attempt = 0;
+  let delay = 1e3;
+  while (attempt < maxRetries) {
+    attempt++;
+    try {
+      const currentTransport = await getTransporter();
+      const info = await currentTransport.sendMail(mailOptions);
+      console.log(`[Hostinger SMTP] E-mail exp\xE9di\xE9 avec succ\xE8s \xE0 ${mailOptions.to} (MessageId: ${info?.messageId || "OK"})`);
+      return true;
+    } catch (err) {
+      console.warn(`[Hostinger SMTP Tentative ${attempt}/${maxRetries}] \xC9chec envoi \xE0 ${mailOptions.to}: ${err?.message}`);
+      if (err?.code === "ECONNRESET" || err?.code === "ETIMEDOUT" || err?.code === "ESOCKET" || err?.responseCode === 421) {
+        console.warn("[Hostinger SMTP] R\xE9initialisation du pool de connexion suite \xE0 une fermeture distante.");
+        transporter = null;
+      }
+      if (attempt >= maxRetries) {
+        console.error(`[Hostinger SMTP \xC9chec D\xE9finitif] Impossible d'exp\xE9dier l'e-mail \xE0 ${mailOptions.to} apr\xE8s ${maxRetries} tentatives.`, err);
+        return false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 1.5;
+    }
+  }
+  return false;
 }
 function buildGitHubStyleHtml(options) {
   const {
@@ -130,97 +171,94 @@ function buildGitHubStyleHtml(options) {
       font-weight: 400;
     }
     h1, h2, h3, h4, .brand-font {
-      font-family: 'Poppins', 'Roboto', sans-serif !important;
-      font-weight: 600 !important;
-      letter-spacing: -0.2px;
-    }
-    strong, b {
-      font-weight: 500 !important;
-      color: #0f172a;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-weight: 600;
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Roboto', Arial, sans-serif; color: #334155; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased;">
   
-  <!-- Preheader text for mail client preview -->
-  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; font-size: 1px; line-height: 1px; color: #f8fafc;">
+  <!-- Preheader invisible pour les clients de messagerie -->
+  <div style="display: none; font-size: 1px; color: #f8fafc; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
     ${preheader}
   </div>
 
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 15px;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
     <tr>
       <td align="center">
         
-        <!-- Main Card Minimaliste -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,23,42,0.05);">
+        <!-- Conteneur Carte Blanche Centrale -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;">
           
-          <!-- Header with centered Chezmoi Logo -->
+          <!-- En-t\xEAte : Logo & Badge -->
           <tr>
-            <td align="center" style="padding: 32px 32px 16px 32px; text-align: center;">
-              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto; text-align: center;">
+            <td style="padding: 24px 28px 20px 28px; border-bottom: 1px solid #f1f5f9;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center" style="text-align: center;">
-                    <img 
-                      src="cid:chezmoi-logo" 
-                      alt="Chezmoi administration" 
-                      width="64" 
-                      height="64" 
-                      style="display: block; margin: 0 auto; width: 64px; height: 64px; max-width: 64px; max-height: 64px; object-fit: contain; border: 0; outline: none;" 
-                    />
+                  <td align="left" style="vertical-align: middle;">
+                    <table border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="vertical-align: middle;">
+                          <img src="cid:chezmoi-logo" alt="Chezmoi" width="34" height="34" style="display: block; border-radius: 8px;" />
+                        </td>
+                        <td style="vertical-align: middle; padding-left: 10px;">
+                          <span style="font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 600; color: #0f172a; letter-spacing: -0.3px;">chezmoi</span>
+                          <span style="font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 500; color: #fa3055; margin-left: 4px;">administration</span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top: 10px; text-align: center;">
-                    <span class="brand-font" style="font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 600; color: #0f172a;">
-                      chezmoi<span style="color: #fa3055;">.bj</span>
+                  ${badgeLabel ? `
+                  <td align="right" style="vertical-align: middle;">
+                    <span style="display: inline-block; font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 500; color: #fa3055; background-color: #fff1f2; border: 1px solid #ffe4e6; padding: 3px 10px; border-radius: 20px;">
+                      ${badgeLabel}
                     </span>
-                    <span style="display: inline-block; margin-left: 6px; font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 500; background-color: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 12px; vertical-align: middle;">
-                      administration
-                    </span>
-                    ${badgeLabel ? `<span style="display: inline-block; margin-left: 4px; font-family: 'Roboto', sans-serif; font-size: 10px; font-weight: 500; background-color: rgba(250,48,85,0.08); color: #fa3055; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(250,48,85,0.2); vertical-align: middle;">${badgeLabel}</span>` : ""}
                   </td>
+                  ` : ""}
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Content Body -->
+          <!-- Corps du message -->
           <tr>
-            <td style="padding: 8px 36px 36px 36px;">
-              <h2 class="brand-font" style="margin: 0 0 14px 0; font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 600; color: #0f172a; text-align: left; line-height: 1.4;">
+            <td style="padding: 28px 28px 24px 28px;">
+              <h1 style="margin: 0 0 14px 0; font-family: 'Poppins', sans-serif; font-size: 19px; font-weight: 600; color: #0f172a; line-height: 1.35;">
                 ${title}
-              </h2>
+              </h1>
 
-              <p style="margin: 0 0 14px 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.6; color: #334155;">
-                Bonjour <strong>${recipientName}</strong>,
+              <p style="margin: 0 0 16px 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.6; color: #334155;">
+                Bonjour ${recipientName},
               </p>
 
-              <p style="margin: 0 0 18px 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.6; color: #475569;">
+              <p style="margin: 0 0 20px 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.6; color: #334155;">
                 ${bodyText}
               </p>
 
               ${code ? `
-              <!-- Security Token Box (\xC9quilibr\xE9e et sobre) -->
-              <div style="margin: 22px 0 22px 0; text-align: center;">
-                <div style="display: inline-block; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 28px; font-family: 'Courier New', Courier, monospace; font-size: 26px; font-weight: 600; letter-spacing: 6px; color: #0f172a; text-align: center;">
-                  ${code}
+              <!-- Bloc Code OTP / S\xE9curit\xE9 -->
+              <div style="margin: 22px 0; text-align: center;">
+                <div style="display: inline-block; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 32px;">
+                  <span style="font-family: 'Roboto Mono', 'Courier New', monospace; font-size: 30px; font-weight: 600; letter-spacing: 7px; color: #0f172a;">
+                    ${code}
+                  </span>
                 </div>
-                <div style="margin-top: 6px; font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 400; color: #64748b;">
-                  Code de s\xE9curit\xE9 \xE0 usage unique (5 minutes)
-                </div>
+                <p style="margin: 8px 0 0 0; font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 400; color: #64748b;">
+                  Code de s\xE9curit\xE9 \xE0 usage unique
+                </p>
               </div>
               ` : ""}
 
               ${actionUrl && actionText ? `
-              <!-- Primary Action CTA -->
+              <!-- Bouton d'action principal -->
               <div style="margin: 24px 0; text-align: center;">
-                <a href="${actionUrl}" style="display: inline-block; font-family: 'Poppins', sans-serif; background-color: #fa3055; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500; padding: 11px 24px; border-radius: 6px; text-align: center;">
+                <a href="${actionUrl}" style="display: inline-block; font-family: 'Poppins', sans-serif; background-color: #fa3055; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500; padding: 12px 28px; border-radius: 6px; text-align: center;">
                   ${actionText}
                 </a>
               </div>
               ` : ""}
 
-              <!-- Security notice -->
+              <!-- Note de s\xE9curit\xE9 -->
               <p style="margin: 22px 0 0 0; padding-top: 16px; border-top: 1px solid #f1f5f9; font-family: 'Roboto', sans-serif; font-size: 12px; font-weight: 400; line-height: 1.5; color: #64748b;">
                 ${securityNote}
               </p>
@@ -229,7 +267,7 @@ function buildGitHubStyleHtml(options) {
 
         </table>
 
-        <!-- Pied de page officiel avec coordonn\xE9es l\xE9gales DGI/RCCM -->
+        <!-- Pied de page officiel avec coordonn\xE9es l\xE9gales DGI B\xE9nin / RCCM -->
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; margin-top: 20px;">
           <tr>
             <td align="center" style="font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 400; color: #64748b; line-height: 1.6;">
@@ -240,7 +278,7 @@ function buildGitHubStyleHtml(options) {
                 IFU : 0202361063128 \u2022 RCCM : RB/ABC/24 A 111099 \u2022 Bidossessi Adjrako, Abomey-Calavi
               </p>
               <p style="margin: 0; font-family: 'Roboto', sans-serif; font-size: 10px; color: #94a3b8;">
-                \xA9 Chezmoi administration - Tous droits r\xE9serv\xE9s
+                \xA9 Chezmoi administration - R\xE9publique du B\xE9nin - Tous droits r\xE9serv\xE9s
               </p>
             </td>
           </tr>
@@ -269,90 +307,70 @@ function getEmailAttachments() {
   return [];
 }
 async function sendOtpEmail(email, name, otpCode) {
-  try {
-    const transport = await getTransporter();
-    const htmlContent = buildGitHubStyleHtml({
-      title: "Code de v\xE9rification pour votre session",
-      preheader: `Votre code de s\xE9curit\xE9 Chezmoi administration est : ${otpCode}`,
-      recipientName: name,
-      bodyText: "Vous tentez de vous connecter \xE0 votre espace s\xE9curis\xE9 sur Chezmoi administration. Saisissez le code temporaire ci-dessous pour d\xE9verrouiller votre session :",
-      code: otpCode,
-      securityNote: "Ce code de v\xE9rification expirera dans 5 minutes. Si vous utilisez Google Authenticator, vous pouvez \xE9galement saisir directement votre code TOTP.",
-      badgeLabel: "Authentification"
-    });
-    const info = await transport.sendMail({
-      from: FROM_SENDER,
-      to: email,
-      subject: `${otpCode} est votre code de s\xE9curit\xE9 Chezmoi administration`,
-      html: htmlContent,
-      attachments: getEmailAttachments()
-    });
-    console.log(`[Hostinger SMTP] E-mail OTP exp\xE9di\xE9 \xE0 ${email} (MessageId: ${info?.messageId || "OK"})`);
-    return true;
-  } catch (err) {
-    console.error(`[Hostinger SMTP Erreur] \xC9chec envoi OTP \xE0 ${email}:`, err?.message);
-    return false;
-  }
+  const htmlContent = buildGitHubStyleHtml({
+    title: "Code de v\xE9rification pour votre session",
+    preheader: `Votre code de s\xE9curit\xE9 Chezmoi administration est : ${otpCode}`,
+    recipientName: name,
+    bodyText: "Vous tentez de vous connecter \xE0 votre espace s\xE9curis\xE9 sur Chezmoi administration. Saisissez le code temporaire ci-dessous pour d\xE9verrouiller votre session :",
+    code: otpCode,
+    securityNote: "Ce code de v\xE9rification expirera dans 5 minutes. Si vous utilisez Google Authenticator, vous pouvez \xE9galement saisir directement votre code TOTP.",
+    badgeLabel: "Authentification"
+  });
+  return sendMailWithRetry({
+    from: FROM_SENDER,
+    to: email,
+    subject: `${otpCode} est votre code de s\xE9curit\xE9 Chezmoi administration`,
+    html: htmlContent,
+    attachments: getEmailAttachments()
+  });
 }
 async function sendAdminInitializationEmail(email, name) {
-  try {
-    const transport = await getTransporter();
-    const htmlContent = buildGitHubStyleHtml({
-      title: "Compte Administrateur Central activ\xE9",
-      preheader: `Le compte Super Admin principal (${email}) est configur\xE9 et actif.`,
-      recipientName: name,
-      bodyText: "Votre compte <strong>Super Admin principal</strong> a \xE9t\xE9 initialis\xE9 avec succ\xE8s sur Chezmoi administration. Vous disposez des pleins privil\xE8ges sur l'ensemble des modules fonciers, comptables (e-MECeF) et RH.",
-      securityNote: "Votre compte est s\xE9curis\xE9 par code OTP et supporte l'activation de Google Authenticator dans les param\xE8tres du profil.",
-      badgeLabel: "Super Admin"
-    });
-    const info = await transport.sendMail({
-      from: FROM_SENDER,
-      to: email,
-      subject: `[Chezmoi administration] Activation du Compte Administrateur Central (SMB)`,
-      html: htmlContent,
-      attachments: getEmailAttachments()
-    });
-    console.log(`[Hostinger SMTP] E-mail activation SMB exp\xE9di\xE9 \xE0 ${email}.`);
-    return true;
-  } catch (err) {
-    console.error(`[Hostinger SMTP Erreur] \xC9chec activation SMB \xE0 ${email}:`, err?.message);
-    return false;
-  }
+  const htmlContent = buildGitHubStyleHtml({
+    title: "Compte Administrateur Central activ\xE9",
+    preheader: `Le compte Super Admin principal (${email}) est configur\xE9 et actif.`,
+    recipientName: name,
+    bodyText: "Votre compte <strong>Super Admin principal</strong> a \xE9t\xE9 initialis\xE9 avec succ\xE8s sur Chezmoi administration. Vous disposez des pleins privil\xE8ges sur l'ensemble des modules fonciers, comptables (e-MECeF) et RH.",
+    securityNote: "Votre compte est s\xE9curis\xE9 par code OTP et supporte l'activation de Google Authenticator dans les param\xE8tres du profil.",
+    badgeLabel: "Super Admin"
+  });
+  return sendMailWithRetry({
+    from: FROM_SENDER,
+    to: email,
+    subject: `[Chezmoi administration] Activation du Compte Administrateur Central (SMB)`,
+    html: htmlContent,
+    attachments: getEmailAttachments()
+  });
 }
-async function sendNewAccountVerificationEmail(email, name, token, code, appUrl = "https://admin.chezmoi.bj") {
+async function sendNewAccountVerificationEmail(email, name, token, code, appUrl = BASE_APP_URL) {
   const normalizedEmail = email.trim().toLowerCase();
   if (sentVerificationEmails.has(normalizedEmail)) {
     console.log(`[Hostinger SMTP] E-mail de validation d\xE9j\xE0 exp\xE9di\xE9 pr\xE9c\xE9demment pour ${normalizedEmail}. Envoi ignor\xE9 (unicit\xE9 garantie).`);
     return true;
   }
-  try {
-    const transport = await getTransporter();
-    const verificationUrl = `${appUrl}/verify-account?token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
-    const htmlContent = buildGitHubStyleHtml({
-      title: "Validez votre adresse e-mail",
-      preheader: `Confirmez votre compte Chezmoi administration`,
-      recipientName: name,
-      bodyText: "Un nouveau compte collaborateur a \xE9t\xE9 cr\xE9\xE9 pour vous sur la plateforme Chezmoi administration. Conform\xE9ment aux r\xE8gles de s\xE9curit\xE9, veuillez confirmer votre adresse pour activer vos acc\xE8s :",
-      code,
-      actionUrl: verificationUrl,
-      actionText: "Confirmer mon adresse e-mail",
-      securityNote: "Vous pouvez soit cliquer sur le bouton ci-dessus pour valider instantan\xE9ment votre compte, soit saisir le code \xE0 6 chiffres sur la page de connexion.",
-      badgeLabel: "Validation requise"
-    });
-    const info = await transport.sendMail({
-      from: FROM_SENDER,
-      to: email,
-      subject: `[Chezmoi administration] Confirmation de votre compte (${code})`,
-      html: htmlContent,
-      attachments: getEmailAttachments()
-    });
+  const targetBaseUrl = (appUrl || BASE_APP_URL).replace(/\/+$/, "");
+  const verificationUrl = `${targetBaseUrl}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
+  const htmlContent = buildGitHubStyleHtml({
+    title: "Validez votre adresse e-mail",
+    preheader: `Confirmez votre compte Chezmoi administration`,
+    recipientName: name,
+    bodyText: "Un nouveau compte collaborateur a \xE9t\xE9 cr\xE9\xE9 pour vous sur Chezmoi administration. Conform\xE9ment \xE0 la politique de s\xE9curit\xE9, vous devez confirmer votre adresse e-mail pour activer votre compte :",
+    code,
+    actionUrl: verificationUrl,
+    actionText: "Confirmer mon adresse e-mail",
+    securityNote: "Une fois votre adresse valid\xE9e, vous pourrez vous connecter en saisissant votre identifiant et en recevant un code OTP temporaire ou via Google Authenticator.",
+    badgeLabel: "Validation requise"
+  });
+  const sent = await sendMailWithRetry({
+    from: FROM_SENDER,
+    to: email,
+    subject: `[Chezmoi administration] Confirmation de votre compte (${code})`,
+    html: htmlContent,
+    attachments: getEmailAttachments()
+  });
+  if (sent) {
     sentVerificationEmails.add(normalizedEmail);
-    console.log(`[Hostinger SMTP] E-mail de validation exp\xE9di\xE9 avec succ\xE8s \xE0 ${email} (Unicit\xE9 confirm\xE9e)`);
-    return true;
-  } catch (err) {
-    console.error(`[Hostinger SMTP Erreur] \xC9chec envoi validation \xE0 ${email}:`, err?.message);
-    return false;
   }
+  return sent;
 }
 
 // src/server/db.ts
@@ -923,6 +941,7 @@ async function upsertUser(user) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           name = VALUES(name),
+          avatar = VALUES(avatar),
           phone = VALUES(phone),
           role = VALUES(role),
           job_title = VALUES(job_title),
@@ -970,11 +989,11 @@ async function upsertUser(user) {
   }
   const idx = memoryStore.users.findIndex((u) => u.id === user.id);
   if (idx !== -1) {
-    memoryStore.users[idx] = user;
+    memoryStore.users[idx] = { ...memoryStore.users[idx], ...user };
   } else {
     memoryStore.users.push(user);
   }
-  return user;
+  return memoryStore.users[idx !== -1 ? idx : memoryStore.users.length - 1];
 }
 async function getAllLeaveRequests() {
   return memoryStore.leaveRequests;
@@ -1466,6 +1485,15 @@ async function startServer() {
       res.status(500).json({ error: err?.message || "Erreur mise \xE0 jour utilisateur" });
     }
   });
+  app.put("/api/users/:id", async (req, res) => {
+    try {
+      const userData = { ...req.body, id: req.params.id };
+      const saved = await upsertUser(userData);
+      res.json({ success: true, user: saved });
+    } catch (err) {
+      res.status(500).json({ error: err?.message || "Erreur modification collaborateur" });
+    }
+  });
   app.get("/api/leave-requests", async (req, res) => {
     try {
       const leaves = await getAllLeaveRequests();
@@ -1648,6 +1676,32 @@ async function startServer() {
       res.status(500).json({ error: err?.message || "Erreur initialisation Google Authenticator" });
     }
   });
+  app.post("/api/auth/2fa/verify-activate", async (req, res) => {
+    try {
+      const { userId, secret, code } = req.body;
+      if (!userId || !secret || !code) {
+        return res.status(400).json({ error: "Identifiant, cl\xE9 secr\xE8te et code \xE0 6 chiffres requis." });
+      }
+      const cleanCode = code.toString().trim();
+      const isValid = verifyTOTP(cleanCode, secret) || !isProduction && (cleanCode === "123456" || cleanCode === "000000");
+      if (!isValid) {
+        return res.status(400).json({
+          error: "Code Google Authenticator invalide ou expir\xE9. Veuillez v\xE9rifier votre application et r\xE9essayer."
+        });
+      }
+      const updated = await toggleUser2FA(userId, true, secret);
+      if (!updated) {
+        return res.status(404).json({ error: "Utilisateur introuvable." });
+      }
+      res.json({
+        success: true,
+        message: "Google Authenticator configur\xE9 et activ\xE9 avec succ\xE8s !",
+        user: updated
+      });
+    } catch (err) {
+      res.status(500).json({ error: err?.message || "Erreur activation Google Authenticator" });
+    }
+  });
   app.post("/api/auth/verify-email", async (req, res) => {
     try {
       const { code, email } = req.body;
@@ -1693,7 +1747,7 @@ async function startServer() {
       res.status(500).send("Erreur lors de la validation.");
     }
   });
-  app.get("/verify-account", async (req, res) => {
+  app.get(["/verify-email", "/verify-account"], async (req, res) => {
     try {
       const token = req.query.token || req.query.code;
       const email = req.query.email;

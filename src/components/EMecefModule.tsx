@@ -583,6 +583,21 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           {/* Top Control Bar matching e-SFE */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5">
+              {/* Type de facture */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-slate-600 hidden sm:inline">Type :</span>
+                <select
+                  value={invoiceType}
+                  onChange={(e) => setInvoiceType(e.target.value as any)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
+                >
+                  <option value="FACTURE_VENTE">FACTURE DE VENTE (FV)</option>
+                  <option value="FACTURE_PROFORMA">FACTURE PROFORMA</option>
+                  <option value="FACTURE_NORMALISEE">FACTURE NORMALISÉE DGI</option>
+                  <option value="FACTURE_AVOIR">FACTURE D'AVOIR (FA)</option>
+                </select>
+              </div>
+
               {/* Sélecteur de format */}
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-slate-600 hidden sm:inline">Format :</span>
@@ -693,11 +708,14 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                     </div>
 
                     <div className="text-left sm:text-right">
-                      <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 uppercase">
-                        FACTURE DE VENTE
+                      <h2 className={`text-sm sm:text-base font-black tracking-tight uppercase ${invoiceType === 'FACTURE_PROFORMA' ? 'text-[#f91942]' : 'text-slate-900'}`}>
+                        {invoiceType === 'FACTURE_PROFORMA' ? 'FACTURE PROFORMA' :
+                         invoiceType === 'FACTURE_AVOIR' ? "FACTURE D'AVOIR" :
+                         invoiceType === 'FACTURE_NORMALISEE' ? 'FACTURE NORMALISÉE DGI' :
+                         'FACTURE DE VENTE'}
                       </h2>
                       <p className="text-xs font-bold text-slate-800 mt-0.5">
-                        Facture # : {invoiceNumber}
+                        {invoiceType === 'FACTURE_PROFORMA' ? 'Proforma #' : 'Facture #'} : {invoiceNumber}
                       </p>
                       <p className="text-[11px] text-slate-600">
                         Date : {invoiceDate}

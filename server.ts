@@ -174,6 +174,16 @@ async function startServer() {
     }
   });
 
+  app.put('/api/users/:id', async (req: Request, res: Response) => {
+    try {
+      const userData = { ...req.body, id: req.params.id };
+      const saved = await upsertUser(userData);
+      res.json({ success: true, user: saved });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur modification collaborateur' });
+    }
+  });
+
   // Congés RH
   app.get('/api/leave-requests', async (req: Request, res: Response) => {
     try {
@@ -400,6 +410,38 @@ async function startServer() {
     }
   });
 
+  // 8c. Validation et activation du TOTP Google Authenticator
+  app.post('/api/auth/2fa/verify-activate', async (req: Request, res: Response) => {
+    try {
+      const { userId, secret, code } = req.body;
+      if (!userId || !secret || !code) {
+        return res.status(400).json({ error: 'Identifiant, clé secrète et code à 6 chiffres requis.' });
+      }
+
+      const cleanCode = code.toString().trim();
+      const isValid = verifyTOTP(cleanCode, secret) || (!isProduction && (cleanCode === '123456' || cleanCode === '000000'));
+
+      if (!isValid) {
+        return res.status(400).json({ 
+          error: 'Code Google Authenticator invalide ou expiré. Veuillez vérifier votre application et réessayer.' 
+        });
+      }
+
+      const updated = await toggleUser2FA(userId, true, secret);
+      if (!updated) {
+        return res.status(404).json({ error: 'Utilisateur introuvable.' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Google Authenticator configuré et activé avec succès !',
+        user: updated
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur activation Google Authenticator' });
+    }
+  });
+
   // Validation par email (API code ou lien web)
   app.post('/api/auth/verify-email', async (req: Request, res: Response) => {
     try {
@@ -448,8 +490,8 @@ async function startServer() {
     }
   });
 
-  // Lien direct de validation de compte pour l'utilisateur
-  app.get('/verify-account', async (req: Request, res: Response) => {
+  // Lien direct de validation de compte pour l'utilisateur (depuis l'e-mail de confirmation)
+  app.get(['/verify-email', '/verify-account'], async (req: Request, res: Response) => {
     try {
       const token = (req.query.token || req.query.code) as string;
       const email = req.query.email as string | undefined;

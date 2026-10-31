@@ -27,6 +27,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Coordinates, PhotoCategory, PropertyCategory, PropertyListingType, PropertyPhoto, PropertyRecord } from '../types';
 import { BENIN_TERRITORIES, searchTerritory, TerritorySearchResult } from '../data/beninTerritories';
+import { apiFetch } from '../utils/api';
 
 interface CensusFormProps {
   onSaveRecord: (property: PropertyRecord) => void;
@@ -303,9 +304,8 @@ export const CensusForm: React.FC<CensusFormProps> = ({
 
     // Synchronisation automatique et immédiate avec MySQL dès que connecté
     if (isOnline) {
-      fetch('/api/properties', {
+      apiFetch('/api/properties', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRecord)
       }).catch((err) => console.error('[AutoSync Error] Direct property push:', err));
     }

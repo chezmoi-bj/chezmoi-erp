@@ -14,6 +14,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import { PropertyRecord, UserAccount } from '../types';
+import { apiFetch } from '../utils/api';
 
 interface PropertyDetailModalProps {
   property: PropertyRecord | null;
@@ -105,9 +106,8 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
     // Synchronisation automatique directe vers MySQL
     try {
-      await fetch(`/api/properties/${property.id}`, {
+      await apiFetch(`/api/properties/${property.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedProperty),
       });
     } catch (err) {

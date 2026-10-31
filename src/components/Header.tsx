@@ -70,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
   const tabs = allTabs.filter(t => allowedTabIds.includes(t.id));
 
   const roleInfo = ROLE_DEFINITIONS[currentUser.role];
-  const canAccessSettings = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
+  const canAccessSettings = currentUser.role === 'SUPER_ADMIN';
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 lg:px-8 py-2.5 transition-all">

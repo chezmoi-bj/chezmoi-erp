@@ -672,6 +672,7 @@ export async function upsertUser(user: UserAccount): Promise<UserAccount> {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           name = VALUES(name),
+          avatar = VALUES(avatar),
           phone = VALUES(phone),
           role = VALUES(role),
           job_title = VALUES(job_title),
@@ -720,11 +721,11 @@ export async function upsertUser(user: UserAccount): Promise<UserAccount> {
 
   const idx = memoryStore.users.findIndex(u => u.id === user.id);
   if (idx !== -1) {
-    memoryStore.users[idx] = user;
+    memoryStore.users[idx] = { ...memoryStore.users[idx], ...user };
   } else {
     memoryStore.users.push(user);
   }
-  return user;
+  return memoryStore.users[idx !== -1 ? idx : memoryStore.users.length - 1];
 }
 
 export async function getAllLeaveRequests(): Promise<LeaveRequest[]> {

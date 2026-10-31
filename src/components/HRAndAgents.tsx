@@ -19,9 +19,12 @@ import {
   Printer,
   ChevronRight,
   TrendingUp,
-  AlertCircle,
   Edit3,
-  UserCheck
+  UserCheck,
+  Upload,
+  Camera,
+  Save,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LeaveRequest, PayslipRecord, Role, UserAccount } from '../types';
@@ -70,6 +73,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
   const [newSalary, setNewSalary] = useState<number>(220000);
   const [newCommissionRate, setNewCommissionRate] = useState<number>(3.5);
   const [newJobTitle, setNewJobTitle] = useState('Agent recenseur foncier terrain');
+  const [newAvatar, setNewAvatar] = useState<string>('');
 
   // Leave form
   const [leaveEmployeeId, setLeaveEmployeeId] = useState(agents[0]?.id || '');
@@ -95,6 +99,17 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
     return a.role === roleFilter;
   });
 
+  const handleAvatarFileChange = (file: File | null, onSet: (url: string) => void) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (typeof e.target?.result === 'string') {
+        onSet(e.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCreateEmployee = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
@@ -102,7 +117,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
     const newEmp: UserAccount = {
       id: `user_${Date.now()}`,
       name: newName,
-      avatar: `https://images.unsplash.com/photo-${1530000000000 + Math.floor(Math.random() * 9999999)}?w=150&auto=format&fit=crop&q=80`,
+      avatar: newAvatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
       phone: newPhone,
       email: newEmail,
       role: newRole,
@@ -127,6 +142,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
     setIsAddModalOpen(false);
     setNewName('');
     setNewEmail('');
+    setNewAvatar('');
   };
 
   const handleCreateLeave = (e: React.FormEvent) => {
@@ -663,6 +679,38 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
             </div>
 
             <form onSubmit={handleCreateEmployee} className="space-y-3 text-xs">
+              {/* Photo de profil (Avatar) Upload */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <img
+                  src={newAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                  alt="Aperçu photo"
+                  className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#FA3055]/30 flex-shrink-0 bg-white"
+                />
+                <div className="flex-1 min-w-0">
+                  <label className="block font-bold text-slate-800 mb-0.5">Photo de profil (Avatar)</label>
+                  <p className="text-[10px] text-slate-500 mb-1.5">Importer une photo depuis l'ordinateur ou le mobile</p>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-[#FA3055] text-slate-700 font-semibold text-[11px] cursor-pointer transition-colors shadow-2xs">
+                    <Upload className="w-3.5 h-3.5 text-[#FA3055]" />
+                    <span>Choisir une image...</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleAvatarFileChange(e.target.files?.[0] || null, setNewAvatar)}
+                    />
+                  </label>
+                  {newAvatar && (
+                    <button
+                      type="button"
+                      onClick={() => setNewAvatar('')}
+                      className="ml-2 text-[10px] text-rose-500 hover:underline"
+                    >
+                      Supprimer
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Nom et prénom(s)</label>
                 <input
@@ -710,6 +758,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                     <option value="SECRETAIRE">Secrétaire</option>
                     <option value="RH">Ressources humaines</option>
                     <option value="ADMIN">Admin Opérations</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
                   </select>
                 </div>
 
@@ -737,6 +786,206 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                   className="px-5 py-2 rounded-full bg-[#FA3055] text-white font-bold"
                 >
                   Créer le compte
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Employee Modal - Totalement modifiable par l'administrateur */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-[#FA3055] uppercase tracking-wider">Administration RH</span>
+                <h3 className="text-base font-bold text-slate-900 mt-0.5">Modifier le collaborateur</h3>
+              </div>
+              <button 
+                onClick={() => setEditingUser(null)} 
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onUpdateAgent(editingUser);
+                confetti({ particleCount: 30, spread: 45, colors: ['#FA3055', '#10B981'] });
+                setEditingUser(null);
+              }}
+              className="space-y-3.5 text-xs"
+            >
+              {/* Photo de profil (Avatar) Upload & Preview */}
+              <div className="flex items-center gap-3.5 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <img
+                  src={editingUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                  alt={editingUser.name}
+                  className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#FA3055]/30 flex-shrink-0 bg-white"
+                />
+                <div className="flex-1 min-w-0">
+                  <label className="block font-bold text-slate-800 mb-0.5">Photo de profil</label>
+                  <p className="text-[10px] text-slate-500 mb-1.5">Mettre à jour la photo du collaborateur</p>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-[#FA3055] text-slate-700 font-semibold text-[11px] cursor-pointer transition-colors shadow-2xs">
+                    <Upload className="w-3.5 h-3.5 text-[#FA3055]" />
+                    <span>Changer la photo...</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        handleAvatarFileChange(e.target.files?.[0] || null, (url) => {
+                          setEditingUser({ ...editingUser, avatar: url });
+                        });
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Nom & Téléphone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Nom et prénom(s)</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.name}
+                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Téléphone Bénin</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.phone}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  />
+                </div>
+              </div>
+
+              {/* Email & Rôle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Email (Identifiant de connexion)</label>
+                  <input
+                    type="email"
+                    value={editingUser.email}
+                    disabled
+                    className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Rôle & Droits RBAC</label>
+                  <select
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as Role })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900"
+                  >
+                    <option value="SUPER_ADMIN">Super Admin (Direction générale)</option>
+                    <option value="ADMIN">Admin Opérations (Foncier & e-MECeF)</option>
+                    <option value="COMPTABLE">Comptable (e-MECeF & Trésorerie)</option>
+                    <option value="RH">Ressources Humaines (Paie & Congés)</option>
+                    <option value="SECRETAIRE">Secrétaire (Accueil & GED)</option>
+                    <option value="AGENT_RECENSEUR">Agent Recenseur (Terrain)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Poste & Département */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Intitulé du poste</label>
+                  <input
+                    type="text"
+                    value={editingUser.jobTitle}
+                    onChange={(e) => setEditingUser({ ...editingUser, jobTitle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Département</label>
+                  <input
+                    type="text"
+                    value={editingUser.departmentName}
+                    onChange={(e) => setEditingUser({ ...editingUser, departmentName: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  />
+                </div>
+              </div>
+
+              {/* Ville & Zone d'affectation */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Ville d'affectation</label>
+                  <input
+                    type="text"
+                    value={editingUser.city}
+                    onChange={(e) => setEditingUser({ ...editingUser, city: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Zone d'intervention</label>
+                  <input
+                    type="text"
+                    value={editingUser.assignedZone}
+                    onChange={(e) => setEditingUser({ ...editingUser, assignedZone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  />
+                </div>
+              </div>
+
+              {/* Salaire & Statut */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Salaire mensuel de base (FCFA)</label>
+                  <input
+                    type="number"
+                    value={editingUser.baseSalary}
+                    onChange={(e) => setEditingUser({ ...editingUser, baseSalary: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-[#FA3055]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Statut du compte</label>
+                  <select
+                    value={editingUser.status}
+                    onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900"
+                  >
+                    <option value="ACTIF">ACTIF (Accès autorisé)</option>
+                    <option value="EN_ATTENTE_VALIDATION">EN ATTENTE VALIDATION EMAIL</option>
+                    <option value="SUSPENDU">SUSPENDU (Accès bloqué)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-full border border-slate-200 text-slate-600 font-semibold"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Enregistrer les modifications</span>
                 </button>
               </div>
             </form>
