@@ -8,6 +8,7 @@ import {
   PayslipRecord, 
   LegalDocument 
 } from '../types/index.js';
+export type { UserAccount };
 import { 
   INITIAL_PROPERTIES, 
   INITIAL_USERS, 
@@ -19,7 +20,8 @@ import {
 } from '../data/mockData';
 import { 
   sendAdminInitializationEmail, 
-  sendNewAccountVerificationEmail 
+  sendNewAccountVerificationEmail,
+  sendProfileUpdatedNotificationEmail
 } from './mailer';
 
 dotenv.config();
@@ -36,7 +38,7 @@ let isMySqlConnected = false;
 let lastDbError: string | null = null;
 
 // Mémoire de secours (Fallback automatique pour le dev local quand MySQL distant Hostinger n'est pas encore configuré)
-const memoryStore = {
+export const memoryStore = {
   properties: [...INITIAL_PROPERTIES],
   users: [...INITIAL_USERS],
   transactions: [...INITIAL_TRANSACTIONS],
@@ -632,33 +634,43 @@ export async function getAllUsers(): Promise<UserAccount[]> {
   return memoryStore.users;
 }
 
-export async function upsertUser(user: UserAccount): Promise<UserAccount> {
+/**
+ * 1. CRÉATION D'UN NOUVEAU COLLABORATEUR (Primo-inscription)
+ * - Statut initial 'EN_ATTENTE_VALIDATION' (sauf Super Admin SMB)
+ * - Génération d'un code OTP à 6 chiffres unique
+ * - Expédition de l'e-mail de confirmation avec lien et bouton de validation
+ */
+export async function createCollaborator(user: UserAccount): Promise<UserAccount> {
   const now = Date.now();
   const isSMB = user.email.toLowerCase() === 'chezmoi.benin@gmail.com';
-  
-  // Vérification s'il s'agit d'un nouvel utilisateur
+
+  // Si l'utilisateur existe déjà, déléguer vers la mise à jour pour éviter tout doublon ou régression de validation
   const existingInMemory = memoryStore.users.find(u => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
-  const isNewUser = !existingInMemory;
+  if (existingInMemory) {
+    return updateCollaboratorProfile(existingInMemory.id, user);
+  }
 
-  if (isNewUser) {
-    if (isSMB) {
-      user.status = 'ACTIF';
-      user.emailVerified = true;
-      user.verificationEmailSent = true;
-    } else {
-      user.status = 'EN_ATTENTE_VALIDATION';
-      user.emailVerified = false;
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      user.verificationToken = verificationCode;
+  const newCollaborator: UserAccount = {
+    ...user,
+    status: isSMB ? 'ACTIF' : 'EN_ATTENTE_VALIDATION',
+    emailVerified: isSMB ? true : false,
+    verificationEmailSent: false,
+    createdAt: now,
+    updatedAt: now,
+  };
 
-      // Déclenchement automatique de l'e-mail de confirmation (GARANTI UNE SEULE FOIS)
-      if (!user.verificationEmailSent) {
-        user.verificationEmailSent = true;
-        sendNewAccountVerificationEmail(user.email, user.name, verificationCode, verificationCode).catch(e => {
-          console.error('[Nodemailer] Erreur envoi validation nouveau compte:', e);
-        });
-      }
-    }
+  // Génération du code OTP initial EXCLUSIVEMENT pour la primo-inscription
+  if (!isSMB) {
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    newCollaborator.verificationToken = verificationCode;
+
+    // Déclenchement automatique de l'e-mail de validation (garanti une seule fois)
+    newCollaborator.verificationEmailSent = true;
+    sendNewAccountVerificationEmail(newCollaborator.email, newCollaborator.name, verificationCode, verificationCode).catch(e => {
+      console.error('[Nodemailer] Erreur envoi validation nouveau compte:', e);
+    });
+  } else {
+    newCollaborator.verificationEmailSent = true;
   }
 
   if (isMySqlConnected && pool) {
@@ -670,62 +682,226 @@ export async function upsertUser(user: UserAccount): Promise<UserAccount> {
           assigned_zone, rating, properties_count, pending_sync_count, 
           total_commissions, status, cnss_number, email_verified, verification_token, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-          name = VALUES(name),
-          avatar = VALUES(avatar),
-          phone = VALUES(phone),
-          role = VALUES(role),
-          job_title = VALUES(job_title),
-          department_name = VALUES(department_name),
-          base_salary = VALUES(base_salary),
-          commission_rate = VALUES(commission_rate),
-          city = VALUES(city),
-          assigned_zone = VALUES(assigned_zone),
-          status = VALUES(status),
-          cnss_number = VALUES(cnss_number),
-          email_verified = VALUES(email_verified),
-          verification_token = VALUES(verification_token),
-          updated_at = VALUES(updated_at)
       `;
       await pool.query(sql, [
-        user.id,
-        user.name,
-        user.email,
-        user.avatar || null,
-        user.phone,
-        user.role,
-        user.jobTitle,
-        user.departmentName,
-        user.baseSalary,
-        user.commissionRate,
-        user.hireDate,
-        user.contractType,
-        user.city,
-        user.assignedZone,
-        user.rating,
-        user.propertiesCount,
-        user.pendingSyncCount,
-        user.totalCommissions,
-        user.status,
-        user.cnssNumber || null,
-        user.emailVerified ? 1 : 0,
-        user.verificationToken || null,
+        newCollaborator.id,
+        newCollaborator.name,
+        newCollaborator.email,
+        newCollaborator.avatar || null,
+        newCollaborator.phone,
+        newCollaborator.role,
+        newCollaborator.jobTitle,
+        newCollaborator.departmentName,
+        newCollaborator.baseSalary,
+        newCollaborator.commissionRate,
+        newCollaborator.hireDate,
+        newCollaborator.contractType,
+        newCollaborator.city,
+        newCollaborator.assignedZone,
+        newCollaborator.rating,
+        newCollaborator.propertiesCount,
+        newCollaborator.pendingSyncCount,
+        newCollaborator.totalCommissions,
+        newCollaborator.status,
+        newCollaborator.cnssNumber || null,
+        newCollaborator.emailVerified ? 1 : 0,
+        newCollaborator.verificationToken || null,
         now,
         now
       ]);
-      return user;
     } catch (err) {
-      console.error('[MySQL Error] upsertUser:', err);
+      console.error('[MySQL Error] createCollaborator:', err);
     }
   }
 
-  const idx = memoryStore.users.findIndex(u => u.id === user.id);
-  if (idx !== -1) {
-    memoryStore.users[idx] = { ...memoryStore.users[idx], ...user };
-  } else {
-    memoryStore.users.push(user);
+  memoryStore.users.push(newCollaborator);
+  return newCollaborator;
+}
+
+/**
+ * 2. MISE À JOUR D'UN COLLABORATEUR EXISTANT
+ * - RÈGLE STRICTE 1 : Si le compte a déjà validé son adresse e-mail par le passé,
+ *   le système ne modifie EN AUCUN CAS son statut de validation (emailVerified reste true)
+ *   et ne le repasse JAMAIS en "compte en attente de validation".
+ * - RÈGLE STRICTE 2 : La mise à jour d'un profil ne génère AUCUN code OTP de validation
+ *   et ne bloque JAMAIS la connexion de l'utilisateur.
+ * - RÈGLE STRICTE 3 : Envoie un e-mail de notification d'information épuré,
+ *   SANS bloc de code OTP et SANS bouton bloquant de confirmation.
+ */
+export async function updateCollaboratorProfile(userId: string, updates: Partial<UserAccount>): Promise<UserAccount> {
+  const now = Date.now();
+
+  // 1. Recherche de l'utilisateur existant
+  let existing = memoryStore.users.find(u => u.id === userId || (updates.email && u.email.toLowerCase() === updates.email.toLowerCase()));
+
+  if (!existing && isMySqlConnected && pool) {
+    try {
+      const [rows] = await pool.query<mysql.RowDataPacket[]>('SELECT * FROM users WHERE id = ? OR LOWER(email) = ? LIMIT 1', [userId, (updates.email || '').toLowerCase()]);
+      if (rows && rows.length > 0) {
+        const r = rows[0];
+        existing = {
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          avatar: r.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+          phone: r.phone,
+          role: r.role,
+          jobTitle: r.job_title,
+          departmentName: r.department_name,
+          baseSalary: Number(r.base_salary || 0),
+          commissionRate: Number(r.commission_rate || 0),
+          hireDate: r.hire_date,
+          contractType: r.contract_type,
+          city: r.city,
+          assignedZone: r.assigned_zone,
+          rating: Number(r.rating || 9.0),
+          propertiesCount: Number(r.properties_count || 0),
+          pendingSyncCount: 0,
+          totalCommissions: Number(r.total_commissions || 0),
+          status: r.status,
+          cnssNumber: r.cnss_number || undefined,
+          emailVerified: Boolean(r.email_verified),
+          totpSecret: r.totp_secret || undefined,
+          twoFactorEnabled: Boolean(r.two_factor_enabled),
+          verificationToken: r.verification_token || undefined,
+          verificationEmailSent: Boolean(r.verification_email_sent || false),
+        };
+      }
+    } catch (err) {
+      console.error('[MySQL Error] updateCollaboratorProfile lookup:', err);
+    }
   }
-  return memoryStore.users[idx !== -1 ? idx : memoryStore.users.length - 1];
+
+  if (!existing) {
+    throw new Error(`Utilisateur introuvable pour la mise à jour (ID: ${userId})`);
+  }
+
+  // PROTECTION STRICTE DE LA VALIDATION DU COMPTE :
+  // Si le compte a déjà été validé par le passé, conserver obligatoirement emailVerified = true
+  const wasAlreadyVerified = existing.emailVerified === true;
+  const isSMB = existing.email.toLowerCase() === 'chezmoi.benin@gmail.com';
+  const finalEmailVerified = (wasAlreadyVerified || isSMB) ? true : Boolean(updates.emailVerified ?? existing.emailVerified);
+
+  // Le statut ne doit JAMAIS repasser à EN_ATTENTE_VALIDATION si le compte est déjà validé
+  let finalStatus: UserAccount['status'] = existing.status;
+  if (wasAlreadyVerified || isSMB) {
+    if (updates.status && updates.status !== 'EN_ATTENTE_VALIDATION') {
+      finalStatus = updates.status;
+    } else {
+      finalStatus = existing.status === 'EN_ATTENTE_VALIDATION' ? 'ACTIF' : existing.status;
+    }
+  } else {
+    finalStatus = updates.status || existing.status;
+  }
+
+  // Détection des modifications pour le résumé de notification
+  const changes: string[] = [];
+  if (updates.name && updates.name.trim() !== existing.name.trim()) changes.push(`Nom : ${updates.name.trim()}`);
+  if (updates.phone && updates.phone.trim() !== existing.phone.trim()) changes.push(`Téléphone : ${updates.phone.trim()}`);
+  if (updates.role && updates.role !== existing.role) changes.push(`Rôle : ${updates.role}`);
+  if (updates.jobTitle && updates.jobTitle.trim() !== existing.jobTitle.trim()) changes.push(`Poste : ${updates.jobTitle.trim()}`);
+  if (updates.city && updates.city.trim() !== existing.city.trim()) changes.push(`Ville : ${updates.city.trim()}`);
+  if (updates.avatar && updates.avatar !== existing.avatar) changes.push(`Photo de profil`);
+  if (updates.status && updates.status !== existing.status) changes.push(`Statut : ${updates.status}`);
+
+  // Objet utilisateur fusionné et sécurisé
+  const updatedUser: UserAccount = {
+    ...existing,
+    name: updates.name !== undefined ? updates.name.trim() : existing.name,
+    avatar: updates.avatar !== undefined ? updates.avatar : existing.avatar,
+    phone: updates.phone !== undefined ? updates.phone.trim() : existing.phone,
+    role: updates.role !== undefined ? updates.role : existing.role,
+    jobTitle: updates.jobTitle !== undefined ? updates.jobTitle.trim() : existing.jobTitle,
+    departmentName: updates.departmentName !== undefined ? updates.departmentName.trim() : existing.departmentName,
+    baseSalary: updates.baseSalary !== undefined ? Number(updates.baseSalary) : existing.baseSalary,
+    commissionRate: updates.commissionRate !== undefined ? Number(updates.commissionRate) : existing.commissionRate,
+    city: updates.city !== undefined ? updates.city.trim() : existing.city,
+    assignedZone: updates.assignedZone !== undefined ? updates.assignedZone.trim() : existing.assignedZone,
+    status: finalStatus,
+    cnssNumber: updates.cnssNumber !== undefined ? updates.cnssNumber : existing.cnssNumber,
+    emailVerified: finalEmailVerified,
+    // La mise à jour ne génère JAMAIS de code OTP de validation
+    verificationToken: finalEmailVerified ? undefined : existing.verificationToken,
+    totpSecret: existing.totpSecret,
+    twoFactorEnabled: existing.twoFactorEnabled,
+    updatedAt: now,
+  };
+
+  // Persistance en MySQL
+  if (isMySqlConnected && pool) {
+    try {
+      const sql = `
+        UPDATE users SET 
+          name = ?, 
+          avatar = ?, 
+          phone = ?, 
+          role = ?, 
+          job_title = ?, 
+          department_name = ?, 
+          base_salary = ?, 
+          commission_rate = ?, 
+          city = ?, 
+          assigned_zone = ?, 
+          status = ?, 
+          cnss_number = ?, 
+          email_verified = ?, 
+          updated_at = ?
+        WHERE id = ?
+      `;
+      await pool.query(sql, [
+        updatedUser.name,
+        updatedUser.avatar || null,
+        updatedUser.phone,
+        updatedUser.role,
+        updatedUser.jobTitle,
+        updatedUser.departmentName,
+        updatedUser.baseSalary,
+        updatedUser.commissionRate,
+        updatedUser.city,
+        updatedUser.assignedZone,
+        updatedUser.status,
+        updatedUser.cnssNumber || null,
+        updatedUser.emailVerified ? 1 : 0,
+        now,
+        existing.id
+      ]);
+    } catch (err) {
+      console.error('[MySQL Error] updateCollaboratorProfile:', err);
+    }
+  }
+
+  // Mise à jour de la mémoire centrale
+  const idx = memoryStore.users.findIndex(u => u.id === existing!.id);
+  if (idx !== -1) {
+    memoryStore.users[idx] = updatedUser;
+  } else {
+    memoryStore.users.push(updatedUser);
+  }
+
+  // Expédition exclusive de l'e-mail de notification d'information (SANS OTP, SANS BOUTON BLOQUANT)
+  sendProfileUpdatedNotificationEmail(
+    updatedUser.email, 
+    updatedUser.name, 
+    changes.length > 0 ? changes.join(', ') : undefined
+  ).catch(err => {
+    console.error('[Hostinger SMTP] Erreur expédition notification mise à jour profil:', err?.message || err);
+  });
+
+  return updatedUser;
+}
+
+/**
+ * 3. UPSERT ROUTEUR
+ * Détecte si l'utilisateur existe déjà :
+ * - Si OUI -> délègue à updateCollaboratorProfile (protège le statut de validation, pas d'OTP)
+ * - Si NON -> délègue à createCollaborator (génère l'OTP initial)
+ */
+export async function upsertUser(user: UserAccount): Promise<UserAccount> {
+  const existingInMemory = memoryStore.users.find(u => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
+  if (existingInMemory) {
+    return updateCollaboratorProfile(existingInMemory.id, user);
+  }
+  return createCollaborator(user);
 }
 
 export async function getAllLeaveRequests(): Promise<LeaveRequest[]> {
@@ -1001,6 +1177,14 @@ export async function toggleUser2FA(userId: string, enabled: boolean, totpSecret
 export async function verifyEmailAccount(tokenOrCode: string, email?: string): Promise<{ success: boolean; user?: UserAccount; message: string }> {
   const cleanCode = tokenOrCode.trim();
   const cleanEmail = email ? normalizeIdentifier(email) : '';
+
+  // Si le compte est déjà validé et actif (ex: clic ultérieur ou validation préalable par l'admin)
+  if (cleanEmail) {
+    const alreadyVerifiedUser = memoryStore.users.find(u => normalizeIdentifier(u.email) === cleanEmail && u.emailVerified);
+    if (alreadyVerifiedUser) {
+      return { success: true, user: alreadyVerifiedUser, message: 'Votre compte est déjà vérifié et actif ! Vous pouvez vous connecter en toute sécurité.' };
+    }
+  }
 
   // Look in memory
   const user = memoryStore.users.find(u => {

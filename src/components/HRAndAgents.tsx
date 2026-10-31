@@ -959,16 +959,41 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Statut du compte</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-slate-700">Statut du compte</label>
+                    {editingUser.emailVerified ? (
+                      <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                        ✓ E-mail validé
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                        ⏳ En attente validation
+                      </span>
+                    )}
+                  </div>
                   <select
                     value={editingUser.status}
-                    onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value as any })}
+                    onChange={(e) => {
+                      const nextStatus = e.target.value as any;
+                      // Si le compte est déjà validé, interdire le repassage en EN_ATTENTE_VALIDATION
+                      if (editingUser.emailVerified && nextStatus === 'EN_ATTENTE_VALIDATION') {
+                        return;
+                      }
+                      setEditingUser({ ...editingUser, status: nextStatus });
+                    }}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900"
                   >
                     <option value="ACTIF">ACTIF (Accès autorisé)</option>
-                    <option value="EN_ATTENTE_VALIDATION">EN ATTENTE VALIDATION EMAIL</option>
+                    {!editingUser.emailVerified && (
+                      <option value="EN_ATTENTE_VALIDATION">EN ATTENTE VALIDATION EMAIL</option>
+                    )}
                     <option value="SUSPENDU">SUSPENDU (Accès bloqué)</option>
                   </select>
+                  {editingUser.emailVerified && (
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Ce compte a déjà été validé par son titulaire. Les modifications enregistrées n'affectent pas son accès.
+                    </p>
+                  )}
                 </div>
               </div>
 

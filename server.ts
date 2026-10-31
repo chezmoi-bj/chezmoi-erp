@@ -13,6 +13,8 @@ import {
   upsertTransaction,
   getAllUsers,
   upsertUser,
+  createCollaborator,
+  updateCollaboratorProfile,
   getAllLeaveRequests,
   addLeaveRequest,
   updateLeaveStatus,
@@ -167,19 +169,40 @@ async function startServer() {
 
   app.post('/api/users', async (req: Request, res: Response) => {
     try {
-      const saved = await upsertUser(req.body);
-      res.json({ success: true, user: saved });
+      const userData = req.body;
+      const existing = (userData.id ? await findUserById(userData.id) : null) || 
+                       (userData.email ? await findUserByIdentifier(userData.email) : null);
+
+      if (existing) {
+        // C'est une mise à jour d'un compte déjà existant :
+        // - Préserve strictement la validation du compte (emailVerified = true)
+        // - Ne génère AUCUN code OTP bloquant
+        // - Envoie uniquement l'e-mail de notification d'information
+        const updated = await updateCollaboratorProfile(existing.id, userData);
+        return res.json({ success: true, user: updated, isNew: false });
+      }
+
+      // C'est une véritable primo-inscription d'un nouveau collaborateur :
+      // - Génère le code OTP initial
+      // - Expédie l'e-mail de confirmation avec lien officiel vers production
+      const created = await createCollaborator(userData);
+      res.json({ success: true, user: created, isNew: true });
     } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Erreur mise à jour utilisateur' });
+      console.error('[POST /api/users Error]', err);
+      res.status(500).json({ error: err?.message || 'Erreur enregistrement collaborateur' });
     }
   });
 
   app.put('/api/users/:id', async (req: Request, res: Response) => {
     try {
-      const userData = { ...req.body, id: req.params.id };
-      const saved = await upsertUser(userData);
-      res.json({ success: true, user: saved });
+      // Mise à jour explicite du profil :
+      // - RÈGLE STRICTE 1 : Ne repasse JAMAIS en EN_ATTENTE_VALIDATION si déjà vérifié
+      // - RÈGLE STRICTE 2 : Ne génère AUCUN code OTP de validation
+      // - RÈGLE STRICTE 3 : Expédie un simple e-mail d'information sans bouton bloquant
+      const updated = await updateCollaboratorProfile(req.params.id, req.body);
+      res.json({ success: true, user: updated });
     } catch (err: any) {
+      console.error('[PUT /api/users/:id Error]', err);
       res.status(500).json({ error: err?.message || 'Erreur modification collaborateur' });
     }
   });

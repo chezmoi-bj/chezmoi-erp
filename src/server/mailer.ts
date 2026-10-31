@@ -24,11 +24,16 @@ function getLogoPath(): string {
 const LOGO_PATH = getLogoPath();
 
 // URL officielle de production - JAMAIS de localhost:3000 dans les e-mails
-export const BASE_APP_URL = (
-  process.env.APP_URL || 
-  process.env.VITE_APP_URL || 
-  'https://admin.chezmoi.bj'
-).replace(/\/+$/, '');
+export function getSafeAppUrl(providedUrl?: string): string {
+  const candidate = (providedUrl || process.env.APP_URL || process.env.VITE_APP_URL || '').trim();
+  // Protection absolue : interdire localhost ou 127.0.0.1 dans les liens d'e-mails
+  if (!candidate || candidate.includes('localhost') || candidate.includes('127.0.0.1')) {
+    return 'https://admin.chezmoi.bj';
+  }
+  return candidate.replace(/\/+$/, '');
+}
+
+export const BASE_APP_URL = getSafeAppUrl();
 
 let transporter: Transporter | null = null;
 
@@ -377,8 +382,8 @@ export async function sendNewAccountVerificationEmail(
     return true;
   }
 
-  // URL absolue de production
-  const targetBaseUrl = (appUrl || BASE_APP_URL).replace(/\/+$/, '');
+  // URL absolue de production officielle - JAMAIS de localhost
+  const targetBaseUrl = getSafeAppUrl(appUrl);
   const verificationUrl = `${targetBaseUrl}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
 
   const htmlContent = buildGitHubStyleHtml({
@@ -405,4 +410,37 @@ export async function sendNewAccountVerificationEmail(
     sentVerificationEmails.add(normalizedEmail);
   }
   return sent;
+}
+
+/**
+ * 4. Envoie un e-mail de notification d'information lors de la mise à jour d'un profil existant
+ * - STRICTEMENT SANS code OTP bloquant
+ * - STRICTEMENT SANS bouton de confirmation d'e-mail ou de réactivation
+ * - Simple notification d'information épurée
+ */
+export async function sendProfileUpdatedNotificationEmail(
+  email: string,
+  name: string,
+  updatesSummary?: string
+): Promise<boolean> {
+  const details = updatesSummary 
+    ? `Les modifications suivantes ont été enregistrées sur votre profil : <strong>${updatesSummary}</strong>.` 
+    : "Les informations de votre profil collaborateur (nom, coordonnées ou affectation) ont été mises à jour par l'administration.";
+
+  const htmlContent = buildGitHubStyleHtml({
+    title: 'Mise à jour de votre profil collaborateur',
+    preheader: 'Notification : vos informations de profil ont été mises à jour',
+    recipientName: name,
+    bodyText: `${details} Votre compte demeure actif et directement accessible sans aucune action ou validation supplémentaire de votre part.`,
+    securityNote: "Si vous n'êtes pas à l'origine de cette mise à jour ou si vous constatez une anomalie, veuillez contacter directement la direction générale Chezmoi administration.",
+    badgeLabel: 'Information profil'
+  });
+
+  return sendMailWithRetry({
+    from: FROM_SENDER,
+    to: email,
+    subject: `[Chezmoi administration] Mise à jour de votre profil collaborateur`,
+    html: htmlContent,
+    attachments: getEmailAttachments(),
+  });
 }

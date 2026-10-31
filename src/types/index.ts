@@ -157,6 +157,8 @@ export interface UserAccount {
   emailVerified?: boolean;
   verificationToken?: string;
   verificationEmailSent?: boolean;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface AppNotification {
