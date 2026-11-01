@@ -13,16 +13,54 @@ export type PropertyListingType =
   | 'BAIL_COMMERCIAL'
   | 'GESTION_DELEGUEE';
 
+export const OFFICIAL_PROPERTY_CATEGORIES = [
+  'Terrains',
+  'Appartements',
+  'Boutiques et Magasins',
+  'Maisons & Villas',
+  'Résidences Meublées',
+  'Bureaux',
+] as const;
+
+export type OfficialPropertyCategory = typeof OFFICIAL_PROPERTY_CATEGORIES[number];
+
 export type PropertyCategory =
+  | 'Terrains'
+  | 'Appartements'
+  | 'Boutiques et Magasins'
+  | 'Maisons & Villas'
+  | 'Résidences Meublées'
+  | 'Bureaux'
   | 'TERRAIN_NU'
   | 'PARCELLE_AVEC_TF'
   | 'VILLA_BASSE'
   | 'VILLA_DUPLEX'
   | 'IMMEUBLE_R_PLUS'
-  | 'APPARTEMENT'
-  | 'BOUTIQUE_MAGASIN'
-  | 'BUREAU'
   | 'CONCESSION_FAMILIALE';
+
+export function normalizePropertyCategory(cat: string | undefined): OfficialPropertyCategory {
+  if (!cat) return 'Terrains';
+  const c = cat.trim();
+  if (c === 'Terrains' || c === 'TERRAIN_NU' || c === 'PARCELLE_AVEC_TF' || c.toLowerCase().includes('terrain') || c.toLowerCase().includes('parcelle')) {
+    return 'Terrains';
+  }
+  if (c === 'Appartements' || c === 'APPARTEMENT' || c.toLowerCase().includes('appartement')) {
+    return 'Appartements';
+  }
+  if (c === 'Boutiques et Magasins' || c === 'BOUTIQUE_MAGASIN' || c.toLowerCase().includes('boutique') || c.toLowerCase().includes('magasin')) {
+    return 'Boutiques et Magasins';
+  }
+  if (c === 'Maisons & Villas' || c === 'VILLA_BASSE' || c === 'VILLA_DUPLEX' || c === 'IMMEUBLE_R_PLUS' || c === 'CONCESSION_FAMILIALE' || c.toLowerCase().includes('villa') || c.toLowerCase().includes('maison')) {
+    return 'Maisons & Villas';
+  }
+  if (c === 'Résidences Meublées' || c.toLowerCase().includes('meubl') || c.toLowerCase().includes('residence')) {
+    return 'Résidences Meublées';
+  }
+  if (c === 'Bureaux' || c === 'BUREAU' || c.toLowerCase().includes('bureau')) {
+    return 'Bureaux';
+  }
+  return 'Terrains';
+}
 
 export type DocumentType =
   | 'TITRE_FONCIER'

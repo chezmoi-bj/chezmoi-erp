@@ -21,7 +21,13 @@ import {
   Home,
   CheckCircle2
 } from 'lucide-react';
-import { PropertyRecord, UserAccount } from '../types';
+import { 
+  PropertyCategory, 
+  PropertyRecord, 
+  UserAccount, 
+  OFFICIAL_PROPERTY_CATEGORIES, 
+  normalizePropertyCategory 
+} from '../types';
 import { apiFetch } from '../utils/api';
 import { BENIN_TERRITORIES, searchTerritory, TerritorySearchResult } from '../data/beninTerritories';
 
@@ -47,6 +53,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
   // Form edit states - Général & caractéristiques
   const [editTitle, setEditTitle] = useState(property.title);
+  const [editCategory, setEditCategory] = useState<PropertyCategory>(normalizePropertyCategory(property.category));
   const [editPriceInput, setEditPriceInput] = useState(String(property.priceAmount));
   const [editDescription, setEditDescription] = useState(property.description || '');
   const [editOtherDetails, setEditOtherDetails] = useState(property.otherDetails || '');
@@ -203,6 +210,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
     const updatedProperty: PropertyRecord = {
       ...property,
       title: editTitle.trim() || property.title,
+      category: editCategory,
       priceAmount: finalPrice,
       priceUSD: Math.round(finalPrice / 600),
       description: editDescription,
@@ -272,6 +280,9 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-[#FA3055] text-white text-[10px] font-bold font-mono">
                 {property.codeReference}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold">
+                {normalizePropertyCategory(property.category)}
               </span>
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                 property.syncStatus === 'synced'
@@ -352,6 +363,24 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 onChange={(e) => setEditTitle(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
               />
+            </div>
+
+            {/* Catégorie du bien (Nomenclature officielle chezmoi.bj) */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Catégorie du bien (Nomenclature officielle chezmoi.bj) *
+              </label>
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value as PropertyCategory)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
+              >
+                {OFFICIAL_PROPERTY_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* 2. Prix et Superficie */}

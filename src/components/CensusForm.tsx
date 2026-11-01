@@ -61,7 +61,7 @@ export const CensusForm: React.FC<CensusFormProps> = ({
   // 3. Bien & Taxonomie chezmoi.bj
   const [title, setTitle] = useState('Villa duplex contemporaine - Fidjrossè plage');
   const [listingType, setListingType] = useState<PropertyListingType>('VENTE');
-  const [category, setCategory] = useState<PropertyCategory>('VILLA_DUPLEX');
+  const [category, setCategory] = useState<PropertyCategory>('Terrains');
   const [address, setAddress] = useState('2ème von après le carrefour Calvaire');
   // Prix de vente / location principale (string pour permettre l'effacement complet sans blocage sur 0)
   const [priceInput, setPriceInput] = useState<string>('120000000');
@@ -683,19 +683,20 @@ export const CensusForm: React.FC<CensusFormProps> = ({
             </div>
 
             <div className="w-full">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Catégorie du bien</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Catégorie du bien (Nomenclature officielle chezmoi.bj) *
+              </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as PropertyCategory)}
                 className="w-full px-3.5 py-3 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
               >
-                <option value="VILLA_DUPLEX">Villa duplex (R+1 / R+2)</option>
-                <option value="PARCELLE_AVEC_TF">Parcelle avec Titre Foncier</option>
-                <option value="TERRAIN_NU">Terrain nu / Domaine agricole</option>
-                <option value="VILLA_BASSE">Villa basse</option>
-                <option value="APPARTEMENT">Appartement F2/F3/F4</option>
-                <option value="IMMEUBLE_R_PLUS">Immeuble de rapport</option>
-                <option value="BOUTIQUE_MAGASIN">Boutique / Magasin commercial</option>
+                <option value="Terrains">Terrains</option>
+                <option value="Appartements">Appartements</option>
+                <option value="Boutiques et Magasins">Boutiques et Magasins</option>
+                <option value="Maisons & Villas">Maisons & Villas</option>
+                <option value="Résidences Meublées">Résidences Meublées</option>
+                <option value="Bureaux">Bureaux</option>
               </select>
             </div>
 
