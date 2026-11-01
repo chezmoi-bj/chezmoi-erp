@@ -475,51 +475,151 @@ async function startServer() {
     }
   });
 
-  app.get('/api/auth/verify-email', async (req: Request, res: Response) => {
-    try {
-      const token = (req.query.token || req.query.code) as string;
-      const email = req.query.email as string | undefined;
-      if (!token) {
-        return res.status(400).send('Jeton ou code de validation manquant.');
-      }
-      const result = await verifyEmailAccount(token, email);
-      if (!result.success) {
-        return res.status(400).send(`
-          <html>
-            <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #0b0f17; color: #fff;">
-              <div style="background: #151c28; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 32px; text-align: center; max-width: 440px;">
-                <h2 style="color: #fa3055; margin-top: 0;">Validation Impossible</h2>
-                <p style="color: #94a3b8;">${result.message}</p>
-                <a href="/" style="display: inline-block; margin-top: 16px; padding: 10px 20px; background: #fa3055; color: #fff; text-decoration: none; border-radius: 8px;">Retour à Chezmoi administration</a>
-              </div>
-            </body>
-          </html>
-        `);
-      }
-      res.redirect('/?email_verified=true');
-    } catch (err: any) {
-      res.status(500).send('Erreur lors de la validation.');
-    }
-  });
+  const renderVerificationPage = (success: boolean, message: string, user?: { name: string; email: string }) => {
+    const targetEmail = user?.email || '';
+    const redirectUrl = success 
+      ? `/?email_verified=true&email=${encodeURIComponent(targetEmail)}`
+      : `/?error=${encodeURIComponent(message)}`;
 
-  // Lien direct de validation de compte pour l'utilisateur (depuis l'e-mail de confirmation)
-  app.get(['/verify-email', '/verify-account'], async (req: Request, res: Response) => {
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${success ? 'Compte vérifié' : 'Validation de compte'} - Chezmoi administration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <meta http-equiv="refresh" content="${success ? '3' : '8'};url=${redirectUrl}">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0b0f17;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #f1f5f9;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 40px 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px auto;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .icon-success {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 2px solid rgba(16, 185, 129, 0.35);
+    }
+    .icon-error {
+      background: rgba(250, 48, 85, 0.15);
+      color: #fa3055;
+      border: 2px solid rgba(250, 48, 85, 0.35);
+    }
+    .brand {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fa3055;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+      color: #ffffff;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin: 0 0 28px 0;
+    }
+    .btn {
+      display: inline-block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      background-color: #fa3055;
+      color: #ffffff;
+      padding: 13px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(250, 48, 85, 0.4);
+    }
+    .btn:hover {
+      background-color: #e02045;
+      transform: translateY(-1px);
+    }
+    .timer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">Chezmoi administration</div>
+    <div class="icon ${success ? 'icon-success' : 'icon-error'}">
+      ${success ? '✓' : '✕'}
+    </div>
+    <h2>${success ? 'Adresse e-mail confirmée !' : 'Validation Impossible'}</h2>
+    <p>${message}</p>
+    <a href="${redirectUrl}" class="btn">
+      ${success ? 'Accéder à mon espace de travail' : 'Retourner à la page de connexion'}
+    </a>
+    <div class="timer">Redirection automatique vers l'application...</div>
+  </div>
+  <script>
+    setTimeout(function() {
+      window.location.href = "${redirectUrl}";
+    }, ${success ? 2200 : 7000});
+  </script>
+</body>
+</html>`;
+  };
+
+  // Traitement universel des requêtes de validation GET (supporte /verify-email, /verify-account, et /api/auth/verify-email)
+  const handleEmailVerificationGet = async (req: Request, res: Response) => {
     try {
       const token = (req.query.token || req.query.code) as string;
       const email = req.query.email as string | undefined;
       if (!token) {
-        return res.redirect('/?error=token_missing');
+        return res.type('html').send(renderVerificationPage(false, 'Le jeton ou le code de validation est manquant.'));
       }
       const result = await verifyEmailAccount(token, email);
-      if (result.success) {
-        res.redirect('/?email_verified=true');
-      } else {
-        res.redirect(`/?error=${encodeURIComponent(result.message)}`);
-      }
-    } catch {
-      res.redirect('/?error=verification_failed');
+      return res.type('html').send(renderVerificationPage(result.success, result.message, result.user));
+    } catch (err: any) {
+      return res.type('html').send(renderVerificationPage(false, err?.message || 'Erreur lors de la validation du compte.'));
     }
-  });
+  };
+
+  app.get('/api/auth/verify-email', handleEmailVerificationGet);
+  app.get(['/verify-email', '/verify-account'], handleEmailVerificationGet);
 
   app.post('/api/auth/toggle-2fa', async (req: Request, res: Response) => {
     try {

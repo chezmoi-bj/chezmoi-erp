@@ -55,6 +55,7 @@ import {
   calculateInvoiceTotals,
   calculateTaxBreakdown,
   PREDEFINED_DGI_SERVICES,
+  INITIAL_PROFORMA_SAMPLE_ITEMS,
   numberToFrenchWords
 } from '../utils/emecef';
 import { ChezmoiLogo } from './ChezmoiLogo';
@@ -77,19 +78,16 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
   // =========================================================================
   // e-MECeF DGI Bénin - Facturation multi-articles / multi-lignes
   // =========================================================================
-  const [invoiceItems, setInvoiceItems] = useState<EMecefInvoiceItem[]>([]);
-  const [invoiceNumber, setInvoiceNumber] = useState<string>(() => `FV-2026-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [invoiceType, setInvoiceType] = useState<'FACTURE_VENTE' | 'FACTURE_NORMALISEE' | 'FACTURE_AVOIR' | 'FACTURE_PROFORMA'>('FACTURE_VENTE');
-  const [invoiceDate, setInvoiceDate] = useState<string>(() => {
-    const now = new Date();
-    return `${now.toLocaleDateString('fr-FR')} ${now.toLocaleTimeString('fr-FR')}`;
-  });
-  const [sellerName, setSellerName] = useState('SFE en ligne');
+  const [invoiceItems, setInvoiceItems] = useState<EMecefInvoiceItem[]>(() => INITIAL_PROFORMA_SAMPLE_ITEMS);
+  const [invoiceNumber, setInvoiceNumber] = useState<string>('# EM01508441-3');
+  const [invoiceType, setInvoiceType] = useState<'FACTURE_VENTE' | 'FACTURE_NORMALISEE' | 'FACTURE_AVOIR' | 'FACTURE_PROFORMA'>('FACTURE_PROFORMA');
+  const [invoiceDate, setInvoiceDate] = useState<string>('02/10/2026 14:32:10');
+  const [sellerName, setSellerName] = useState('Didier Alvaro ABALLO');
   const [additionalDescription, setAdditionalDescription] = useState('');
 
   // Coordonnées du Client
-  const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
+  const [clientName, setClientName] = useState('Association des tailleurs');
+  const [clientPhone, setClientPhone] = useState('01 97 23 86 13');
   const [clientIfu, setClientIfu] = useState('');
   const [clientAddress, setClientAddress] = useState('');
 
@@ -555,6 +553,32 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
             #emecef-official-sheet .text-\\[\\#FA3055\\] {
               color: #fa3055 !important;
             }
+            #emecef-official-sheet .invoice-title,
+            #emecef-official-sheet h2 {
+              font-family: 'Montserrat', sans-serif !important;
+            }
+            #emecef-official-sheet input {
+              background-color: transparent !important;
+              color: #0f172a !important;
+              border-color: #cbd5e1 !important;
+            }
+            #emecef-official-sheet input:focus {
+              background-color: #f8fafc !important;
+              border-color: #fa3055 !important;
+            }
+            #emecef-official-sheet table {
+              border-collapse: separate !important;
+              border-spacing: 0 !important;
+            }
+            #emecef-official-sheet table th.border-r,
+            #emecef-official-sheet table td.border-r {
+              border-right: 1.5px solid #ffffff !important;
+            }
+            #emecef-official-sheet table th.border-b,
+            #emecef-official-sheet table td.border-b,
+            #emecef-official-sheet table tr.border-b > td {
+              border-bottom: 1.5px solid #ffffff !important;
+            }
 
             @media print {
               body * {
@@ -692,101 +716,146 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   color: '#0f172a'
                 }}
               >
-                {/* 1. EN-TÊTE PRINCIPAL */}
+                {/* 1. EN-TÊTE PRINCIPAL (3 COLONNES CONFORME AU DESIGN DE RÉFÉRENCE) */}
                 {printOptions.showHeader && (
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4 border-b border-slate-300">
-                    <div>
-                      <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-950 uppercase">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4">
+                    {/* Colonne GAUCHE : Coordonnées légales de l'entreprise */}
+                    <div className="space-y-0.5 text-[10.5px] leading-tight text-slate-800 w-full sm:w-[260px]">
+                      <h1 className="text-[12px] font-bold text-slate-950 uppercase tracking-tight">
                         Chezmoi immobilier
                       </h1>
-                      <p className="font-semibold text-slate-800 text-[11px] sm:text-xs mt-0.5">
-                        IFU : 0202361063128
-                      </p>
-                      <p className="text-[10px] sm:text-[11px] text-slate-600">
-                        N° RCCM : RB/ABC/24 A 111099
-                      </p>
+                      <p className="text-slate-700 font-medium">Bidossessi Adjrako</p>
+                      <p className="text-slate-600">Abomey-Calavi, Bénin</p>
+                      <p className="text-slate-600">RCCM : RB/ABC/24 A 111099</p>
+                      <p className="text-slate-600">N° IFU : 0202361063128</p>
+                      <p className="text-slate-600">VMCF : EM01508441</p>
+                      <p className="text-slate-900 font-bold">Tél : +229 01 91 77 77 90 / 01 90 30 30 50</p>
+                      <p className="text-slate-600">www.chezmoi.bj</p>
                     </div>
 
-                    <div className="text-left sm:text-right">
-                      <h2 className={`text-sm sm:text-base font-black tracking-tight uppercase ${invoiceType === 'FACTURE_PROFORMA' ? 'text-[#f91942]' : 'text-slate-900'}`}>
+                    {/* Colonne CENTRALE : Logo Chezmoi officiel + Titre de la facture en Montserrat */}
+                    <div className="flex flex-col items-center justify-center flex-1 text-center py-1">
+                      <img 
+                        src="/assets/aistudio/1_e24ebf1b.png" 
+                        alt="Chezmoi" 
+                        className="h-14 w-auto object-contain mx-auto mb-2"
+                      />
+                      <h2 
+                        className="text-xl sm:text-2xl font-semibold tracking-[0.22em] text-slate-900 uppercase invoice-title"
+                        style={{ fontFamily: "'Montserrat', sans-serif" }}
+                      >
                         {invoiceType === 'FACTURE_PROFORMA' ? 'FACTURE PROFORMA' :
                          invoiceType === 'FACTURE_AVOIR' ? "FACTURE D'AVOIR" :
-                         invoiceType === 'FACTURE_NORMALISEE' ? 'FACTURE NORMALISÉE DGI' :
+                         invoiceType === 'FACTURE_NORMALISEE' ? 'FACTURE NORMALISÉE' :
                          'FACTURE DE VENTE'}
                       </h2>
-                      <p className="text-xs font-bold text-slate-800 mt-0.5">
-                        {invoiceType === 'FACTURE_PROFORMA' ? 'Proforma #' : 'Facture #'} : {invoiceNumber}
+                    </div>
+
+                    {/* Colonne DROITE : Encadré Code MECeF/DG + Compteurs + QR Code scannable */}
+                    <div className="border border-slate-900 p-2 text-[10px] leading-snug w-full sm:w-[240px] bg-white self-start">
+                      <div className="text-center font-bold border-b border-slate-900 pb-1 mb-1.5 text-slate-950 uppercase tracking-wider text-[11px]">
+                        Code MECeF/DG
+                      </div>
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="space-y-1 text-slate-800 text-[10px] leading-tight flex-1">
+                          <p><span className="text-slate-500">MECeF NIM:</span> <strong className="font-mono text-slate-900">{sealedInvoice?.nim || 'EM01508441'}</strong></p>
+                          <p><span className="text-slate-500">MECeF Compteurs:</span> <strong className="font-mono text-slate-900">{sealedInvoice?.counters || '7/10 FV'}</strong></p>
+                          <p><span className="text-slate-500">MECeF Heure:</span> <strong className="font-mono text-slate-900">{invoiceDate.split(' ')[1] || '14:32:10'}</strong></p>
+                        </div>
+                        <div className="w-16 h-16 shrink-0 bg-white border border-slate-200 p-0.5">
+                          {qrCodeDataUrl ? (
+                            <img src={qrCodeDataUrl} alt="QR Code DGI" className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                              <QrCode className="w-8 h-8 text-slate-800" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. BLOC MÉTADONNÉES FACTURE & CLIENT */}
+                {printOptions.showInvoiceMeta && (
+                  <div className="my-4 pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    {/* Gauche : Facture Meta */}
+                    <div className="space-y-1">
+                      <p className="text-slate-800">
+                        <span className="inline-block w-24 text-slate-600">Nº Facture :</span>
+                        <strong className="text-slate-950 font-mono text-[13px]">{invoiceNumber}</strong>
                       </p>
-                      <p className="text-[11px] text-slate-600">
-                        Date : {invoiceDate}
+                      <p className="text-slate-800">
+                        <span className="inline-block w-24 text-slate-600">Date :</span>
+                        <strong className="text-slate-900 font-mono">{invoiceDate.split(' ')[0] || invoiceDate}</strong>
                       </p>
-                      <p className="text-[11px] text-slate-600">
-                        Vendeur : {sellerName}
+                      <div className="flex items-center text-slate-800 group">
+                        <span className="inline-block w-24 text-slate-600 shrink-0">Prestataire :</span>
+                        <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                          <input
+                            type="text"
+                            value={sellerName}
+                            onChange={(e) => setSellerName(e.target.value)}
+                            placeholder="Nom du prestataire..."
+                            className="font-bold text-slate-950 bg-transparent hover:bg-slate-100/80 focus:bg-white focus:ring-1 focus:ring-[#FA3055] px-1 py-0.5 rounded border border-dashed border-slate-300 hover:border-slate-400 focus:border-[#FA3055] transition-all outline-none w-full max-w-[240px] print:border-none print:p-0 print:bg-transparent"
+                            title="Nom du prestataire (cliquez pour modifier directement)"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const promptVal = window.prompt('Nom du prestataire :', sellerName);
+                              if (promptVal !== null) setSellerName(promptVal.trim());
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-[#FA3055] transition-opacity no-print cursor-pointer"
+                            title="Modifier le nom du prestataire"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Droite : Client */}
+                    <div className="space-y-1">
+                      <p className="text-slate-800">
+                        <span className="inline-block w-20 text-slate-600">Client :</span>
+                        <strong className="text-slate-950 text-[13px]">{clientName || 'Association des tailleurs'}</strong>
+                      </p>
+                      <p className="text-slate-800">
+                        <span className="inline-block w-20 text-slate-600">IFU :</span>
+                        <strong className="text-slate-900 font-mono">{clientIfu || '-'}</strong>
+                      </p>
+                      <p className="text-slate-800">
+                        <span className="inline-block w-20 text-slate-600">Tél :</span>
+                        <strong className="text-slate-900 font-mono">{clientPhone || '01 97 23 86 13'}</strong>
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* 2. ENCADRÉ COORDONNÉES SOCIÉTÉ & e-MCF (conforme capture e-SFE) */}
-                {printOptions.showCompanyBox && (
-                  <div className="my-4 max-w-sm">
-                    <table className="w-full text-[10px] sm:text-[11px] border border-slate-400">
-                      <tbody>
-                        <tr className="border-b border-slate-300">
-                          <td className="p-1.5 font-bold text-slate-700 bg-slate-50 w-24">Adresse</td>
-                          <td className="p-1.5 text-slate-900">Bidossessi Adjrako, Abomey-Calavi</td>
-                        </tr>
-                        <tr className="border-b border-slate-300">
-                          <td className="p-1.5 font-bold text-slate-700 bg-slate-50">Contact</td>
-                          <td className="p-1.5 text-slate-900">+229 97 00 00 00 / contact@chezmoi.bj</td>
-                        </tr>
-                        <tr>
-                          <td className="p-1.5 font-bold text-slate-700 bg-slate-50">e-MCF</td>
-                          <td className="p-1.5 font-bold text-slate-900">EM01508441</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 3. COORDONNÉES DU CLIENT */}
-                {printOptions.showClient && (clientName || clientIfu || clientPhone) && (
-                  <div className="my-4 p-3 bg-slate-50/80 rounded border border-slate-300 max-w-md">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-[10px] text-slate-500 uppercase">Client facturé :</span>
-                      {clientIfu && (
-                        <span className="text-[10px] font-mono text-slate-700">IFU : <strong>{clientIfu}</strong></span>
-                      )}
-                    </div>
-                    <p className="text-xs font-bold text-slate-900">{clientName || 'Client au comptant'}</p>
-                    {clientPhone && <p className="text-[11px] text-slate-600">Tél : {clientPhone}</p>}
-                    {clientAddress && <p className="text-[11px] text-slate-600">Adresse : {clientAddress}</p>}
-                  </div>
-                )}
-
-                {/* 4. DESCRIPTION SUPPLÉMENTAIRE */}
+                {/* 3. DESCRIPTION SUPPLÉMENTAIRE (si présente) */}
                 {printOptions.showAdditionalDesc && additionalDescription && (
-                  <div className="my-3 p-2.5 bg-amber-50/60 border border-amber-200 rounded text-[11px] text-amber-950">
-                    <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800 block mb-0.5">
+                  <div className="my-3 p-2.5 bg-rose-50/50 border border-rose-200 rounded text-[11px] text-slate-800">
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-[#FA3055] block mb-0.5">
                       Description / Mentions complémentaires :
                     </span>
                     <p className="whitespace-pre-line">{additionalDescription}</p>
                   </div>
                 )}
 
-                {/* 5. TABLEAU MULTI-ARTICLES / MULTI-LIGNES (conforme e-SFE) */}
+                {/* 4. TABLEAU MULTI-ARTICLES / MULTI-LIGNES (avec en-tête gris ardoise et fines séparations blanches entre colonnes) */}
                 {printOptions.showArticlesTable && (
                   <div className="my-5 overflow-x-auto">
                     <table className="w-full text-[11px] sm:text-xs border-collapse">
                       <thead>
-                        <tr className="bg-slate-100 border-y border-slate-400 text-slate-800">
-                          <th className="py-2 px-2 text-center w-8">#</th>
-                          <th className="py-2 px-2 text-left">Designation</th>
-                          <th className="py-2 px-2 text-right">Prix unitaire (T.T.C.)</th>
-                          <th className="py-2 px-2 text-center w-16">Quantité</th>
-                          <th className="py-2 px-2 text-right">Montant (T.T.C.)</th>
-                          <th className="py-2 px-2 text-center w-16 no-print">Impr.</th>
-                          <th className="py-2 px-2 text-center w-20 no-print">Actions</th>
+                        <tr className="bg-[#94a3b8] text-white font-bold uppercase text-[10px] sm:text-[11px] tracking-wider border-b border-white">
+                          <th className="py-2 px-2 text-center w-8 border-r border-white">N°</th>
+                          <th className="py-2 px-2 text-left border-r border-white">DESIGNATION</th>
+                          <th className="py-2 px-2 text-right border-r border-white">Prix Unitaire</th>
+                          <th className="py-2 px-2 text-center w-16 border-r border-white">Quantité</th>
+                          <th className="py-2 px-2 text-right print:border-r-0 border-r border-white">Montant TTC</th>
+                          <th className="py-2 px-2 text-center w-12 no-print border-r border-white">Impr.</th>
+                          <th className="py-2 px-2 text-center w-16 no-print">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -801,33 +870,36 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                             const rawTotal = (item.quantity || 0) * (item.unitPriceTTC || 0);
                             const lineTotal = rawTotal + (item.specificTax || 0);
                             const isIncludedInPrint = item.selectedForPrint !== false;
+                            const isTinted = index % 2 === 0;
+                            const rowBg = isTinted ? 'bg-[#eef3f8]' : 'bg-white';
+                            const qtyFormatted = String(item.quantity).padStart(2, '0');
 
                             return (
                               <tr 
                                 key={item.id} 
-                                className={`border-b border-slate-200 hover:bg-slate-50/80 transition-colors ${
-                                  !isIncludedInPrint ? 'opacity-40 bg-slate-100/50 print:hidden' : ''
+                                className={`border-b border-white ${rowBg} hover:brightness-95 transition-all ${
+                                  !isIncludedInPrint ? 'opacity-35 bg-slate-100/50 print:hidden' : ''
                                 }`}
                               >
-                                <td className="py-2.5 px-2 text-center font-bold text-slate-500">{index + 1}</td>
-                                <td className="py-2.5 px-2 font-medium text-slate-900">
+                                <td className="py-2 px-2 text-center font-bold text-slate-600 border-r border-white">{index + 1}</td>
+                                <td className="py-2 px-2 font-medium text-slate-900 border-r border-white">
                                   <div>{item.designation}</div>
                                   {item.specificTax ? (
-                                    <span className="text-[10px] text-amber-700 italic">
+                                    <span className="text-[10px] text-[#FA3055] italic block">
                                       + T.S. : {Number(item.specificTax).toLocaleString('fr-FR')} FCFA
                                     </span>
                                   ) : null}
                                 </td>
-                                <td className="py-2.5 px-2 text-right font-mono text-slate-800">
+                                <td className="py-2 px-2 text-right font-mono text-slate-800 border-r border-white">
                                   {Number(item.unitPriceTTC).toLocaleString('fr-FR')}
                                 </td>
-                                <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-900">
-                                  {item.quantity}
+                                <td className="py-2 px-2 text-center font-mono font-bold text-slate-900 border-r border-white">
+                                  {qtyFormatted}
                                 </td>
-                                <td className="py-2.5 px-2 text-right font-mono font-bold text-slate-950">
+                                <td className="py-2 px-2 text-right font-mono font-bold text-slate-950 print:border-r-0 border-r border-white">
                                   {lineTotal.toLocaleString('fr-FR')} <span className="font-bold text-[#FA3055]">[{item.taxGroup}]</span>
                                 </td>
-                                <td className="py-2.5 px-2 text-center no-print">
+                                <td className="py-2 px-2 text-center no-print border-r border-white">
                                   <button
                                     type="button"
                                     onClick={() => handleToggleArticlePrint(index)}
@@ -841,7 +913,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                                     )}
                                   </button>
                                 </td>
-                                <td className="py-2.5 px-2 text-center no-print">
+                                <td className="py-2 px-2 text-center no-print">
                                   <div className="flex items-center justify-center gap-1">
                                     <button
                                       type="button"
@@ -870,119 +942,103 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   </div>
                 )}
 
-                {/* 6. TOTAL GÉNÉRAL TTC (aligné à droite et souligné) */}
-                <div className="my-4 flex justify-end">
-                  <div className="text-right border-b-2 border-slate-900 pb-1 px-2">
-                    <span className="text-sm sm:text-base font-bold text-slate-900">
-                      Total: {invoiceTotals.totalTTC.toLocaleString('fr-FR')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 7. TABLEAU DE VENTILATION DES IMPÔTS (conforme e-SFE) */}
-                {printOptions.showTaxVentilation && (
-                  <div className="my-6">
-                    <p className="text-[11px] font-bold text-slate-700 tracking-wider mb-1">
-                      --- VENTILATION DES IMPÔTS ---
-                    </p>
-                    <table className="w-full text-[10px] sm:text-[11px] border border-slate-400">
-                      <thead>
-                        <tr className="bg-slate-100 border-b border-slate-400 text-slate-800">
-                          <th className="py-1.5 px-2 text-left">Groupe</th>
-                          <th className="py-1.5 px-2 text-right">Total</th>
-                          <th className="py-1.5 px-2 text-right">Imposable</th>
-                          <th className="py-1.5 px-2 text-right">Impôt</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {taxBreakdown.map((row) => (
-                          <tr key={row.groupCode} className="border-b border-slate-200">
-                            <td className="py-1.5 px-2 font-bold text-slate-800">{row.group}</td>
-                            <td className="py-1.5 px-2 text-right font-mono">{row.totalTTC.toLocaleString('fr-FR')}</td>
-                            <td className="py-1.5 px-2 text-right font-mono">{row.imposableHT.toLocaleString('fr-FR')}</td>
-                            <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-900">{row.taxAmount.toLocaleString('fr-FR')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 8. TABLEAU DE RÉPARTITION DES PAIEMENTS (conforme e-SFE) */}
-                {printOptions.showPaymentBreakdown && (
-                  <div className="my-6">
-                    <p className="text-[11px] font-bold text-slate-700 tracking-wider mb-1">
-                      --- RÉPARTITION DES PAIEMENTS ---
-                    </p>
-                    <table className="w-full text-[10px] sm:text-[11px] border border-slate-400">
-                      <thead>
-                        <tr className="bg-slate-100 border-b border-slate-400 text-slate-800">
-                          <th className="py-1.5 px-2 text-left">Type de paiement</th>
-                          <th className="py-1.5 px-2 text-right">Payé</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="py-1.5 px-2 font-bold text-slate-800">
-                            {paymentMode.replace('_', ' ')}
-                          </td>
-                          <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-900">
-                            {(amountPaid || invoiceTotals.totalTTC).toLocaleString('fr-FR')}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 9. MONTANT EN TOUTES LETTRES */}
-                {printOptions.showAmountInWords && invoiceTotals.totalTTC > 0 && (
-                  <div className="my-4 text-[11px] text-slate-800 italic">
-                    Arrêté la présente facture à la somme de : <strong>{totalInWords} Francs CFA</strong>
-                  </div>
-                )}
-
-                {/* 10. BLOC DE SÉCURITÉ SDC / MECeF & QR CODE OFFICIEL */}
-                {printOptions.showSecurityBlock && (
-                  <div className="mt-8 pt-4 border-t-2 border-slate-800 flex flex-col sm:flex-row items-center gap-4">
-                    {qrCodeDataUrl ? (
-                      <div className="p-1 bg-white border border-slate-300 rounded shadow-2xs flex-shrink-0">
-                        <img 
-                          src={qrCodeDataUrl} 
-                          alt="QR Code DGI Bénin" 
-                          className="w-24 h-24 sm:w-28 sm:h-28 object-contain"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 bg-slate-900 p-2 flex items-center justify-center flex-shrink-0 text-white">
-                        <QrCode className="w-16 h-16" />
+                {/* 5. VENTILATION DES IMPÔTS + RÉPARTITION DES PAIEMENTS + GRAND TOTAL */}
+                <div className="my-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                  {/* GAUCHE : Ventilation & Répartition des paiements */}
+                  <div className="md:col-span-7 space-y-5">
+                    {/* TABLEAU DE VENTILATION DES IMPÔTS */}
+                    {printOptions.showTaxVentilation && (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-700 tracking-wider mb-1 font-mono">
+                          ---VENTILATION DES IMPÔTS ---
+                        </p>
+                        <table className="w-full text-[10px] sm:text-[11px] border border-slate-300 border-collapse">
+                          <thead>
+                            <tr className="bg-[#94a3b8] text-white font-bold border-b border-white">
+                              <th className="py-1.5 px-2 text-left border-r border-white">Groupe</th>
+                              <th className="py-1.5 px-2 text-center border-r border-white">Total</th>
+                              <th className="py-1.5 px-2 text-center border-r border-white">Imposable</th>
+                              <th className="py-1.5 px-2 text-center">Impôt</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {taxBreakdown.map((row, idx) => {
+                              const isRowTinted = idx % 2 === 0;
+                              return (
+                                <tr key={row.groupCode} className={`border-b border-white ${isRowTinted ? 'bg-[#eef3f8]' : 'bg-white'}`}>
+                                  <td className="py-1.5 px-2 font-bold text-slate-900 border-r border-white">{row.group}</td>
+                                  <td className="py-1.5 px-2 text-center font-mono border-r border-white">{row.totalTTC > 0 ? row.totalTTC.toLocaleString('fr-FR') : '-'}</td>
+                                  <td className="py-1.5 px-2 text-center font-mono border-r border-white">{row.imposableHT > 0 ? row.imposableHT.toLocaleString('fr-FR') : '-'}</td>
+                                  <td className="py-1.5 px-2 text-center font-mono font-bold text-slate-900">{row.taxAmount > 0 ? row.taxAmount.toLocaleString('fr-FR') : '-'}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )}
 
-                    <div className="text-[10px] sm:text-[11px] text-slate-700 space-y-0.5 flex-1">
-                      <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
-                        <span className="font-bold text-slate-950 uppercase tracking-wider">
-                          SCEAU SDC / DGI BÉNIN
-                        </span>
-                        <span className="font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px]">
-                          {isSealed ? 'NORMALISÉE' : 'PRÉ-VALIDÉE'}
-                        </span>
+                    {/* TABLEAU DE RÉPARTITION DES PAIEMENTS */}
+                    {printOptions.showPaymentBreakdown && (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-700 tracking-wider mb-1 font-mono">
+                          ---RÉPARTITION DES PAIEMENTS ---
+                        </p>
+                        <table className="w-full text-[10px] sm:text-[11px] border border-slate-300 border-collapse">
+                          <thead>
+                            <tr className="bg-[#94a3b8] text-white font-bold border-b border-white">
+                              <th className="py-1.5 px-2 text-left border-r border-white">Type de paiement</th>
+                              <th className="py-1.5 px-2 text-right">Payé</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="bg-[#eef3f8] border-b border-white">
+                              <td className="py-1.5 px-2 font-bold text-slate-900 border-r border-white">
+                                {paymentMode.replace('_', ' ')}
+                              </td>
+                              <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-900">
+                                {(amountPaid || 0).toLocaleString('fr-FR')}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
-                      <p className="font-mono">
-                        Code MECeF/DGI : <strong className="text-slate-950">{sealedInvoice?.securityCode || '0202-3610-6312-8001'}</strong>
-                      </p>
-                      <p className="font-mono">
-                        MECeF NIM: <strong>EM01508441</strong>
-                      </p>
-                      <p className="font-mono">
-                        MECeF Compteurs: <strong>{sealedInvoice?.counters || '7/10 FV'}</strong>
-                      </p>
-                      <p className="font-mono">
-                        MECeF Heure: <strong>{invoiceDate}</strong>
-                      </p>
+                    )}
+                  </div>
+
+                  {/* DROITE : Grand Total en grand style référence */}
+                  <div className="md:col-span-5 flex flex-col justify-start items-end pt-2">
+                    <div className="text-right">
+                      <span className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                        Total :
+                      </span>
+                      <span className="ml-3 text-2xl sm:text-3xl font-black text-slate-950 font-mono tracking-tight">
+                        {invoiceTotals.totalTTC.toLocaleString('fr-FR')}
+                      </span>
                     </div>
                   </div>
+                </div>
+
+                {/* 6. MONTANT EN TOUTES LETTRES */}
+                {printOptions.showAmountInWords && invoiceTotals.totalTTC > 0 && (
+                  <div className="my-6 text-xs text-slate-800 italic">
+                    Arrêté la présente facture à la somme de <strong className="font-semibold text-slate-950">{totalInWords} francs CFA TTC</strong>
+                  </div>
                 )}
+
+                {/* 7. PIED DE PAGE OFFICIEL */}
+                <div className="mt-10 pt-3 border-t border-slate-300 flex flex-col sm:flex-row items-center justify-between text-[10px] sm:text-[11px] text-slate-600 gap-2">
+                  <div className="flex items-center gap-2">
+                    <img src="/assets/aistudio/1_e24ebf1b.png" alt="Chezmoi" className="h-5 w-auto object-contain" />
+                    <span className="font-semibold text-slate-800">chezmoi immobilier</span>
+                  </div>
+                  <div>
+                    Email : <span className="text-slate-800 font-medium">contact@chezmoi.bj</span>
+                  </div>
+                  <div>
+                    Siège : <span className="text-slate-800 font-medium">Bidossessi Adjrako, Abomey-Calavi</span>
+                  </div>
+                </div>
 
               </div>
             </div>
@@ -1354,6 +1410,19 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                 </div>
 
                 <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Nom du prestataire (Émetteur de la facture)
+                    </label>
+                    <input
+                      type="text"
+                      value={sellerName}
+                      onChange={(e) => setSellerName(e.target.value)}
+                      placeholder="Ex: Didier Alvaro ABALLO"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Nom du client ou entreprise</label>
                     <input

@@ -833,7 +833,7 @@ class _PropertyCensusScreenState extends State<PropertyCensusScreen> {
               icon: _isLocating
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.my_location),
-              label: Text(_capturedPosition == null ? 'Capturer Position GPS (Style WhatsApp)' : 'Ré-actualiser le point GPS'),
+              label: Text(_capturedPosition == null ? 'Capturer Position GPS' : 'Ré-actualiser le point GPS'),
             ),
           ],
         ),

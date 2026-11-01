@@ -90,6 +90,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get('email_verified') === 'true') {
+        const verifiedEmail = params.get('email');
+        if (verifiedEmail && verifiedEmail.trim()) {
+          setIdentifier(verifiedEmail.trim());
+        }
         setVerificationSuccess('Votre compte a été vérifié avec succès ! Vous pouvez maintenant vous connecter.');
         window.history.replaceState({}, document.title, window.location.pathname);
       }

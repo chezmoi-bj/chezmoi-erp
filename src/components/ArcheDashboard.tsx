@@ -654,13 +654,17 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
                   <span>Toutes les photos (12)</span>
                 </button>
 
-                {/* Satellite Pin */}
+                {/* Satellite Pin - Google Maps Direct Navigation */}
                 <button
-                  onClick={() => alert(`Coordonnées GPS terrain : ${featured.coordinates.latitude}, ${featured.coordinates.longitude}`)}
-                  className="w-8 h-8 rounded-full bg-[#F4F6F5] hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors"
-                  title="Afficher le point GPS"
+                  type="button"
+                  onClick={() => {
+                    const gMaps = `https://www.google.com/maps/search/?api=1&query=${featured.coordinates.latitude},${featured.coordinates.longitude}`;
+                    window.open(gMaps, '_blank', 'noopener,noreferrer');
+                  }}
+                  className="w-8 h-8 rounded-full bg-[#F4F6F5] hover:bg-[#FA3055]/10 hover:text-[#FA3055] flex items-center justify-center text-slate-700 transition-colors cursor-pointer"
+                  title="Ouvrir le positionnement terrain dans Google Maps"
                 >
-                  <MapPin className="w-3.5 h-3.5" />
+                  <MapPin className="w-3.5 h-3.5 text-[#FA3055]" />
                 </button>
 
               </div>

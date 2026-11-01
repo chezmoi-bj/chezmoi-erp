@@ -539,7 +539,7 @@ export const CensusForm: React.FC<CensusFormProps> = ({
           </div>
 
           <div className="flex flex-col gap-3">
-            {/* WhatsApp-Style Instant GPS Button */}
+            {/* Instant GPS Button */}
             <button
               type="button"
               onClick={handleInstantGPSCapture}
@@ -548,7 +548,7 @@ export const CensusForm: React.FC<CensusFormProps> = ({
             >
               <Crosshair className={`w-5 h-5 flex-shrink-0 ${isLocating ? 'animate-spin' : ''}`} />
               <span className="whitespace-normal leading-tight">
-                {isLocating ? 'Recherche des satellites GPS...' : 'Partager ma position GPS instantanée (Style WhatsApp)'}
+                {isLocating ? 'Recherche des satellites GPS...' : 'Partager ma position GPS instantanée'}
               </span>
             </button>
 

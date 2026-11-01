@@ -237,7 +237,8 @@ CREATE TABLE `system_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- DONNÉES INITIALES : COMPTE ADMINISTRATEUR CENTRAL (SMB)
+-- ============================================================================
+-- DONNÉES INITIALES : LES 5 MEMBRES OFFICIELS ENREGISTRÉS DU SYSTÈME (RBAC)
 -- ============================================================================
 
 INSERT INTO `users` (
@@ -246,16 +247,82 @@ INSERT INTO `users` (
   `hire_date`, `contract_type`, `city`, `assigned_zone`, `rating`, 
   `properties_count`, `pending_sync_count`, `total_commissions`, 
   `status`, `cnss_number`, `email_verified`, `verification_token`, `two_factor_enabled`, `created_at`, `updated_at`
-) VALUES (
+) VALUES 
+(
   'user_smb_central', 'SMB', 'chezmoi.benin@gmail.com', NULL, 
   '/assets/aistudio/1_e24ebf1b.png', '+229 97 00 00 01', 'SUPER_ADMIN', 
   'Administrateur Central', 'Direction Générale Chezmoi Bénin', 0.00, 0.00, 
-  '2026-01-01', 'CDI', 'Cotonou', 'National (Bénin)', 5.00, 
+  '2026-01-01', 'CDI', 'Cotonou', 'National (Bénin)', 9.99, 
   0, 0, 0.00, 
   'ACTIF', 'CNSS-2026-001', 1, NULL, 0, 1769000000000, 1769000000000
-) ON DUPLICATE KEY UPDATE 
+),
+(
+  'user_kokou_aballo', 'Kokou Aballo', 'didier.aballo40@gmail.com', NULL,
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', '+229 90 12 34 56', 'ADMIN',
+  'Manager', 'Opérations Foncières', 0.00, 3.50,
+  '2026-01-15', 'CDI', 'Abomey-Calavi', 'Cotonou et environs', 8.50,
+  0, 0, 0.00,
+  'ACTIF', 'CNSS-2026-002', 1, NULL, 0, 1769000000000, 1769000000000
+),
+(
+  'user_gbeto_jean_claude', 'GBETO Jean-Claude', 'gbeto.jeanclaude@chezmoi.bj', NULL,
+  'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80', '+229 97 00 12 01', 'ADMIN',
+  'Agent recenseur foncier terrain', 'Opérations Foncières', 0.00, 3.50,
+  '2026-01-10', 'CDI', 'Cotonou', 'Cotonou et environs', 8.50,
+  0, 0, 0.00,
+  'ACTIF', 'CNSS-2026-003', 1, NULL, 0, 1769000000000, 1769000000000
+),
+(
+  'user_ismene_bankole', 'Ismène Mahoussi Samiath Bankole', 'ismene.bankole@chezmoi.bj', NULL,
+  'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80', '+229 97 00 12 02', 'SECRETAIRE',
+  'Agent recenseur foncier terrain', 'Secrétariat & Administration', 0.00, 3.50,
+  '2026-01-12', 'CDI', 'Cotonou', 'Cotonou et environs', 8.50,
+  0, 0, 0.00,
+  'ACTIF', 'CNSS-2026-004', 1, NULL, 0, 1769000000000, 1769000000000
+),
+(
+  'user_deo_gratias', 'Déo Gratias Marie Clarisse', 'deogratias.marieclarisse@chezmoi.bj', NULL,
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', '+229 97 00 12 03', 'SECRETAIRE',
+  'Agent recenseur foncier terrain', 'Secrétariat & Administration', 0.00, 3.50,
+  '2026-01-20', 'CDI', 'Cotonou', 'Cotonou et environs', 8.50,
+  0, 0, 0.00,
+  'EN_ATTENTE_VALIDATION', 'CNSS-2026-005', 0, NULL, 0, 1769000000000, 1769000000000
+)
+ON DUPLICATE KEY UPDATE 
   `name` = VALUES(`name`),
   `role` = VALUES(`role`),
-  `status` = 'ACTIF',
-  `email_verified` = 1;
+  `job_title` = VALUES(`job_title`),
+  `department_name` = VALUES(`department_name`),
+  `status` = VALUES(`status`),
+  `email_verified` = VALUES(`email_verified`);
+
+-- ============================================================================
+-- BIEN IMMOBILIER INITIAL : PARCELLE WOMEY SODO (CM-ABO-2026-521)
+-- ============================================================================
+
+INSERT INTO `properties` (
+  `id`, `code_reference`, `title`, `description`, `listing_type`, `category`, 
+  `department`, `city`, `arrondissement`, `district`, `address`, `price_amount`, 
+  `price_usd`, `area_sq_meters`, `rooms_count`, `bedrooms_count`, `bathrooms_count`, 
+  `coordinates_lat`, `coordinates_lng`, `coordinates_accuracy`, `coordinates_address_approx`, `coordinates_captured_at`,
+  `owner_data`, `photos`, `rental_rates`, `other_details`, `assigned_agent_id`, `assigned_agent_name`, `sync_status`, 
+  `legal_status`, `is_featured`, `created_at`, `updated_at`, `server_sync_timestamp`
+) VALUES (
+  'prop_womey_sodo_521', 'CM-ABO-2026-521', 'Parcelle Womey Sodo - A vendre - 2000m²',
+  'Parcelle viabilisée et clôturée de 2000 m² située à Womey Sodo. Zone résidentielle paisible, eau SONEB et électricité SBEE disponibles. Accès rapide depuis le carrefour Calvaire.',
+  'VENTE', 'PARCELLE_TERRAIN', 'Atlantique', 'Abomey-Calavi', 'Godomey', 'Womey Sodo', '2ème von après le carrefour Calvaire',
+  25000000.00, 41667.00, 2000.00, 6, 4, 3,
+  6.3621000, 2.3812000, 3.40, 'Womey Sodo, Abomey-Calavi', 1769000000000,
+  JSON_OBJECT('id', 'owner_meckdashi_alain', 'fullName', 'Meckdashi Alain', 'phonePrimary', '0197225225', 'phoneWhatsapp', '0197225225', 'mandateType', 'SIMPLE', 'mandateDurationMonths', 12),
+  JSON_ARRAY(JSON_OBJECT('id', 'photo_womey_1', 'url', 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80', 'category', 'EXTERIEUR', 'caption', 'Vue du terrain et bornage', 'timestamp', 1769000000000)),
+  JSON_OBJECT('daily', 35000, 'weekly', 200000, 'monthly', 650000),
+  'Accès bitumé à 150m, quartier en plein essor, terrain plat sans bas-fond.',
+  'user_smb_central', 'SMB', 'synced', 'CONCESSION', 1, 1769000000000, 1769000000000, 1769000000000
+) ON DUPLICATE KEY UPDATE 
+  `title` = VALUES(`title`),
+  `price_amount` = VALUES(`price_amount`),
+  `city` = VALUES(`city`),
+  `district` = VALUES(`district`),
+  `coordinates_lat` = VALUES(`coordinates_lat`),
+  `coordinates_lng` = VALUES(`coordinates_lng`);
 

@@ -23,11 +23,19 @@ function getLogoPath(): string {
 
 const LOGO_PATH = getLogoPath();
 
-// URL officielle de production - JAMAIS de localhost:3000 dans les e-mails
+// URL officielle de production - STRICTEMENT INTERDIT d'inclure localhost, 127.0.0.1 ou le port 3000
 export function getSafeAppUrl(providedUrl?: string): string {
   const candidate = (providedUrl || process.env.APP_URL || process.env.VITE_APP_URL || '').trim();
-  // Protection absolue : interdire localhost ou 127.0.0.1 dans les liens d'e-mails
-  if (!candidate || candidate.includes('localhost') || candidate.includes('127.0.0.1')) {
+  // Protection absolue : interdire localhost, 127.0.0.1, 0.0.0.0, :3000 ou :5173
+  if (
+    !candidate ||
+    candidate.includes('localhost') ||
+    candidate.includes('127.0.0.1') ||
+    candidate.includes('0.0.0.0') ||
+    candidate.includes(':3000') ||
+    candidate.includes(':5173') ||
+    !candidate.startsWith('http')
+  ) {
     return 'https://admin.chezmoi.bj';
   }
   return candidate.replace(/\/+$/, '');

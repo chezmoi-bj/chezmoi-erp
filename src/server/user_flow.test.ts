@@ -8,9 +8,16 @@ describe('Vérification stricte du flux de gestion des collaborateurs et e-mails
   test('getSafeAppUrl ne retourne JAMAIS localhost ou 127.0.0.1', () => {
     assert.strictEqual(getSafeAppUrl('http://localhost:3000'), 'https://admin.chezmoi.bj');
     assert.strictEqual(getSafeAppUrl('http://127.0.0.1:3000'), 'https://admin.chezmoi.bj');
+    assert.strictEqual(getSafeAppUrl('http://0.0.0.0:3000'), 'https://admin.chezmoi.bj');
     assert.strictEqual(getSafeAppUrl('http://localhost:8080/path'), 'https://admin.chezmoi.bj');
+    assert.strictEqual(getSafeAppUrl('http://example.com:3000'), 'https://admin.chezmoi.bj');
     assert.strictEqual(getSafeAppUrl('https://admin.chezmoi.bj/'), 'https://admin.chezmoi.bj');
     assert.strictEqual(getSafeAppUrl('https://chezmoi.bj'), 'https://chezmoi.bj');
+    // En l'absence d'URL ou avec localhost, retourne toujours une URL de production sécurisée non-localhost
+    const fallback = getSafeAppUrl('');
+    assert.ok(!fallback.includes('localhost'), 'Le repli ne doit jamais contenir localhost');
+    assert.ok(!fallback.includes('3000'), 'Le repli ne doit jamais contenir le port 3000');
+    assert.ok(fallback.startsWith('https://'), 'Le repli doit être en HTTPS');
   });
 
   test('createCollaborator génère un code OTP initial pour un nouveau collaborateur', async () => {
@@ -123,9 +130,26 @@ describe('Vérification stricte du flux de gestion des collaborateurs et e-mails
     assert.ok(uSmb, 'Doit retrouver le compte SMB');
     assert.strictEqual(uSmb?.role, 'SUPER_ADMIN');
 
-    // 6. Recherche du compte Sean Agency
-    const uSean = await findUserByIdentifier('sean.co.agency@gmail.com');
-    assert.ok(uSean, 'Doit retrouver Sean Agency');
+    // 6. Recherche de GBETO Jean-Claude
+    const uGbeto = await findUserByIdentifier('gbeto.jeanclaude@chezmoi.bj');
+    assert.ok(uGbeto, 'Doit retrouver GBETO Jean-Claude');
+    assert.strictEqual(uGbeto?.role, 'ADMIN');
+
+    // 7. Recherche d'Ismène Bankole
+    const uIsmene = await findUserByIdentifier('ismene.bankole@chezmoi.bj');
+    assert.ok(uIsmene, 'Doit retrouver Ismène Bankole');
+    assert.strictEqual(uIsmene?.role, 'SECRETAIRE');
+
+    // 8. Recherche de Déo Gratias
+    const uDeo = await findUserByIdentifier('deogratias.marieclarisse@chezmoi.bj');
+    assert.ok(uDeo, 'Doit retrouver Déo Gratias');
+    assert.strictEqual(uDeo?.status, 'EN_ATTENTE_VALIDATION');
+
+    // Nettoyage des comptes temporaires de test pour laisser uniquement les 5 vrais utilisateurs officiels
+    const officialIds = ['user_smb_central', 'user_kokou_aballo', 'user_gbeto_jean_claude', 'user_ismene_bankole', 'user_deo_gratias'];
+    memoryStore.users = memoryStore.users.filter(u => officialIds.includes(u.id));
+    const { savePersistedUsers } = await import('./db');
+    savePersistedUsers();
   });
 
 });
