@@ -19,14 +19,19 @@ import {
   BedDouble,
   Bath,
   Home,
-  CheckCircle2
+  CheckCircle2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   PropertyCategory, 
   PropertyRecord, 
   UserAccount, 
   OFFICIAL_PROPERTY_CATEGORIES, 
-  normalizePropertyCategory 
+  normalizePropertyCategory,
+  PropertyOperationalStatus,
+  OPERATIONAL_STATUS_CONFIG,
+  getPropertyStatus
 } from '../types';
 import { apiFetch } from '../utils/api';
 import { BENIN_TERRITORIES, searchTerritory, TerritorySearchResult } from '../data/beninTerritories';
@@ -37,6 +42,8 @@ interface PropertyDetailModalProps {
   currency: 'FCFA' | 'USD';
   currentUser?: UserAccount;
   onUpdateProperty?: (updated: PropertyRecord) => void;
+  onDeleteProperty?: (id: string) => Promise<void> | void;
+  onUpdatePropertyStatus?: (id: string, status: PropertyOperationalStatus) => Promise<void> | void;
 }
 
 export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
@@ -45,11 +52,17 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   currency,
   currentUser,
   onUpdateProperty,
+  onDeleteProperty,
+  onUpdatePropertyStatus,
 }) => {
   if (!property) return null;
 
   const [isEditing, setIsEditing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editStatus, setEditStatus] = useState<PropertyOperationalStatus>(getPropertyStatus(property));
+  const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
 
   // Form edit states - Général & caractéristiques
   const [editTitle, setEditTitle] = useState(property.title);
@@ -115,6 +128,10 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
       setEditAltitude(String(property.coordinates?.altitude || '9.2'));
       setEditAccuracy(String(property.coordinates?.accuracy || '3.4'));
       setEditAddressApprox(property.coordinates?.addressApprox || '');
+      setEditStatus(getPropertyStatus(property));
+      setShowDeleteModal(false);
+      setIsDeleting(false);
+      setStatusFeedback(null);
       setIsEditing(false);
     }
   }, [property]);
@@ -198,6 +215,54 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   const currentLng = property.coordinates?.longitude || 2.3812;
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${currentLat},${currentLng}`;
 
+  // Modification en 1-clic du statut opérationnel (Disponible / En location / Vendu)
+  const handleQuickStatusChange = async (newStatus: PropertyOperationalStatus) => {
+    if (!canEdit || !property) return;
+    setEditStatus(newStatus);
+    const updatedProperty: PropertyRecord = {
+      ...property,
+      operationalStatus: newStatus,
+      updatedAt: Date.now(),
+      syncStatus: 'synced',
+    };
+
+    if (onUpdateProperty) {
+      onUpdateProperty(updatedProperty);
+    }
+    if (onUpdatePropertyStatus) {
+      onUpdatePropertyStatus(property.id, newStatus);
+    }
+
+    try {
+      await apiFetch(`/api/properties/${property.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ operationalStatus: newStatus }),
+      });
+    } catch (err) {
+      console.error('Erreur synchronisation statut opérationnel:', err);
+    }
+
+    setStatusFeedback(OPERATIONAL_STATUS_CONFIG[newStatus].label);
+    setTimeout(() => {
+      setStatusFeedback(null);
+    }, 2800);
+  };
+
+  // Suppression confirmée avec synchronisation base de données en temps réel
+  const handleConfirmDelete = async () => {
+    if (!property || !onDeleteProperty) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteProperty(property.id);
+      setShowDeleteModal(false);
+      onClose();
+    } catch (err) {
+      console.error('Erreur lors de la suppression du bien:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -211,6 +276,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
       ...property,
       title: editTitle.trim() || property.title,
       category: editCategory,
+      operationalStatus: editStatus,
       priceAmount: finalPrice,
       priceUSD: Math.round(finalPrice / 600),
       description: editDescription,
@@ -277,13 +343,24 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
         {/* Top Header */}
         <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full bg-[#FA3055] text-white text-[10px] font-bold font-mono">
                 {property.codeReference}
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold">
                 {normalizePropertyCategory(property.category)}
               </span>
+              {/* Badge Statut Opérationnel */}
+              {(() => {
+                const opStatus = getPropertyStatus(property);
+                const cfg = OPERATIONAL_STATUS_CONFIG[opStatus];
+                return (
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cfg.badgeBg} text-white shadow-2xs flex items-center gap-1`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    <span>{cfg.label}</span>
+                  </span>
+                );
+              })()}
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                 property.syncStatus === 'synced'
                   ? 'bg-emerald-100 text-emerald-800'
@@ -314,15 +391,29 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
           <div className="flex items-center gap-2 shrink-0">
             {canEdit && !isEditing && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
-                title="Modifier les informations, la localisation et le GPS"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-[#FA3055]" />
-                <span>Modifier</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                  title="Modifier les informations, la localisation et le GPS"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-[#FA3055]" />
+                  <span>Modifier</span>
+                </button>
+
+                {onDeleteProperty && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                    title="Supprimer ce bien définitivement"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Supprimer</span>
+                  </button>
+                )}
+              </>
             )}
 
             <button
@@ -381,6 +472,35 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Statut opérationnel du bien (Disponible / En location / Vendu) */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Statut opérationnel du bien *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {(['DISPONIBLE', 'EN_LOCATION', 'VENDU'] as PropertyOperationalStatus[]).map((st) => {
+                  const cfg = OPERATIONAL_STATUS_CONFIG[st];
+                  const isSelected = editStatus === st;
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setEditStatus(st)}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? `${cfg.badgeBg} text-white shadow-xs ring-2 ring-offset-1 ring-slate-400`
+                          : `${cfg.bgClass} ${cfg.textClass} border ${cfg.borderClass} hover:opacity-90`
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : cfg.dotClass}`} />
+                      <span>{cfg.label}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-white ml-auto" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* 2. Prix et Superficie */}
@@ -768,6 +888,60 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
           /* MODE CONSULTATION DÉTAILLÉE DU BIEN (RÉSUMÉ EXHAUSTIF ET ÉLÉGANT)         */
           /* ========================================================================= */
           <>
+            {/* GESTION DYNAMIQUE DU STATUT OPÉRATIONNEL (DISPONIBLE / EN LOCATION / VENDU) */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#FA3055]" />
+                  <span>Statut opérationnel du bien</span>
+                </span>
+                {canEdit ? (
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    (Cliquez sur un statut pour le modifier en 1 clic)
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-medium">Lecture seule</span>
+                )}
+              </div>
+
+              {/* 3 boutons de statuts avec couleurs distinctes */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {(['DISPONIBLE', 'EN_LOCATION', 'VENDU'] as PropertyOperationalStatus[]).map((st) => {
+                  const cfg = OPERATIONAL_STATUS_CONFIG[st];
+                  const currentStatus = getPropertyStatus(property);
+                  const isCurrent = currentStatus === st;
+
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      disabled={!canEdit}
+                      onClick={() => handleQuickStatusChange(st)}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                        !canEdit ? 'cursor-default' : 'cursor-pointer hover:shadow-xs active:scale-[0.98]'
+                      } ${
+                        isCurrent
+                          ? `${cfg.badgeBg} text-white shadow-sm ring-2 ring-offset-1 ring-slate-400`
+                          : `${cfg.bgClass} ${cfg.textClass} border ${cfg.borderClass} hover:opacity-95`
+                      }`}
+                      title={canEdit ? `Basculer ce bien vers le statut : ${cfg.label}` : cfg.label}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-white animate-pulse' : cfg.dotClass}`} />
+                      <span>{cfg.label}</span>
+                      {isCurrent && <Check className="w-3.5 h-3.5 text-white ml-auto" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Feedback visuel lors du changement */}
+              {statusFeedback && (
+                <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold text-center animate-in fade-in">
+                  ✓ Statut opérationnel actualisé avec succès : <strong>{statusFeedback}</strong>
+                </div>
+              )}
+            </div>
+
             {/* 1. Photos Showcase */}
             {property.photos && property.photos.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
@@ -959,10 +1133,22 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             </div>
 
             {/* 8. Pied de page & Fiche Commerciale */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <p className="text-[11px] text-slate-400">
-                Recensé par <strong className="text-slate-700">{property.assignedAgentName || 'Agent Chezmoi'}</strong>
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center gap-3">
+                <p className="text-[11px] text-slate-400">
+                  Recensé par <strong className="text-slate-700">{property.assignedAgentName || 'Agent Chezmoi'}</strong>
+                </p>
+                {canEdit && onDeleteProperty && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Supprimer ce bien</span>
+                  </button>
+                )}
+              </div>
 
               <button
                 onClick={() => alert(`Exportation de la fiche commerciale pour ${property.codeReference}`)}
@@ -976,6 +1162,54 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
         )}
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* MODALE DE SÉCURITÉ DE CONFIRMATION DE SUPPRESSION D'UN BIEN               */}
+      {/* ========================================================================= */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-70 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center mx-auto shadow-2xs">
+              <Trash2 className="w-7 h-7 text-rose-600" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-bold text-slate-900 leading-snug">
+                Êtes-vous sûr de vouloir supprimer ce bien ?
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Cette action supprimera définitivement le bien <strong>« {property.title} »</strong> (Réf. <span className="font-mono text-slate-800 font-bold">{property.codeReference}</span>) de la base de données. Les données associées seront effacées en temps réel.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <span>Suppression en cours...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirmer la suppression</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

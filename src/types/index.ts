@@ -166,6 +166,50 @@ export interface PropertyRecord {
   serverSyncTimestamp?: number;
   legalStatus: PropertyLegalStatus;
   isFeatured?: boolean;
+  operationalStatus?: PropertyOperationalStatus; // DISPONIBLE | EN_LOCATION | VENDU
+}
+
+export type PropertyOperationalStatus = 
+  | 'DISPONIBLE' 
+  | 'EN_LOCATION' 
+  | 'VENDU';
+
+export const OPERATIONAL_STATUS_CONFIG: Record<
+  PropertyOperationalStatus,
+  { label: string; shortLabel: string; bgClass: string; textClass: string; borderClass: string; dotClass: string; badgeBg: string }
+> = {
+  DISPONIBLE: {
+    label: 'Disponible',
+    shortLabel: 'Disponible',
+    bgClass: 'bg-emerald-50',
+    textClass: 'text-emerald-700',
+    borderClass: 'border-emerald-200',
+    dotClass: 'bg-emerald-500',
+    badgeBg: 'bg-emerald-600',
+  },
+  EN_LOCATION: {
+    label: 'Actuellement en location',
+    shortLabel: 'En location',
+    bgClass: 'bg-blue-50',
+    textClass: 'text-blue-700',
+    borderClass: 'border-blue-200',
+    dotClass: 'bg-blue-500',
+    badgeBg: 'bg-blue-600',
+  },
+  VENDU: {
+    label: 'Vendu',
+    shortLabel: 'Vendu',
+    bgClass: 'bg-slate-100',
+    textClass: 'text-slate-800',
+    borderClass: 'border-slate-300',
+    dotClass: 'bg-slate-600',
+    badgeBg: 'bg-slate-700',
+  },
+};
+
+export function getPropertyStatus(prop: PropertyRecord | null | undefined): PropertyOperationalStatus {
+  if (!prop || !prop.operationalStatus) return 'DISPONIBLE';
+  return prop.operationalStatus;
 }
 
 export interface UserAccount {

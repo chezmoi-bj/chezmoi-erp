@@ -18,14 +18,21 @@ import {
   ExternalLink,
   CheckCircle2,
   Filter,
-  Eye
+  Eye,
+  Trash2,
+  AlertTriangle,
+  Tag
 } from 'lucide-react';
 import { 
   AgentRecenseur, 
   PropertyRecord, 
+  UserAccount,
   OFFICIAL_PROPERTY_CATEGORIES, 
   OfficialPropertyCategory, 
-  normalizePropertyCategory 
+  normalizePropertyCategory,
+  PropertyOperationalStatus,
+  OPERATIONAL_STATUS_CONFIG,
+  getPropertyStatus
 } from '../types';
 import { BENIN_TERRITORIES } from '../data/beninTerritories';
 
@@ -36,6 +43,9 @@ interface ArcheDashboardProps {
   onOpenCensus: () => void;
   currency: 'FCFA' | 'USD';
   setCurrency: (c: 'FCFA' | 'USD') => void;
+  currentUser?: UserAccount;
+  onDeleteProperty?: (id: string) => void;
+  onUpdatePropertyStatus?: (id: string, status: PropertyOperationalStatus) => void;
 }
 
 export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
@@ -45,14 +55,32 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
   onOpenCensus,
   currency,
   setCurrency,
+  currentUser,
+  onDeleteProperty,
+  onUpdatePropertyStatus,
 }) => {
   const [contactTab, setContactTab] = useState<'realtors' | 'builders' | 'clients'>('realtors');
   const [selectedCategory, setSelectedCategory] = useState<string>('Toutes');
   const [selectedCity, setSelectedCity] = useState<string>('Toutes les villes');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Tous les quartiers');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'TOUS' | PropertyOperationalStatus>('TOUS');
   const [dashboardSearchQuery, setDashboardSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'recent' | 'price_asc' | 'price_desc' | 'area_desc'>('recent');
   const [selectedAgentId, setSelectedAgentId] = useState<string>('agent_1');
+  const [propertyToDelete, setPropertyToDelete] = useState<PropertyRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [statusMenuOpenId, setStatusMenuOpenId] = useState<string | null>(null);
+
+  // Vérification de permission de modification ou suppression
+  const canUserManage = (prop: PropertyRecord) => {
+    if (!currentUser) return false;
+    return (
+      currentUser.role === 'SUPER_ADMIN' ||
+      currentUser.role === 'ADMIN' ||
+      currentUser.role === 'SECRETAIRE' ||
+      currentUser.id === prop.assignedAgentId
+    );
+  };
 
   // Formatage monétaire
   const formatMoney = (amountXOF: number) => {
@@ -128,7 +156,12 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
         prop.codeReference.toLowerCase().includes(dashboardSearchQuery.toLowerCase()) ||
         propNormCategory.toLowerCase().includes(dashboardSearchQuery.toLowerCase());
 
-      return matchCategory && matchCity && matchDistrict && matchSearch;
+      const propStatus = getPropertyStatus(prop);
+      const matchStatus =
+        selectedStatusFilter === 'TOUS' ||
+        propStatus === selectedStatusFilter;
+
+      return matchCategory && matchCity && matchDistrict && matchSearch && matchStatus;
     });
 
     // Tri dynamique
@@ -143,7 +176,7 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
     }
 
     return result;
-  }, [properties, selectedCategory, selectedCity, selectedDistrict, dashboardSearchQuery, sortBy]);
+  }, [properties, selectedCategory, selectedCity, selectedDistrict, selectedStatusFilter, dashboardSearchQuery, sortBy]);
 
   // Icône associée à chaque catégorie officielle
   const getCategoryIcon = (cat: string) => {
@@ -319,6 +352,21 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
               placeholder="Rechercher référence, quartier, titre..."
               className="w-full bg-[#F4F6F5] text-xs py-2 pl-8 pr-4 rounded-full text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
             />
+          </div>
+
+          {/* Filtre dynamique par statut opérationnel */}
+          <div className="relative">
+            <select
+              value={selectedStatusFilter}
+              onChange={(e) => setSelectedStatusFilter(e.target.value as any)}
+              className="appearance-none bg-[#F4F6F5] hover:bg-slate-200/70 text-slate-800 font-semibold text-xs py-2 pl-3.5 pr-8 rounded-full cursor-pointer focus:outline-none transition-colors"
+            >
+              <option value="TOUS">Tous les statuts ({properties.length})</option>
+              <option value="DISPONIBLE">● Disponible ({properties.filter(p => getPropertyStatus(p) === 'DISPONIBLE').length})</option>
+              <option value="EN_LOCATION">● En location ({properties.filter(p => getPropertyStatus(p) === 'EN_LOCATION').length})</option>
+              <option value="VENDU">● Vendu ({properties.filter(p => getPropertyStatus(p) === 'VENDU').length})</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
         </div>
@@ -559,12 +607,18 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
                           </span>
                         </div>
 
-                        {/* Statut disponibilité */}
+                        {/* Statut opérationnel dynamique */}
                         <div className="absolute bottom-2.5 left-2.5">
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-600/90 backdrop-blur-xs text-white font-bold text-[10px] flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Disponible</span>
-                          </span>
+                          {(() => {
+                            const opStatus = getPropertyStatus(prop);
+                            const statusCfg = OPERATIONAL_STATUS_CONFIG[opStatus];
+                            return (
+                              <span className={`px-2.5 py-0.5 rounded-full ${statusCfg.badgeBg} text-white font-bold text-[10px] flex items-center gap-1 shadow-sm`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                <span>{statusCfg.label}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -607,7 +661,7 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         {/* Bouton Consulter la fiche */}
                         <button
                           type="button"
@@ -615,11 +669,29 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
                             e.stopPropagation();
                             onSelectProperty(prop);
                           }}
-                          className="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-[#FA3055] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="flex-1 min-w-[120px] py-2 px-3 rounded-xl bg-slate-900 hover:bg-[#FA3055] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>Consulter la fiche</span>
+                          <span>Consulter</span>
                         </button>
+
+                        {/* Sélecteur de statut opérationnel rapide si autorisé */}
+                        {canUserManage(prop) && onUpdatePropertyStatus && (
+                          <select
+                            value={getPropertyStatus(prop)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              onUpdatePropertyStatus(prop.id, e.target.value as PropertyOperationalStatus);
+                            }}
+                            title="Changer le statut en 1 clic"
+                            className="py-2 px-2 rounded-xl bg-[#F4F6F5] hover:bg-slate-200 text-slate-800 text-[10px] font-bold border border-slate-200 cursor-pointer focus:outline-none transition-colors"
+                          >
+                            <option value="DISPONIBLE">Disponible</option>
+                            <option value="EN_LOCATION">En location</option>
+                            <option value="VENDU">Vendu</option>
+                          </select>
+                        )}
 
                         {/* Bouton Google Maps direct */}
                         {hasCoordinates && (
@@ -636,6 +708,21 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
                             <MapPin className="w-4 h-4 text-emerald-600" />
                           </button>
                         )}
+
+                        {/* Bouton Supprimer si autorisé */}
+                        {canUserManage(prop) && onDeleteProperty && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPropertyToDelete(prop);
+                            }}
+                            title="Supprimer ce bien"
+                            className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-600" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -648,6 +735,65 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
         </div>
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* MODALE DE SÉCURITÉ DE CONFIRMATION DE SUPPRESSION D'UN BIEN               */}
+      {/* ========================================================================= */}
+      {propertyToDelete && (
+        <div className="fixed inset-0 z-70 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center mx-auto shadow-2xs">
+              <Trash2 className="w-7 h-7 text-rose-600" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-bold text-slate-900 leading-snug">
+                Êtes-vous sûr de vouloir supprimer ce bien ?
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Cette action supprimera définitivement le bien <strong>« {propertyToDelete.title} »</strong> (Réf. <span className="font-mono text-slate-800 font-bold">{propertyToDelete.codeReference}</span>) de la base de données. Les données associées seront effacées en temps réel.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setPropertyToDelete(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!onDeleteProperty) return;
+                  setIsDeleting(true);
+                  try {
+                    await onDeleteProperty(propertyToDelete.id);
+                    setPropertyToDelete(null);
+                  } catch (err) {
+                    console.error('Erreur suppression:', err);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <span>Suppression en cours...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirmer la suppression</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

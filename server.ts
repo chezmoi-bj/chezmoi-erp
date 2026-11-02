@@ -7,6 +7,7 @@ import {
   getDatabaseStatus, 
   getAllProperties, 
   upsertProperty, 
+  deleteProperty,
   processSyncPush, 
   processSyncPull,
   getAllTransactions,
@@ -112,6 +113,15 @@ async function startServer() {
       res.json({ success: true, property: saved });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Erreur lors de la mise à jour du bien' });
+    }
+  });
+
+  app.delete('/api/properties/:id', async (req: Request, res: Response) => {
+    try {
+      await deleteProperty(req.params.id);
+      res.json({ success: true, message: 'Bien supprimé avec succès' });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Erreur lors de la suppression du bien' });
     }
   });
 

@@ -184,6 +184,7 @@ async function ensureTablesAndAdmin(pool: mysql.Pool) {
       'ALTER TABLE users ADD COLUMN total_commissions DECIMAL(14, 2) NOT NULL DEFAULT 0.00',
       'ALTER TABLE properties ADD COLUMN rental_rates JSON DEFAULT NULL',
       'ALTER TABLE properties ADD COLUMN other_details TEXT DEFAULT NULL',
+      'ALTER TABLE properties ADD COLUMN operational_status VARCHAR(32) NOT NULL DEFAULT "DISPONIBLE"',
     ];
     for (const mig of columnMigrations) {
       try {
@@ -225,6 +226,7 @@ async function ensureTablesAndAdmin(pool: mysql.Pool) {
         sync_status VARCHAR(32) NOT NULL DEFAULT 'synced',
         sync_error TEXT DEFAULT NULL,
         legal_status VARCHAR(64) NOT NULL DEFAULT 'EN_COURS',
+        operational_status VARCHAR(32) NOT NULL DEFAULT 'DISPONIBLE',
         is_featured TINYINT(1) NOT NULL DEFAULT 0,
         created_at BIGINT NOT NULL,
         updated_at BIGINT NOT NULL,
@@ -365,6 +367,7 @@ export async function getAllProperties(): Promise<PropertyRecord[]> {
         syncStatus: r.sync_status,
         syncError: r.sync_error || undefined,
         legalStatus: r.legal_status,
+        operationalStatus: (r.operational_status as any) || 'DISPONIBLE',
         isFeatured: Boolean(r.is_featured),
         createdAt: Number(r.created_at),
         updatedAt: Number(r.updated_at),
@@ -381,6 +384,7 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
   const now = Date.now();
   const record: PropertyRecord = {
     ...prop,
+    operationalStatus: prop.operationalStatus || 'DISPONIBLE',
     syncStatus: 'synced',
     updatedAt: prop.updatedAt || now,
     serverSyncTimestamp: now
@@ -395,8 +399,8 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
           price_usd, area_sq_meters, rooms_count, bedrooms_count, bathrooms_count, 
           coordinates_lat, coordinates_lng, coordinates_accuracy, coordinates_address_approx, coordinates_captured_at,
           owner_data, photos, rental_rates, other_details, assigned_agent_id, assigned_agent_name, sync_status, 
-          legal_status, is_featured, created_at, updated_at, server_sync_timestamp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          legal_status, operational_status, is_featured, created_at, updated_at, server_sync_timestamp
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           title = VALUES(title),
           description = VALUES(description),
@@ -421,6 +425,8 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
           photos = VALUES(photos),
           rental_rates = VALUES(rental_rates),
           other_details = VALUES(other_details),
+          legal_status = VALUES(legal_status),
+          operational_status = VALUES(operational_status),
           sync_status = 'synced',
           updated_at = VALUES(updated_at),
           server_sync_timestamp = VALUES(server_sync_timestamp)
@@ -457,6 +463,7 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
         record.assignedAgentName,
         'synced',
         record.legalStatus,
+        record.operationalStatus || 'DISPONIBLE',
         record.isFeatured ? 1 : 0,
         record.createdAt || now,
         record.updatedAt || now,
@@ -477,6 +484,18 @@ export async function upsertProperty(prop: PropertyRecord): Promise<PropertyReco
     memoryStore.properties.unshift(record);
   }
   return record;
+}
+
+export async function deleteProperty(id: string): Promise<boolean> {
+  if (isMySqlConnected && pool) {
+    try {
+      await pool.query('DELETE FROM properties WHERE id = ?', [id]);
+    } catch (err) {
+      console.error('[MySQL Error] deleteProperty:', err);
+    }
+  }
+  memoryStore.properties = memoryStore.properties.filter(p => p.id !== id);
+  return true;
 }
 
 // ----------------------------------------------------------------------------

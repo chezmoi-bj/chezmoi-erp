@@ -73,16 +73,17 @@ export const Header: React.FC<HeaderProps> = ({
   const canAccessSettings = currentUser.role === 'SUPER_ADMIN';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 lg:px-8 py-2.5 transition-all">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#12151B]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-2.5 sm:px-6 lg:px-8 py-2 sm:py-2.5 transition-all">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-4">
         
         {/* Brand & Official Chezmoi Logo */}
-        <div className="flex items-center gap-2.5 flex-shrink-0">
-          <ChezmoiLogo size={38} />
+        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+          <ChezmoiLogo size={34} className="sm:w-10 sm:h-10" />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-slate-900 tracking-tight text-base sm:text-lg">chezmoi</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FA3055] text-white font-black tracking-wider">
+              <span className="font-black text-slate-900 dark:text-white tracking-tight text-base sm:text-lg">chezmoi</span>
+              {/* Badge masqué sur mobile (< sm) pour libérer l'espace horizontal, visible sur desktop/tablette */}
+              <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded-full bg-[#FA3055] text-white font-black tracking-wider">
                 administration
               </span>
             </div>
@@ -114,14 +115,14 @@ export const Header: React.FC<HeaderProps> = ({
           })}
         </nav>
 
-        {/* Right Action Bar */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        {/* Right Action Bar - Réagencée pour tenir intégralement sur écran mobile visible */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           
           {/* Network Simulator Toggle */}
           <button
             onClick={toggleNetwork}
-            title={isOnline ? 'Cliquer pour simuler le mode hors-ligne' : 'Cliquer pour réactiver la connexion Internet'}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all border cursor-pointer ${
+            title={isOnline ? 'En ligne (cliquer pour simuler hors-ligne)' : 'Hors-ligne (cliquer pour reconnecter)'}
+            className={`flex items-center justify-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all border cursor-pointer shrink-0 ${
               isOnline
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
                 : 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse hover:bg-rose-100'
@@ -129,13 +130,13 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {isOnline ? (
               <>
-                <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                <Wifi className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span className="hidden sm:inline">En ligne</span>
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5 text-rose-600" />
-                <span>Hors-ligne</span>
+                <WifiOff className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="hidden sm:inline">Hors-ligne</span>
               </>
             )}
           </button>
@@ -145,25 +146,25 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={triggerSync}
             disabled={!isOnline || isSyncing}
             title="Synchroniser les données"
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+            className={`flex items-center justify-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-semibold border transition-all shrink-0 ${
               isSyncing
                 ? 'bg-amber-50 text-amber-700 border-amber-300 cursor-wait'
                 : !isOnline
                 ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                : 'bg-white text-slate-700 border-slate-200 hover:border-[#FA3055]/30 hover:bg-[#F4F6F5] cursor-pointer shadow-2xs'
+                : 'bg-white text-slate-700 border-slate-200 hover:border-[#FA3055]/30 hover:bg-[#F4F6F5] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs'
             }`}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-600' : 'text-[#FA3055]'}`} />
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isSyncing ? 'animate-spin text-amber-600' : 'text-[#FA3055]'}`} />
             <span className="hidden xl:inline">{isSyncing ? 'Sync...' : 'Sync'}</span>
           </button>
 
-          {/* Viewport Frame Toggle */}
-          <div className="hidden sm:flex items-center bg-[#F4F6F5] p-0.5 rounded-xl border border-slate-200">
+          {/* Viewport Frame Toggle (Desktop/Tablette uniquement) */}
+          <div className="hidden sm:flex items-center bg-[#F4F6F5] dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
             <button
               onClick={() => setViewMode('desktop')}
               title="Vue écran PC"
               className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                viewMode === 'desktop' ? 'bg-white text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800'
+                viewMode === 'desktop' ? 'bg-white dark:bg-slate-900 text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
               }`}
             >
               <Monitor className="w-3.5 h-3.5" />
@@ -172,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setViewMode('mobile')}
               title="Vue mobile agent terrain"
               className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                viewMode === 'mobile' ? 'bg-white text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800'
+                viewMode === 'mobile' ? 'bg-white dark:bg-slate-900 text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
               }`}
             >
               <Smartphone className="w-3.5 h-3.5" />
@@ -184,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={openSettings}
               title="Paramètres API (WhatsApp, Gmail, Docs, WordPress, Gemini, e-MECeF)"
-              className="p-1.5 rounded-full text-slate-600 hover:text-[#FA3055] hover:bg-[#F4F6F5] cursor-pointer transition-colors"
+              className="p-1.5 rounded-full text-slate-600 dark:text-slate-300 hover:text-[#FA3055] hover:bg-[#F4F6F5] dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
             >
               <SettingsIcon className="w-4 h-4" />
             </button>
@@ -195,7 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onToggleTheme}
               title={theme === 'dark' ? 'Basculer en mode clair' : 'Basculer en mode sombre'}
-              className="p-1.5 rounded-full text-slate-600 hover:text-[#FA3055] hover:bg-[#F4F6F5] cursor-pointer transition-colors"
+              className="p-1.5 rounded-full text-slate-600 dark:text-slate-300 hover:text-[#FA3055] hover:bg-[#F4F6F5] dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-amber-400" />
@@ -205,11 +206,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Authenticated User Profile Button */}
+          {/* Authenticated User Profile Button - Compact sur mobile */}
           <button
             onClick={openProfileModal}
             title="Consulter le profil & paramétrer la double authentification (2FA)"
-            className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200/80 bg-white"
+            className="flex items-center gap-1.5 p-0.5 sm:pl-1.5 sm:pr-2.5 sm:py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0"
           >
             <div className="relative">
               <img
@@ -218,21 +219,21 @@ export const Header: React.FC<HeaderProps> = ({
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-[#FA3055]/30 flex-shrink-0"
               />
               {currentUser.twoFactorEnabled && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" title="2FA Activée" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" title="2FA Activée" />
               )}
             </div>
             <div className="hidden xl:block text-left text-xs leading-tight">
-              <p className="font-bold text-slate-900 truncate max-w-[120px]">{currentUser.name}</p>
+              <p className="font-bold text-slate-900 dark:text-white truncate max-w-[120px]">{currentUser.name}</p>
               <p className="text-[10px] text-[#FA3055] font-semibold">{roleInfo.label}</p>
             </div>
             <UserCheck className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
           </button>
 
-          {/* Direct Logout Icon Button */}
+          {/* Direct Logout Icon Button - Toujours visible sur mobile sans scroll */}
           <button
             onClick={onLogout}
             title="Se déconnecter de la session"
-            className="p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
+            className="p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer transition-colors shrink-0"
           >
             <LogOut className="w-4 h-4" />
           </button>

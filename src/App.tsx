@@ -24,7 +24,8 @@ import {
   PropertyRecord,
   LeaveRequest,
   PayslipRecord,
-  AuthSession
+  AuthSession,
+  PropertyOperationalStatus
 } from './types';
 import { 
   enqueueMutation, 
@@ -225,6 +226,48 @@ export default function App() {
     }
   };
 
+  // Modification dynamique du statut opérationnel (Disponible / En location / Vendu)
+  const handleUpdatePropertyStatus = async (propertyId: string, newStatus: PropertyOperationalStatus) => {
+    const now = Date.now();
+    setProperties((prev) =>
+      prev.map((p) => (p.id === propertyId ? { ...p, operationalStatus: newStatus, updatedAt: now } : p))
+    );
+    if (selectedProperty?.id === propertyId) {
+      setSelectedProperty((prev) =>
+        prev ? { ...prev, operationalStatus: newStatus, updatedAt: now } : null
+      );
+    }
+
+    if (isOnline) {
+      try {
+        await apiFetch(`/api/properties/${propertyId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ operationalStatus: newStatus }),
+        });
+      } catch (err) {
+        console.error('Erreur mise à jour statut bien:', err);
+      }
+    }
+  };
+
+  // Suppression d'un bien avec confirmation et synchronisation BD temps réel
+  const handleDeleteProperty = async (propertyId: string) => {
+    setProperties((prev) => prev.filter((p) => p.id !== propertyId));
+    if (selectedProperty?.id === propertyId) {
+      setSelectedProperty(null);
+    }
+
+    if (isOnline) {
+      try {
+        await apiFetch(`/api/properties/${propertyId}`, {
+          method: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Erreur suppression bien:', err);
+      }
+    }
+  };
+
   // Gestion des utilisateurs et rôles
   const handleAddUser = async (newUser: UserAccount) => {
     const isCentralAdmin = newUser.email.toLowerCase() === 'chezmoi.benin@gmail.com';
@@ -359,6 +402,9 @@ export default function App() {
             onOpenCensus={() => setActiveTab('census')}
             currency={currency}
             setCurrency={setCurrency}
+            currentUser={currentUser}
+            onDeleteProperty={handleDeleteProperty}
+            onUpdatePropertyStatus={handleUpdatePropertyStatus}
           />
         );
       case 'census':
@@ -463,6 +509,8 @@ export default function App() {
         currency={currency}
         currentUser={currentUser}
         onUpdateProperty={handleUpdateProperty}
+        onDeleteProperty={handleDeleteProperty}
+        onUpdatePropertyStatus={handleUpdatePropertyStatus}
       />
 
       {/* Settings Modal (WhatsApp, Gmail, Docs, WordPress, Gemini, e-MECeF, Maps) */}
