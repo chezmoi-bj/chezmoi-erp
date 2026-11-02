@@ -16,11 +16,19 @@ export function getApiBaseUrl(): string {
   // 2. Détection contexte mobile (Capacitor, Cordova, WebView APK, file://)
   if (typeof window !== 'undefined') {
     const isFileProto = window.location.protocol === 'file:';
-    const isCapacitor = (window as any).Capacitor !== undefined || window.location.origin.includes('capacitor');
+    const win = window as any;
+    const isCapacitor = 
+      win.Capacitor !== undefined || 
+      window.location.origin.includes('capacitor') || 
+      window.location.origin.includes('ionic') ||
+      (win.Capacitor && typeof win.Capacitor.isNativePlatform === 'function' && win.Capacitor.isNativePlatform());
+
     const isCustomPort = window.location.port !== '' && window.location.port !== '3000' && window.location.port !== '5173';
     const isRemoteProduction = window.location.hostname.includes('chezmoi.bj');
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileWebView = isMobileUserAgent && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-    if (isFileProto || isCapacitor || (window.location.hostname === 'localhost' && isCustomPort) || isRemoteProduction) {
+    if (isFileProto || isCapacitor || isMobileWebView || (window.location.hostname === 'localhost' && isCustomPort) || isRemoteProduction) {
       return 'https://admin.chezmoi.bj/api';
     }
 
@@ -93,15 +101,15 @@ export async function apiFetch<T = any>(
     const isHtml = rawText.trim().startsWith('<') || contentType.includes('text/html');
 
     if (isHtml) {
-      console.warn(`[API Client Interceptor] Réponse HTML inattendue sur ${fullUrl} (HTTP ${res.status}):`, rawText.substring(0, 160));
+      console.warn(`[API Client Interceptor] Réponse HTML non-JSON capturée sur ${fullUrl} (HTTP ${res.status}):`, rawText.substring(0, 160));
       return {
         ok: false,
         status: res.status,
         error: res.status === 404 
-          ? `Point de terminaison introuvable (404) sur le serveur de production. Veuillez vérifier l'accès au service.`
+          ? `Erreur de connexion au serveur (HTTP 404) : le point de terminaison API est introuvable sur https://admin.chezmoi.bj.`
           : res.status >= 500
-          ? `Le serveur de données a rencontré une erreur temporaire (HTTP ${res.status}). Veuillez réessayer dans quelques instants.`
-          : `Le serveur a renvoyé une page web inattendue au lieu de données JSON (HTTP ${res.status}).`,
+          ? `Erreur de connexion au serveur (HTTP ${res.status}) : service temporairement indisponible. Veuillez réessayer.`
+          : `Erreur de connexion au serveur : réponse HTML inattendue reçue au lieu du format JSON attendu (HTTP ${res.status}).`,
       };
     }
 
@@ -141,7 +149,7 @@ export async function apiFetch<T = any>(
     return {
       ok: false,
       status: 0,
-      error: `Impossible de contacter le serveur Chezmoi (${baseUrl}). Veuillez vérifier votre connexion Internet.`,
+      error: `Erreur de connexion au serveur : impossible de contacter l'API Chezmoi (${baseUrl}). Veuillez vérifier votre connexion Internet.`,
     };
   }
 }

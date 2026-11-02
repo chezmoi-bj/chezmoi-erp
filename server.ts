@@ -56,9 +56,33 @@ async function startServer() {
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-  // CORS headers pour intégrations Webhooks & API externes
+  // CORS headers pour intégrations Mobile APK (Capacitor/Cordova/Android WebView), Webhooks & Production
+  const ALLOWED_CORS_ORIGINS = [
+    'capacitor://localhost',
+    'http://localhost',
+    'https://localhost',
+    'ionic://localhost',
+    'https://admin.chezmoi.bj',
+    'http://admin.chezmoi.bj',
+  ];
+
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (origin) {
+      if (
+        ALLOWED_CORS_ORIGINS.includes(origin) ||
+        origin.startsWith('capacitor://') ||
+        origin.startsWith('ionic://') ||
+        origin.endsWith('chezmoi.bj')
+      ) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
+      } else {
+        res.header('Access-Control-Allow-Origin', '*');
+      }
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     if (req.method === 'OPTIONS') {
