@@ -56,12 +56,16 @@ async function startServer() {
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-  // CORS headers pour intégrations Mobile APK (Capacitor/Cordova/Android WebView), Webhooks & Production
+  // CORS headers pour intégrations Mobile APK, Desktop (.EXE Windows / Mac), Webhooks & Production
   const ALLOWED_CORS_ORIGINS = [
     'capacitor://localhost',
     'http://localhost',
     'https://localhost',
     'ionic://localhost',
+    'tauri://localhost',
+    'http://tauri.localhost',
+    'https://tauri.localhost',
+    'app://localhost',
     'https://admin.chezmoi.bj',
     'http://admin.chezmoi.bj',
   ];
@@ -73,6 +77,8 @@ async function startServer() {
         ALLOWED_CORS_ORIGINS.includes(origin) ||
         origin.startsWith('capacitor://') ||
         origin.startsWith('ionic://') ||
+        origin.startsWith('tauri://') ||
+        origin.startsWith('app://') ||
         origin.endsWith('chezmoi.bj')
       ) {
         res.header('Access-Control-Allow-Origin', origin);

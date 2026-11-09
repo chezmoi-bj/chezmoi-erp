@@ -13,27 +13,49 @@ export function getApiBaseUrl(): string {
     return envUrl.replace(/\/+$/, '');
   }
 
-  // 2. Détection contexte mobile (Capacitor, Cordova, WebView APK, file://)
+  // 2. Détection d'environnement d'exécution
   if (typeof window !== 'undefined') {
-    const isFileProto = window.location.protocol === 'file:';
     const win = window as any;
+    const isFileProto = window.location.protocol === 'file:';
+
+    // Détection Desktop Autonome (.exe Windows, macOS .app / .dmg, Linux AppImage, Electron, Tauri, NW.js)
+    const isElectron = /Electron/i.test(navigator.userAgent) || Boolean(win.process?.versions?.electron);
+    const isTauri = Boolean(win.__TAURI__) || Boolean(win.__TAURI_INTERNALS__) || window.location.origin.startsWith('tauri://') || window.location.hostname.includes('tauri');
+    const isNWJS = Boolean(win.nw);
+    const isNeutralino = Boolean(win.Neutralino);
+    const isCustomDesktopScheme = window.location.origin.startsWith('app://') || window.location.origin.startsWith('desktop://');
+    const isDesktopStandalone = isElectron || isTauri || isNWJS || isNeutralino || isFileProto || isCustomDesktopScheme;
+
+    // Détection Mobile (Android APK, iOS, Capacitor, Cordova, WebView)
     const isCapacitor = 
       win.Capacitor !== undefined || 
       window.location.origin.includes('capacitor') || 
       window.location.origin.includes('ionic') ||
       (win.Capacitor && typeof win.Capacitor.isNativePlatform === 'function' && win.Capacitor.isNativePlatform());
 
-    const isCustomPort = window.location.port !== '' && window.location.port !== '3000' && window.location.port !== '5173';
-    const isRemoteProduction = window.location.hostname.includes('chezmoi.bj');
-    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isMobileWebView = isMobileUserAgent && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Détection stricte du serveur de développement local sur PC (session de dev actif)
+    const isLocalDesktopDev = 
+      !isDesktopStandalone &&
+      !isMobileDevice && 
+      !isCapacitor && 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
+      (window.location.port === '3000' || window.location.port === '5173') &&
+      Boolean((import.meta as any).env?.DEV);
 
-    if (isFileProto || isCapacitor || isMobileWebView || (window.location.hostname === 'localhost' && isCustomPort) || isRemoteProduction) {
-      return 'https://admin.chezmoi.bj/api';
+    // Si on est STRICTEMENT sur PC en développement web actif avec serveur Node local
+    if (isLocalDesktopDev) {
+      return '/api';
     }
 
-    // 3. Mode développement local web standard (port 3000 ou proxy Vite)
-    return '/api';
+    // Dans TOUS les autres cas :
+    // - Applications Desktop Windows (.exe), macOS (.app/.dmg), Linux (.AppImage)
+    // - Applications Mobiles Android (APK), iOS
+    // - Smartphones / Tablettes (navigateurs, PWA, WebViews)
+    // - Serveur de production (https://admin.chezmoi.bj)
+    // => On cible toujours l'API centrale de production
+    return 'https://admin.chezmoi.bj/api';
   }
 
   return 'https://admin.chezmoi.bj/api';

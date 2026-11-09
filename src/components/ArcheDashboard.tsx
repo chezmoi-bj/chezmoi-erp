@@ -21,7 +21,10 @@ import {
   Eye,
   Trash2,
   AlertTriangle,
-  Tag
+  Tag,
+  TrendingUp,
+  KeyRound,
+  Coins
 } from 'lucide-react';
 import { 
   AgentRecenseur, 
@@ -127,6 +130,30 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
       }
     });
     return counts;
+  }, [properties]);
+
+  // Statistiques officielles du portefeuille immobilier
+  const portfolioStats = useMemo(() => {
+    let totalVal = 0;
+    let available = 0;
+    let inRent = 0;
+    let sold = 0;
+
+    properties.forEach((p) => {
+      totalVal += p.priceAmount || 0;
+      const status = getPropertyStatus(p);
+      if (status === 'DISPONIBLE') available++;
+      else if (status === 'EN_LOCATION') inRent++;
+      else if (status === 'VENDU') sold++;
+    });
+
+    return {
+      total: properties.length,
+      available,
+      inRent,
+      sold,
+      totalVal,
+    };
   }, [properties]);
 
   // Filtrage dynamique des biens
@@ -302,7 +329,107 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
         </div>
       </div>
 
-      {/* 2. BARRE DE RECHERCHE GÉOGRAPHIQUE & TRI */}
+      {/* 2. STATISTIQUES OFFICIELLES DU PORTEFEUILLE FONCIER */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {/* Total Biens */}
+        <div 
+          onClick={() => setSelectedStatusFilter('TOUS')}
+          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+            selectedStatusFilter === 'TOUS'
+              ? 'bg-white border-[#FA3055]/40 shadow-sm ring-2 ring-[#FA3055]/10'
+              : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Portefeuille total</span>
+            <Building2 className="w-4 h-4 text-slate-700" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <strong className="text-xl font-extrabold text-slate-900 tracking-tight font-mono">
+              {portfolioStats.total}
+            </strong>
+            <span className="text-[10px] text-slate-400 font-medium">biens recensés</span>
+          </div>
+        </div>
+
+        {/* Disponibles */}
+        <div 
+          onClick={() => setSelectedStatusFilter('DISPONIBLE')}
+          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+            selectedStatusFilter === 'DISPONIBLE'
+              ? 'bg-emerald-50/70 border-emerald-400 shadow-sm ring-2 ring-emerald-500/20'
+              : 'bg-white border-slate-200/80 hover:border-emerald-200 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Disponibles</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <strong className="text-xl font-extrabold text-emerald-800 tracking-tight font-mono">
+              {portfolioStats.available}
+            </strong>
+            <span className="text-[10px] text-emerald-600 font-semibold">offres libres</span>
+          </div>
+        </div>
+
+        {/* En location */}
+        <div 
+          onClick={() => setSelectedStatusFilter('EN_LOCATION')}
+          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+            selectedStatusFilter === 'EN_LOCATION'
+              ? 'bg-amber-50/70 border-amber-400 shadow-sm ring-2 ring-amber-500/20'
+              : 'bg-white border-slate-200/80 hover:border-amber-200 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">En location</span>
+            <KeyRound className="w-4 h-4 text-amber-600" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <strong className="text-xl font-extrabold text-amber-800 tracking-tight font-mono">
+              {portfolioStats.inRent}
+            </strong>
+            <span className="text-[10px] text-amber-600 font-semibold">occupés / gérés</span>
+          </div>
+        </div>
+
+        {/* Vendus */}
+        <div 
+          onClick={() => setSelectedStatusFilter('VENDU')}
+          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+            selectedStatusFilter === 'VENDU'
+              ? 'bg-slate-100 border-slate-400 shadow-sm ring-2 ring-slate-400/20'
+              : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Vendus</span>
+            <Tag className="w-4 h-4 text-slate-500" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <strong className="text-xl font-extrabold text-slate-800 tracking-tight font-mono">
+              {portfolioStats.sold}
+            </strong>
+            <span className="text-[10px] text-slate-500 font-semibold">actes conclus</span>
+          </div>
+        </div>
+
+        {/* Valeur totale du portefeuille */}
+        <div className="col-span-2 sm:col-span-1 lg:col-span-1 p-3.5 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/60 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#FA3055]">Valeur globale</span>
+            <Coins className="w-4 h-4 text-[#FA3055]" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <strong className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight font-mono truncate" title={formatMoney(portfolioStats.totalVal)}>
+              {formatMoney(portfolioStats.totalVal)}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. BARRE DE RECHERCHE GÉOGRAPHIQUE & TRI */}
       <div className="bg-white rounded-3xl p-3 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto flex-1">
           
@@ -387,7 +514,7 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
         </div>
       </div>
 
-      {/* 3. CONTENU PRINCIPAL DU TABLEAU DE BORD */}
+      {/* 4. CONTENU PRINCIPAL DU TABLEAU DE BORD */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* ========================================================================= */}

@@ -33,7 +33,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const isDark = activeTheme === 'dark';
 
   const [step, setStep] = useState<'identifier' | 'otp'>('identifier');
-  const [identifier, setIdentifier] = useState<string>('chezmoi.benin@gmail.com');
+  const [identifier, setIdentifier] = useState<string>('');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
