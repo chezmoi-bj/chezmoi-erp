@@ -357,7 +357,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="relative group">
               <img 
-                src="/assets/aistudio/1_e24ebf1b.png" 
+                src="./assets/aistudio/1_e24ebf1b.png" 
                 alt="Chezmoi" 
                 className="w-24 h-24 sm:w-28 sm:h-28 object-contain transition-transform duration-300 group-hover:scale-[1.02]"
               />

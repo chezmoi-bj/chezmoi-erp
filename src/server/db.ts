@@ -126,11 +126,6 @@ export async function initDatabase(): Promise<boolean> {
     lastDbError = err?.message || String(err);
     console.warn(`[Hostinger MySQL] Impossible de joindre MySQL (${lastDbError}). Bascule sur le stockage mémoire locale.`);
 
-    // Envoi de l'e-mail de confirmation en mode In-Memory également
-    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
-      console.error('[Hostinger SMTP] Erreur envoi activation admin:', err);
-    });
-
     return false;
   }
 }
@@ -286,18 +281,18 @@ async function ensureTablesAndAdmin(pool: mysql.Pool) {
         ]
       );
       console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) inséré avec succès (Rôle: Super Admin, Statut: Vérifié / Actif).`);
+
+      // Envoyer l'e-mail de bienvenue uniquement lors de la toute première création en base
+      sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
+        console.error('[Hostinger SMTP] Erreur envoi activation admin:', err);
+      });
     } else {
       await pool.query(
         `UPDATE users SET role = 'SUPER_ADMIN', status = 'ACTIF', email_verified = 1, avatar = ? WHERE LOWER(email) = ?`,
         [CENTRAL_ADMIN_SMB.avatar, CENTRAL_ADMIN_SMB.email.toLowerCase()]
       );
-      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) vérifié et actif.`);
+      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) vérifié et actif (aucun e-mail répétitif envoyé).`);
     }
-
-    // Déclenchement de l'envoi de l'e-mail de confirmation d'activation SMB via Hostinger SMTP
-    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch(err => {
-      console.error('[Hostinger SMTP] Erreur envoi activation admin:', err);
-    });
 
   } catch (err: any) {
     console.error('[Hostinger MySQL] Erreur ensureTablesAndAdmin:', err?.message);

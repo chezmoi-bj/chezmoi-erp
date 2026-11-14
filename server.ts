@@ -46,17 +46,20 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production' || __filename.endsWith('server.js');
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   const app = express();
 
+  // Confiance envers le reverse-proxy Hostinger Cloud / LiteSpeed
+  app.set('trust proxy', true);
+
   // Parsing JSON & URL-encoded payloads
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-  // CORS headers pour intégrations Mobile APK, Desktop (.EXE Windows / Mac), Webhooks & Production
+  // CORS headers pour intégrations Mobile APK, Desktop (.EXE Windows / Mac), Webhooks & Hostinger Cloud
   const ALLOWED_CORS_ORIGINS = [
     'capacitor://localhost',
     'http://localhost',
@@ -79,18 +82,32 @@ async function startServer() {
         origin.startsWith('ionic://') ||
         origin.startsWith('tauri://') ||
         origin.startsWith('app://') ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('https://localhost') ||
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('https://127.0.0.1') ||
         origin.endsWith('chezmoi.bj')
       ) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Vary', 'Origin');
       } else {
         res.header('Access-Control-Allow-Origin', '*');
       }
     } else {
       res.header('Access-Control-Allow-Origin', '*');
     }
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+    res.header('Access-Control-Max-Age', '86400');
+
+    // Empêcher LiteSpeed (Hostinger Cloud) de mettre en cache les réponses API ou les headers CORS
+    if (req.path.startsWith('/api')) {
+      res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.header('Pragma', 'no-cache');
+      res.header('Expires', '0');
+    }
+
     if (req.method === 'OPTIONS') {
       return res.sendStatus(200);
     }
@@ -696,6 +713,11 @@ async function startServer() {
       payloadSent: payload || { test: 'ping', app: 'Chezmoi administration' },
       message: 'Webhook simulé avec succès vers le point de terminaison spécifié.'
     });
+  });
+
+  // Toute route /api/* non trouvée doit répondre en JSON (jamais renvoyer index.html)
+  app.all('/api/*', (req: Request, res: Response) => {
+    res.status(404).json({ error: `Route API introuvable : ${req.method} ${req.originalUrl}` });
   });
 
   // --------------------------------------------------------------------------
