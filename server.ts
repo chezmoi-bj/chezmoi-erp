@@ -47,7 +47,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isProduction = process.env.NODE_ENV === 'production' || __filename.endsWith('server.js');
-const PORT = process.env.PORT || 3000;
+const portArgIdx = process.argv.indexOf('--port');
+const cliPort = portArgIdx !== -1 ? Number(process.argv[portArgIdx + 1]) : NaN;
+const envPort = process.env.PORT ? Number(process.env.PORT) : NaN;
+const PORT = !Number.isNaN(cliPort)
+  ? cliPort
+  : isProduction
+    ? (!Number.isNaN(envPort) ? envPort : 3000)
+    : (!Number.isNaN(envPort) && envPort !== 8080 ? envPort : 3000);
 
 async function startServer() {
   const app = express();
@@ -741,7 +748,7 @@ async function startServer() {
   }
 
   // Démarrage du serveur
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(` Chezmoi administration Backend Node.js / Express prêt !`);
     console.log(` Port d'écoute : ${PORT}`);
