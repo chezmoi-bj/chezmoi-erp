@@ -92,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => allowedTabIds.includes('dashboard') && setActiveTab('dashboard')}
             className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer"
           >
-            <ChezmoiLogo size={26} className="sm:w-9 sm:h-9 shrink-0" />
+            <ChezmoiLogo className="w-7 h-7 sm:w-9 sm:h-9 shrink-0" />
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-[#141414] dark:text-white tracking-tight text-sm sm:text-lg whitespace-nowrap">
                 chezmoi

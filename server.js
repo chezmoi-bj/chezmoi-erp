@@ -1,15 +1,17 @@
 // server.ts
 import express from "express";
 import dotenv3 from "dotenv";
-import path2 from "path";
+import path3 from "path";
 import { fileURLToPath as fileURLToPath2 } from "url";
 
 // src/server/db.ts
 import mysql from "mysql2/promise";
 import dotenv2 from "dotenv";
+import fs2 from "fs";
+import path2 from "path";
 
 // src/data/mockData.ts
-var CENTRAL_ADMIN_SMB = {
+var USER_SMB_CENTRAL = {
   id: "user_smb_central",
   name: "SMB",
   avatar: "/assets/aistudio/1_e24ebf1b.png",
@@ -24,7 +26,7 @@ var CENTRAL_ADMIN_SMB = {
   contractType: "CDI",
   city: "Cotonou",
   assignedZone: "National (B\xE9nin)",
-  rating: 10,
+  rating: 9.99,
   propertiesCount: 0,
   pendingSyncCount: 0,
   totalCommissions: 0,
@@ -33,10 +35,538 @@ var CENTRAL_ADMIN_SMB = {
   emailVerified: true,
   twoFactorEnabled: false
 };
+var USER_KOKOU_ABALLO = {
+  id: "user_kokou_aballo",
+  name: "Kokou Aballo",
+  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+  email: "didier.aballo40@gmail.com",
+  phone: "+229 90 12 34 56",
+  role: "ADMIN",
+  jobTitle: "Manager",
+  departmentName: "Op\xE9rations Fonci\xE8res",
+  baseSalary: 0,
+  commissionRate: 3.5,
+  hireDate: "2026-01-15",
+  contractType: "CDI",
+  city: "Abomey-Calavi",
+  assignedZone: "Cotonou et environs",
+  rating: 8.5,
+  propertiesCount: 0,
+  pendingSyncCount: 0,
+  totalCommissions: 0,
+  status: "ACTIF",
+  cnssNumber: "CNSS-2026-002",
+  emailVerified: true,
+  twoFactorEnabled: false
+};
+var USER_GBETO_JEAN_CLAUDE = {
+  id: "user_gbeto_jean_claude",
+  name: "GBETO Jean-Claude",
+  avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
+  email: "gbeto.jeanclaude@chezmoi.bj",
+  phone: "+229 97 00 12 01",
+  role: "ADMIN",
+  jobTitle: "Agent recenseur foncier terrain",
+  departmentName: "Op\xE9rations Fonci\xE8res",
+  baseSalary: 0,
+  commissionRate: 3.5,
+  hireDate: "2026-01-10",
+  contractType: "CDI",
+  city: "Cotonou",
+  assignedZone: "Cotonou et environs",
+  rating: 8.5,
+  propertiesCount: 0,
+  pendingSyncCount: 0,
+  totalCommissions: 0,
+  status: "ACTIF",
+  cnssNumber: "CNSS-2026-003",
+  emailVerified: true,
+  twoFactorEnabled: false
+};
+var USER_ISMENE_BANKOLE = {
+  id: "user_ismene_bankole",
+  name: "Ism\xE8ne Mahoussi Samiath Bankole",
+  avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80",
+  email: "ismene.bankole@chezmoi.bj",
+  phone: "+229 97 00 12 02",
+  role: "SECRETAIRE",
+  jobTitle: "Agent recenseur foncier terrain",
+  departmentName: "Secr\xE9tariat & Administration",
+  baseSalary: 0,
+  commissionRate: 3.5,
+  hireDate: "2026-01-12",
+  contractType: "CDI",
+  city: "Cotonou",
+  assignedZone: "Cotonou et environs",
+  rating: 8.5,
+  propertiesCount: 0,
+  pendingSyncCount: 0,
+  totalCommissions: 0,
+  status: "ACTIF",
+  cnssNumber: "CNSS-2026-004",
+  emailVerified: true,
+  twoFactorEnabled: false
+};
+var USER_DEO_GRATIAS = {
+  id: "user_deo_gratias",
+  name: "D\xE9o Gratias Marie Clarisse",
+  avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+  email: "deogratias.marieclarisse@chezmoi.bj",
+  phone: "+229 97 00 12 03",
+  role: "SECRETAIRE",
+  jobTitle: "Agent recenseur foncier terrain",
+  departmentName: "Secr\xE9tariat & Administration",
+  baseSalary: 0,
+  commissionRate: 3.5,
+  hireDate: "2026-01-20",
+  contractType: "CDI",
+  city: "Cotonou",
+  assignedZone: "Cotonou et environs",
+  rating: 8.5,
+  propertiesCount: 0,
+  pendingSyncCount: 0,
+  totalCommissions: 0,
+  status: "EN_ATTENTE_VALIDATION",
+  cnssNumber: "CNSS-2026-005",
+  emailVerified: false,
+  twoFactorEnabled: false
+};
+var CENTRAL_ADMIN_SMB = USER_SMB_CENTRAL;
 var INITIAL_USERS = [
-  CENTRAL_ADMIN_SMB
+  USER_SMB_CENTRAL,
+  USER_KOKOU_ABALLO,
+  USER_GBETO_JEAN_CLAUDE,
+  USER_ISMENE_BANKOLE,
+  USER_DEO_GRATIAS
 ];
-var INITIAL_PROPERTIES = [];
+var INITIAL_PROPERTIES = [
+  {
+    id: "prop_womey_sodo_521",
+    codeReference: "CM-ABO-2026-521",
+    title: "Parcelle Womey Sodo - A vendre - 2000m\xB2",
+    description: "Parcelle viabilis\xE9e et cl\xF4tur\xE9e de 2000 m\xB2 situ\xE9e \xE0 Womey Sodo. Zone r\xE9sidentielle paisible, eau SONEB et \xE9lectricit\xE9 SBEE disponibles. Acc\xE8s rapide depuis le carrefour Calvaire.",
+    listingType: "VENTE",
+    category: "Terrains",
+    department: "Atlantique",
+    city: "Abomey-Calavi",
+    arrondissement: "Godomey",
+    district: "Womey Sodo",
+    address: "2\xE8me von apr\xE8s le carrefour Calvaire",
+    priceAmount: 25e6,
+    priceUSD: 41667,
+    areaSqMeters: 2e3,
+    roomsCount: 6,
+    bedroomsCount: 4,
+    bathroomsCount: 3,
+    legalStatus: "CONCESSION",
+    otherDetails: "Acc\xE8s bitum\xE9 \xE0 150m, quartier en plein essor, terrain plat sans bas-fond.",
+    coordinates: {
+      latitude: 6.3621,
+      longitude: 2.3812,
+      altitude: 9.2,
+      accuracy: 3.4,
+      addressApprox: "Womey Sodo, Abomey-Calavi",
+      capturedAt: 1769e9
+    },
+    rentalRates: {
+      daily: 35e3,
+      weekly: 2e5,
+      monthly: 65e4
+    },
+    owner: {
+      id: "owner_meckdashi_alain",
+      fullName: "Meckdashi Alain",
+      phonePrimary: "0197225225",
+      phoneWhatsapp: "0197225225",
+      mandateType: "SIMPLE",
+      mandateDurationMonths: 12
+    },
+    photos: [
+      {
+        id: "photo_womey_1",
+        url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+        category: "EXTERIEUR",
+        caption: "Vue du terrain et bornage",
+        isMain: true,
+        timestamp: 1769e9
+      }
+    ],
+    assignedAgentId: "user_smb_central",
+    assignedAgentName: "SMB",
+    syncStatus: "synced",
+    createdAt: 1769e9,
+    updatedAt: 1769e9
+  },
+  {
+    id: "prop_marina_833",
+    codeReference: "CM-COT-2026-101",
+    title: "Boulevard de la Marina \u2013 Haie vive \u2013 833m\xB2 clotur\xE9",
+    description: "Exceptionnel terrain titr\xE9 de 833 m\xB2 situ\xE9 sur le Boulevard de la Marina \xE0 Haie Vive. Emplacement strat\xE9gique de premier ordre, id\xE9al pour si\xE8ge de soci\xE9t\xE9, complexe h\xF4telier ou villa de ma\xEEtre.",
+    listingType: "VENTE",
+    category: "Terrains",
+    department: "Littoral",
+    city: "Cotonou",
+    arrondissement: "12\xE8me Arrondissement",
+    district: "Haie-Vive",
+    address: "Route de la marina, Rue 926, Cotonou, B\xE9nin",
+    priceAmount: 1e9,
+    priceUSD: 1666667,
+    areaSqMeters: 833,
+    roomsCount: 0,
+    bedroomsCount: 0,
+    bathroomsCount: 0,
+    legalStatus: "TITRE_FONCIER",
+    otherDetails: "Titre Foncier individuel ANDF, zone haut standing s\xE9curis\xE9e, bordure de voie principale.",
+    coordinates: {
+      latitude: 6.3556,
+      longitude: 2.4187,
+      altitude: 5.5,
+      accuracy: 2.1,
+      addressApprox: "Boulevard de la Marina, Cotonou",
+      capturedAt: 17691e8
+    },
+    owner: {
+      id: "owner_marina_holding",
+      fullName: "Soci\xE9t\xE9 Foncier & Invest B\xE9nin",
+      phonePrimary: "0197238613",
+      phoneWhatsapp: "0197238613",
+      mandateType: "EXCLUSIF",
+      mandateDurationMonths: 24
+    },
+    photos: [
+      {
+        id: "photo_marina_1",
+        url: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80",
+        category: "EXTERIEUR",
+        caption: "Fa\xE7ade sur le Boulevard de la Marina",
+        isMain: true,
+        timestamp: 17691e8
+      }
+    ],
+    assignedAgentId: "user_kokou_aballo",
+    assignedAgentName: "Kokou Aballo",
+    syncStatus: "synced",
+    createdAt: 17691e8,
+    updatedAt: 17691e8
+  },
+  {
+    id: "prop_ketou_455ha",
+    codeReference: "CM-KET-2026-202",
+    title: "K\xE9tou \u2013 Domaine agropastoral \u2013 455 ha",
+    description: "Immense domaine agropastoral de 455 hectares situ\xE9 \xE0 seulement 5 km du nouveau goudron K\xE9tou - Sav\xE8. Terre riche et fertile, cours deau p\xE9renne, acc\xE8s ais\xE9 pour camions et engins lourds.",
+    listingType: "VENTE",
+    category: "Terrains",
+    department: "Plateau",
+    city: "K\xE9tou",
+    arrondissement: "K\xE9tou Centre",
+    district: "Domaine Sud",
+    address: "\xC0 seulement 05 km du nouveau goudron K\xE9tou - Sav\xE8",
+    priceAmount: 455e6,
+    priceUSD: 758333,
+    areaSqMeters: 455e4,
+    roomsCount: 4,
+    bedroomsCount: 2,
+    bathroomsCount: 2,
+    legalStatus: "TITRE_FONCIER",
+    otherDetails: "Plan topographique valid\xE9, bornage g\xE9n\xE9ral complet, exploitation agropastorale pr\xEAte.",
+    coordinates: {
+      latitude: 7.3615,
+      longitude: 2.6014,
+      altitude: 120,
+      accuracy: 4.8,
+      addressApprox: "Zone Agropastorale, K\xE9tou",
+      capturedAt: 17692e8
+    },
+    owner: {
+      id: "owner_agri_ketou",
+      fullName: "Coop\xE9rative Agro K\xE9tou",
+      phonePrimary: "0190123456",
+      phoneWhatsapp: "0190123456",
+      mandateType: "SIMPLE",
+      mandateDurationMonths: 12
+    },
+    photos: [
+      {
+        id: "photo_ketou_1",
+        url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+        category: "EXTERIEUR",
+        caption: "Vue a\xE9rienne des parcelles agropastorales",
+        isMain: true,
+        timestamp: 17692e8
+      }
+    ],
+    assignedAgentId: "user_gbeto_jc",
+    assignedAgentName: "GBETO Jean-Claude",
+    syncStatus: "synced",
+    createdAt: 17692e8,
+    updatedAt: 17692e8
+  },
+  {
+    id: "prop_villa_calavi_arconville",
+    codeReference: "CM-ABO-2026-303",
+    title: "Villa Duplex Contemporaine R+1 avec Piscine & Jardin",
+    description: "Somptueuse villa duplex de 5 chambres salon avec piscine privative et garage 3 v\xE9hicules \xE0 Calavi Arconville. Finitions grand standing, \xE9nergie solaire int\xE9gr\xE9e, groupe \xE9lectrog\xE8ne de secours.",
+    listingType: "VENTE",
+    category: "Maisons & Villas",
+    department: "Atlantique",
+    city: "Abomey-Calavi",
+    arrondissement: "Calavi Centre",
+    district: "Arconville",
+    address: "Rue des Palmiers, Von Pharmacie Arconville",
+    priceAmount: 145e6,
+    priceUSD: 241667,
+    areaSqMeters: 450,
+    roomsCount: 7,
+    bedroomsCount: 5,
+    bathroomsCount: 4,
+    legalStatus: "TITRE_FONCIER",
+    otherDetails: "Piscine 8x4m, syst\xE8me domotique, b\xE2che \xE0 eau 5000L avec surpresseur.",
+    coordinates: {
+      latitude: 6.4485,
+      longitude: 2.3551,
+      altitude: 14.5,
+      accuracy: 2.5,
+      addressApprox: "Arconville, Abomey-Calavi",
+      capturedAt: 176925e7
+    },
+    owner: {
+      id: "owner_adebayo",
+      fullName: "Docteur Adebayo Marcellin",
+      phonePrimary: "0197001201",
+      phoneWhatsapp: "0197001201",
+      mandateType: "EXCLUSIF",
+      mandateDurationMonths: 12
+    },
+    photos: [
+      {
+        id: "photo_villa_1",
+        url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80",
+        category: "FACADE",
+        caption: "Fa\xE7ade contemporaine et piscine",
+        isMain: true,
+        timestamp: 176925e7
+      }
+    ],
+    assignedAgentId: "user_ismene_bankole",
+    assignedAgentName: "Ism\xE8ne Mahoussi Samiath Bankole",
+    syncStatus: "synced",
+    createdAt: 176925e7,
+    updatedAt: 176925e7
+  },
+  {
+    id: "prop_app_cadjehoun_f4",
+    codeReference: "CM-COT-2026-404",
+    title: "Appartement Haut Standing F4 \u2013 Vue Oc\xE9an & Marina",
+    description: "Superbe appartement de 3 chambres salon avec balcons filants offrant une vue panoramique sur loc\xE9an \xE0 Cadjehoun. R\xE9sidence s\xE9curis\xE9e 24/7 avec ascenseur, salle de sport et parking sous-sol.",
+    listingType: "VENTE",
+    category: "Appartements",
+    department: "Littoral",
+    city: "Cotonou",
+    arrondissement: "12\xE8me Arrondissement",
+    district: "Cadjehoun",
+    address: "Boulevard de la Marina, face Novotel",
+    priceAmount: 85e6,
+    priceUSD: 141667,
+    areaSqMeters: 175,
+    roomsCount: 4,
+    bedroomsCount: 3,
+    bathroomsCount: 3,
+    legalStatus: "TITRE_FONCIER",
+    otherDetails: "Climatisation centrale inverter, cuisine \xE9quip\xE9e italienne, ascenseur Schindler.",
+    coordinates: {
+      latitude: 6.3578,
+      longitude: 2.4112,
+      altitude: 8,
+      accuracy: 2,
+      addressApprox: "Cadjehoun, Cotonou littoral",
+      capturedAt: 17693e8
+    },
+    owner: {
+      id: "owner_marina_res",
+      fullName: "Soci\xE9t\xE9 Immobili\xE8re du Golfe",
+      phonePrimary: "0197001202",
+      phoneWhatsapp: "0197001202",
+      mandateType: "SIMPLE",
+      mandateDurationMonths: 12
+    },
+    photos: [
+      {
+        id: "photo_app_1",
+        url: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80",
+        category: "SALON",
+        caption: "Grand s\xE9jour ouvert avec baie vitr\xE9e",
+        isMain: true,
+        timestamp: 17693e8
+      }
+    ],
+    assignedAgentId: "user_deo_gratias",
+    assignedAgentName: "D\xE9o Gratias Marie Clarisse",
+    syncStatus: "synced",
+    createdAt: 17693e8,
+    updatedAt: 17693e8
+  },
+  {
+    id: "prop_magasin_ganhi",
+    codeReference: "CM-COT-2026-505",
+    title: "Boutique Commerciale de Plain-Pied \u2013 Centre dAffaires Ganhi",
+    description: "Local commercial et magasin de 95 m\xB2 avec double vitrine s\xE9curis\xE9e en plein c\u0153ur du quartier financier de Ganhi. Emplacement n\xB01 \xE0 fort passage pi\xE9ton et v\xE9hiculaire.",
+    listingType: "LOCATION",
+    category: "Boutiques et Magasins",
+    department: "Littoral",
+    city: "Cotonou",
+    arrondissement: "5\xE8me Arrondissement",
+    district: "Ganhi",
+    address: "Avenue Clozel, Carrefour des Banques",
+    priceAmount: 85e4,
+    priceUSD: 1417,
+    areaSqMeters: 95,
+    roomsCount: 2,
+    bedroomsCount: 0,
+    bathroomsCount: 1,
+    legalStatus: "TITRE_FONCIER",
+    otherDetails: "Rideau m\xE9tallique \xE9lectrique, compteur SBEE pr\xE9pay\xE9 ind\xE9pendant, ligne fibre optique.",
+    coordinates: {
+      latitude: 6.3622,
+      longitude: 2.4358,
+      altitude: 6,
+      accuracy: 2.5,
+      addressApprox: "Ganhi, Cotonou",
+      capturedAt: 176935e7
+    },
+    owner: {
+      id: "owner_ganhi_com",
+      fullName: "Hadj Ousmane Sanni",
+      phonePrimary: "0197000001",
+      phoneWhatsapp: "0197000001",
+      mandateType: "SIMPLE",
+      mandateDurationMonths: 36
+    },
+    photos: [
+      {
+        id: "photo_shop_1",
+        url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
+        category: "FACADE",
+        caption: "Vitrine commerciale sur art\xE8re principale",
+        isMain: true,
+        timestamp: 176935e7
+      }
+    ],
+    assignedAgentId: "user_smb_central",
+    assignedAgentName: "SMB",
+    syncStatus: "synced",
+    createdAt: 176935e7,
+    updatedAt: 176935e7
+  },
+  {
+    id: "prop_meuble_fidjrosse",
+    codeReference: "CM-COT-2026-606",
+    title: "R\xE9sidence Meubl\xE9e VIP avec Terrasse \u2013 Fidjross\xE8 Plage",
+    description: "Magnifique r\xE9sidence meubl\xE9e et climatis\xE9e tout confort \xE0 200 m de la plage de Fidjross\xE8. Enti\xE8rement \xE9quip\xE9e : wifi haut d\xE9bit Canalbox, Smart TV 65 pouces, cuisine am\xE9ricaine avec \xE9lectrom\xE9nager Bosch, service de m\xE9nage inclus.",
+    listingType: "LOCATION_MEUBLEE",
+    category: "R\xE9sidences Meubl\xE9es",
+    department: "Littoral",
+    city: "Cotonou",
+    arrondissement: "12\xE8me Arrondissement",
+    district: "Fidjross\xE8",
+    address: "Route des P\xEAches, Von Pav\xE9e face Clinique Mahouna",
+    priceAmount: 45e3,
+    priceUSD: 75,
+    areaSqMeters: 120,
+    roomsCount: 3,
+    bedroomsCount: 2,
+    bathroomsCount: 2,
+    legalStatus: "TITRE_FONCIER",
+    otherDetails: "Forfait d\xE9gressif : 45 000 FCFA/jour, 280 000 FCFA/semaine, 850 000 FCFA/mois.",
+    coordinates: {
+      latitude: 6.3638,
+      longitude: 2.3789,
+      altitude: 7.2,
+      accuracy: 2.8,
+      addressApprox: "Fidjross\xE8 Plage, Cotonou",
+      capturedAt: 17694e8
+    },
+    rentalRates: {
+      daily: 45e3,
+      weekly: 28e4,
+      monthly: 85e4
+    },
+    owner: {
+      id: "owner_meuble_fid",
+      fullName: "Madame Houngbo Carine",
+      phonePrimary: "0197225225",
+      phoneWhatsapp: "0197225225",
+      mandateType: "EXCLUSIF",
+      mandateDurationMonths: 12
+    },
+    photos: [
+      {
+        id: "photo_meuble_1",
+        url: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop&q=80",
+        category: "SALON",
+        caption: "Salon design meubl\xE9 et climatis\xE9",
+        isMain: true,
+        timestamp: 17694e8
+      }
+    ],
+    assignedAgentId: "user_kokou_aballo",
+    assignedAgentName: "Kokou Aballo",
+    syncStatus: "synced",
+    createdAt: 17694e8,
+    updatedAt: 17694e8
+  },
+  {
+    id: "prop_bureau_haie_vive",
+    codeReference: "CM-COT-2026-707",
+    title: "Plateau de Bureaux Open-Space \u2013 Haie Vive Prestige",
+    description: "Plateau professionnel moderne de 220 m\xB2 am\xE9nag\xE9 en open-space avec 3 bureaux de direction vitr\xE9s et salle de r\xE9union multim\xE9dia. Id\xE9al pour multinationale, cabinet d\u2019avocats, ONG internationale ou institution financi\xE8re.",
+    listingType: "BAIL_COMMERCIAL",
+    category: "Bureaux",
+    department: "Littoral",
+    city: "Cotonou",
+    arrondissement: "12\xE8me Arrondissement",
+    district: "Haie-Vive",
+    address: "Rue 380, Immeuble Horizon Prestige, 2\xE8me \xE9tage",
+    priceAmount: 12e5,
+    priceUSD: 2e3,
+    areaSqMeters: 220,
+    roomsCount: 5,
+    bedroomsCount: 0,
+    bathroomsCount: 2,
+    legalStatus: "TITRE_FONCIER",
+    otherDetails: "C\xE2blage r\xE9seau baie informatique RJ45 cat\xE9gorie 6, groupe \xE9lectrog\xE8ne automatique 60 kVA.",
+    coordinates: {
+      latitude: 6.3562,
+      longitude: 2.4173,
+      altitude: 6.8,
+      accuracy: 2.2,
+      addressApprox: "Haie Vive, Cotonou",
+      capturedAt: 176945e7
+    },
+    owner: {
+      id: "owner_horizon",
+      fullName: "Horizon Prestige SARL",
+      phonePrimary: "0197238613",
+      phoneWhatsapp: "0197238613",
+      mandateType: "SIMPLE",
+      mandateDurationMonths: 36
+    },
+    photos: [
+      {
+        id: "photo_bur_1",
+        url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80",
+        category: "FACADE",
+        caption: "Plateau de bureaux am\xE9nag\xE9 avec cloisons vitr\xE9es",
+        isMain: true,
+        timestamp: 176945e7
+      }
+    ],
+    assignedAgentId: "user_gbeto_jc",
+    assignedAgentName: "GBETO Jean-Claude",
+    syncStatus: "synced",
+    createdAt: 176945e7,
+    updatedAt: 176945e7
+  }
+];
 var INITIAL_TRANSACTIONS = [];
 var INITIAL_DOCUMENTS = [];
 var INITIAL_LEAVE_REQUESTS = [];
@@ -63,7 +593,14 @@ function getLogoPath() {
   return candidates[0];
 }
 var LOGO_PATH = getLogoPath();
-var BASE_APP_URL = (process.env.APP_URL || process.env.VITE_APP_URL || "https://admin.chezmoi.bj").replace(/\/+$/, "");
+function getSafeAppUrl(providedUrl) {
+  const candidate = (providedUrl || process.env.APP_URL || process.env.VITE_APP_URL || "").trim();
+  if (!candidate || candidate.includes("localhost") || candidate.includes("127.0.0.1") || candidate.includes("0.0.0.0") || candidate.includes(":3000") || candidate.includes(":5173") || !candidate.startsWith("http")) {
+    return "https://admin.chezmoi.bj";
+  }
+  return candidate.replace(/\/+$/, "");
+}
+var BASE_APP_URL = getSafeAppUrl();
 var transporter = null;
 var SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
 var SMTP_PORT = Number(process.env.SMTP_PORT || 465);
@@ -347,7 +884,7 @@ async function sendNewAccountVerificationEmail(email, name, token, code, appUrl 
     console.log(`[Hostinger SMTP] E-mail de validation d\xE9j\xE0 exp\xE9di\xE9 pr\xE9c\xE9demment pour ${normalizedEmail}. Envoi ignor\xE9 (unicit\xE9 garantie).`);
     return true;
   }
-  const targetBaseUrl = (appUrl || BASE_APP_URL).replace(/\/+$/, "");
+  const targetBaseUrl = getSafeAppUrl(appUrl);
   const verificationUrl = `${targetBaseUrl}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
   const htmlContent = buildGitHubStyleHtml({
     title: "Validez votre adresse e-mail",
@@ -372,6 +909,24 @@ async function sendNewAccountVerificationEmail(email, name, token, code, appUrl 
   }
   return sent;
 }
+async function sendProfileUpdatedNotificationEmail(email, name, updatesSummary) {
+  const details = updatesSummary ? `Les modifications suivantes ont \xE9t\xE9 enregistr\xE9es sur votre profil : <strong>${updatesSummary}</strong>.` : "Les informations de votre profil collaborateur (nom, coordonn\xE9es ou affectation) ont \xE9t\xE9 mises \xE0 jour par l'administration.";
+  const htmlContent = buildGitHubStyleHtml({
+    title: "Mise \xE0 jour de votre profil collaborateur",
+    preheader: "Notification : vos informations de profil ont \xE9t\xE9 mises \xE0 jour",
+    recipientName: name,
+    bodyText: `${details} Votre compte demeure actif et directement accessible sans aucune action ou validation suppl\xE9mentaire de votre part.`,
+    securityNote: "Si vous n'\xEAtes pas \xE0 l'origine de cette mise \xE0 jour ou si vous constatez une anomalie, veuillez contacter directement la direction g\xE9n\xE9rale Chezmoi administration.",
+    badgeLabel: "Information profil"
+  });
+  return sendMailWithRetry({
+    from: FROM_SENDER,
+    to: email,
+    subject: `[Chezmoi administration] Mise \xE0 jour de votre profil collaborateur`,
+    html: htmlContent,
+    attachments: getEmailAttachments()
+  });
+}
 
 // src/server/db.ts
 dotenv2.config();
@@ -383,9 +938,36 @@ var dbPort = Number(process.env.DB_PORT || 3306);
 var pool = null;
 var isMySqlConnected = false;
 var lastDbError = null;
+var CACHE_FILE = path2.resolve(process.cwd(), ".data/memory_store.json");
+function loadPersistedUsers() {
+  try {
+    if (fs2.existsSync(CACHE_FILE)) {
+      const raw = fs2.readFileSync(CACHE_FILE, "utf-8");
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.users) && data.users.length > 0) {
+        const map = /* @__PURE__ */ new Map();
+        INITIAL_USERS.forEach((u) => map.set(u.id, u));
+        data.users.forEach((u) => map.set(u.id, u));
+        return Array.from(map.values());
+      }
+    }
+  } catch (err) {
+    console.warn("[Store Cache] Erreur chargement store persistant:", err);
+  }
+  return [...INITIAL_USERS];
+}
+function savePersistedUsers() {
+  try {
+    const dir = path2.dirname(CACHE_FILE);
+    if (!fs2.existsSync(dir)) fs2.mkdirSync(dir, { recursive: true });
+    fs2.writeFileSync(CACHE_FILE, JSON.stringify({ users: memoryStore.users }, null, 2));
+  } catch (err) {
+    console.warn("[Store Cache] Erreur sauvegarde store persistant:", err);
+  }
+}
 var memoryStore = {
   properties: [...INITIAL_PROPERTIES],
-  users: [...INITIAL_USERS],
+  users: loadPersistedUsers(),
   transactions: [...INITIAL_TRANSACTIONS],
   leaveRequests: [...INITIAL_LEAVE_REQUESTS],
   payslips: [...INITIAL_PAYSLIPS],
@@ -428,9 +1010,6 @@ async function initDatabase() {
     isMySqlConnected = false;
     lastDbError = err?.message || String(err);
     console.warn(`[Hostinger MySQL] Impossible de joindre MySQL (${lastDbError}). Bascule sur le stockage m\xE9moire locale.`);
-    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch((err2) => {
-      console.error("[Hostinger SMTP] Erreur envoi activation admin:", err2);
-    });
     return false;
   }
 }
@@ -476,7 +1055,8 @@ async function ensureTablesAndAdmin(pool2) {
       "ALTER TABLE users ADD COLUMN verification_email_sent TINYINT(1) NOT NULL DEFAULT 0",
       "ALTER TABLE users ADD COLUMN total_commissions DECIMAL(14, 2) NOT NULL DEFAULT 0.00",
       "ALTER TABLE properties ADD COLUMN rental_rates JSON DEFAULT NULL",
-      "ALTER TABLE properties ADD COLUMN other_details TEXT DEFAULT NULL"
+      "ALTER TABLE properties ADD COLUMN other_details TEXT DEFAULT NULL",
+      'ALTER TABLE properties ADD COLUMN operational_status VARCHAR(32) NOT NULL DEFAULT "DISPONIBLE"'
     ];
     for (const mig of columnMigrations) {
       try {
@@ -515,6 +1095,7 @@ async function ensureTablesAndAdmin(pool2) {
         sync_status VARCHAR(32) NOT NULL DEFAULT 'synced',
         sync_error TEXT DEFAULT NULL,
         legal_status VARCHAR(64) NOT NULL DEFAULT 'EN_COURS',
+        operational_status VARCHAR(32) NOT NULL DEFAULT 'DISPONIBLE',
         is_featured TINYINT(1) NOT NULL DEFAULT 0,
         created_at BIGINT NOT NULL,
         updated_at BIGINT NOT NULL,
@@ -582,16 +1163,16 @@ async function ensureTablesAndAdmin(pool2) {
         ]
       );
       console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) ins\xE9r\xE9 avec succ\xE8s (R\xF4le: Super Admin, Statut: V\xE9rifi\xE9 / Actif).`);
+      sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch((err) => {
+        console.error("[Hostinger SMTP] Erreur envoi activation admin:", err);
+      });
     } else {
       await pool2.query(
         `UPDATE users SET role = 'SUPER_ADMIN', status = 'ACTIF', email_verified = 1, avatar = ? WHERE LOWER(email) = ?`,
         [CENTRAL_ADMIN_SMB.avatar, CENTRAL_ADMIN_SMB.email.toLowerCase()]
       );
-      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) v\xE9rifi\xE9 et actif.`);
+      console.log(`[Hostinger MySQL] Compte Administrateur Central SMB (${CENTRAL_ADMIN_SMB.email}) v\xE9rifi\xE9 et actif (aucun e-mail r\xE9p\xE9titif envoy\xE9).`);
     }
-    sendAdminInitializationEmail(CENTRAL_ADMIN_SMB.email, CENTRAL_ADMIN_SMB.name).catch((err) => {
-      console.error("[Hostinger SMTP] Erreur envoi activation admin:", err);
-    });
   } catch (err) {
     console.error("[Hostinger MySQL] Erreur ensureTablesAndAdmin:", err?.message);
   }
@@ -651,6 +1232,7 @@ async function getAllProperties() {
         syncStatus: r.sync_status,
         syncError: r.sync_error || void 0,
         legalStatus: r.legal_status,
+        operationalStatus: r.operational_status || "DISPONIBLE",
         isFeatured: Boolean(r.is_featured),
         createdAt: Number(r.created_at),
         updatedAt: Number(r.updated_at),
@@ -666,6 +1248,7 @@ async function upsertProperty(prop) {
   const now = Date.now();
   const record = {
     ...prop,
+    operationalStatus: prop.operationalStatus || "DISPONIBLE",
     syncStatus: "synced",
     updatedAt: prop.updatedAt || now,
     serverSyncTimestamp: now
@@ -679,8 +1262,8 @@ async function upsertProperty(prop) {
           price_usd, area_sq_meters, rooms_count, bedrooms_count, bathrooms_count, 
           coordinates_lat, coordinates_lng, coordinates_accuracy, coordinates_address_approx, coordinates_captured_at,
           owner_data, photos, rental_rates, other_details, assigned_agent_id, assigned_agent_name, sync_status, 
-          legal_status, is_featured, created_at, updated_at, server_sync_timestamp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          legal_status, operational_status, is_featured, created_at, updated_at, server_sync_timestamp
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           title = VALUES(title),
           description = VALUES(description),
@@ -705,6 +1288,8 @@ async function upsertProperty(prop) {
           photos = VALUES(photos),
           rental_rates = VALUES(rental_rates),
           other_details = VALUES(other_details),
+          legal_status = VALUES(legal_status),
+          operational_status = VALUES(operational_status),
           sync_status = 'synced',
           updated_at = VALUES(updated_at),
           server_sync_timestamp = VALUES(server_sync_timestamp)
@@ -740,6 +1325,7 @@ async function upsertProperty(prop) {
         record.assignedAgentName,
         "synced",
         record.legalStatus,
+        record.operationalStatus || "DISPONIBLE",
         record.isFeatured ? 1 : 0,
         record.createdAt || now,
         record.updatedAt || now,
@@ -757,6 +1343,17 @@ async function upsertProperty(prop) {
     memoryStore.properties.unshift(record);
   }
   return record;
+}
+async function deleteProperty(id) {
+  if (isMySqlConnected && pool) {
+    try {
+      await pool.query("DELETE FROM properties WHERE id = ?", [id]);
+    } catch (err) {
+      console.error("[MySQL Error] deleteProperty:", err);
+    }
+  }
+  memoryStore.properties = memoryStore.properties.filter((p) => p.id !== id);
+  return true;
 }
 async function processSyncPush(items) {
   const result = {
@@ -907,28 +1504,30 @@ async function getAllUsers() {
   }
   return memoryStore.users;
 }
-async function upsertUser(user) {
+async function createCollaborator(user) {
   const now = Date.now();
   const isSMB = user.email.toLowerCase() === "chezmoi.benin@gmail.com";
   const existingInMemory = memoryStore.users.find((u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
-  const isNewUser = !existingInMemory;
-  if (isNewUser) {
-    if (isSMB) {
-      user.status = "ACTIF";
-      user.emailVerified = true;
-      user.verificationEmailSent = true;
-    } else {
-      user.status = "EN_ATTENTE_VALIDATION";
-      user.emailVerified = false;
-      const verificationCode = Math.floor(1e5 + Math.random() * 9e5).toString();
-      user.verificationToken = verificationCode;
-      if (!user.verificationEmailSent) {
-        user.verificationEmailSent = true;
-        sendNewAccountVerificationEmail(user.email, user.name, verificationCode, verificationCode).catch((e) => {
-          console.error("[Nodemailer] Erreur envoi validation nouveau compte:", e);
-        });
-      }
-    }
+  if (existingInMemory) {
+    return updateCollaboratorProfile(existingInMemory.id, user);
+  }
+  const newCollaborator = {
+    ...user,
+    status: isSMB ? "ACTIF" : "EN_ATTENTE_VALIDATION",
+    emailVerified: isSMB ? true : false,
+    verificationEmailSent: false,
+    createdAt: now,
+    updatedAt: now
+  };
+  if (!isSMB) {
+    const verificationCode = Math.floor(1e5 + Math.random() * 9e5).toString();
+    newCollaborator.verificationToken = verificationCode;
+    newCollaborator.verificationEmailSent = true;
+    sendNewAccountVerificationEmail(newCollaborator.email, newCollaborator.name, verificationCode, verificationCode).catch((e) => {
+      console.error("[Nodemailer] Erreur envoi validation nouveau compte:", e);
+    });
+  } else {
+    newCollaborator.verificationEmailSent = true;
   }
   if (isMySqlConnected && pool) {
     try {
@@ -939,61 +1538,182 @@ async function upsertUser(user) {
           assigned_zone, rating, properties_count, pending_sync_count, 
           total_commissions, status, cnss_number, email_verified, verification_token, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-          name = VALUES(name),
-          avatar = VALUES(avatar),
-          phone = VALUES(phone),
-          role = VALUES(role),
-          job_title = VALUES(job_title),
-          department_name = VALUES(department_name),
-          base_salary = VALUES(base_salary),
-          commission_rate = VALUES(commission_rate),
-          city = VALUES(city),
-          assigned_zone = VALUES(assigned_zone),
-          status = VALUES(status),
-          cnss_number = VALUES(cnss_number),
-          email_verified = VALUES(email_verified),
-          verification_token = VALUES(verification_token),
-          updated_at = VALUES(updated_at)
       `;
       await pool.query(sql, [
-        user.id,
-        user.name,
-        user.email,
-        user.avatar || null,
-        user.phone,
-        user.role,
-        user.jobTitle,
-        user.departmentName,
-        user.baseSalary,
-        user.commissionRate,
-        user.hireDate,
-        user.contractType,
-        user.city,
-        user.assignedZone,
-        user.rating,
-        user.propertiesCount,
-        user.pendingSyncCount,
-        user.totalCommissions,
-        user.status,
-        user.cnssNumber || null,
-        user.emailVerified ? 1 : 0,
-        user.verificationToken || null,
+        newCollaborator.id,
+        newCollaborator.name,
+        newCollaborator.email,
+        newCollaborator.avatar || null,
+        newCollaborator.phone,
+        newCollaborator.role,
+        newCollaborator.jobTitle,
+        newCollaborator.departmentName,
+        newCollaborator.baseSalary,
+        newCollaborator.commissionRate,
+        newCollaborator.hireDate,
+        newCollaborator.contractType,
+        newCollaborator.city,
+        newCollaborator.assignedZone,
+        newCollaborator.rating,
+        newCollaborator.propertiesCount,
+        newCollaborator.pendingSyncCount,
+        newCollaborator.totalCommissions,
+        newCollaborator.status,
+        newCollaborator.cnssNumber || null,
+        newCollaborator.emailVerified ? 1 : 0,
+        newCollaborator.verificationToken || null,
         now,
         now
       ]);
-      return user;
     } catch (err) {
-      console.error("[MySQL Error] upsertUser:", err);
+      console.error("[MySQL Error] createCollaborator:", err);
     }
   }
-  const idx = memoryStore.users.findIndex((u) => u.id === user.id);
-  if (idx !== -1) {
-    memoryStore.users[idx] = { ...memoryStore.users[idx], ...user };
-  } else {
-    memoryStore.users.push(user);
+  memoryStore.users.push(newCollaborator);
+  savePersistedUsers();
+  return newCollaborator;
+}
+async function updateCollaboratorProfile(userId, updates) {
+  const now = Date.now();
+  let existing = memoryStore.users.find((u) => u.id === userId || updates.email && u.email.toLowerCase() === updates.email.toLowerCase());
+  if (!existing && isMySqlConnected && pool) {
+    try {
+      const [rows] = await pool.query("SELECT * FROM users WHERE id = ? OR LOWER(email) = ? LIMIT 1", [userId, (updates.email || "").toLowerCase()]);
+      if (rows && rows.length > 0) {
+        const r = rows[0];
+        existing = {
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          avatar: r.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+          phone: r.phone,
+          role: r.role,
+          jobTitle: r.job_title,
+          departmentName: r.department_name,
+          baseSalary: Number(r.base_salary || 0),
+          commissionRate: Number(r.commission_rate || 0),
+          hireDate: r.hire_date,
+          contractType: r.contract_type,
+          city: r.city,
+          assignedZone: r.assigned_zone,
+          rating: Number(r.rating || 9),
+          propertiesCount: Number(r.properties_count || 0),
+          pendingSyncCount: 0,
+          totalCommissions: Number(r.total_commissions || 0),
+          status: r.status,
+          cnssNumber: r.cnss_number || void 0,
+          emailVerified: Boolean(r.email_verified),
+          totpSecret: r.totp_secret || void 0,
+          twoFactorEnabled: Boolean(r.two_factor_enabled),
+          verificationToken: r.verification_token || void 0,
+          verificationEmailSent: Boolean(r.verification_email_sent || false)
+        };
+      }
+    } catch (err) {
+      console.error("[MySQL Error] updateCollaboratorProfile lookup:", err);
+    }
   }
-  return memoryStore.users[idx !== -1 ? idx : memoryStore.users.length - 1];
+  if (!existing) {
+    throw new Error(`Utilisateur introuvable pour la mise \xE0 jour (ID: ${userId})`);
+  }
+  const wasAlreadyVerified = existing.emailVerified === true;
+  const isSMB = existing.email.toLowerCase() === "chezmoi.benin@gmail.com";
+  const finalEmailVerified = wasAlreadyVerified || isSMB ? true : Boolean(updates.emailVerified ?? existing.emailVerified);
+  let finalStatus = existing.status;
+  if (wasAlreadyVerified || isSMB) {
+    if (updates.status && updates.status !== "EN_ATTENTE_VALIDATION") {
+      finalStatus = updates.status;
+    } else {
+      finalStatus = existing.status === "EN_ATTENTE_VALIDATION" ? "ACTIF" : existing.status;
+    }
+  } else {
+    finalStatus = updates.status || existing.status;
+  }
+  const changes = [];
+  if (updates.name && updates.name.trim() !== existing.name.trim()) changes.push(`Nom : ${updates.name.trim()}`);
+  if (updates.phone && updates.phone.trim() !== existing.phone.trim()) changes.push(`T\xE9l\xE9phone : ${updates.phone.trim()}`);
+  if (updates.role && updates.role !== existing.role) changes.push(`R\xF4le : ${updates.role}`);
+  if (updates.jobTitle && updates.jobTitle.trim() !== existing.jobTitle.trim()) changes.push(`Poste : ${updates.jobTitle.trim()}`);
+  if (updates.city && updates.city.trim() !== existing.city.trim()) changes.push(`Ville : ${updates.city.trim()}`);
+  if (updates.avatar && updates.avatar !== existing.avatar) changes.push(`Photo de profil`);
+  if (updates.status && updates.status !== existing.status) changes.push(`Statut : ${updates.status}`);
+  const updatedUser = {
+    ...existing,
+    name: updates.name !== void 0 ? updates.name.trim() : existing.name,
+    avatar: updates.avatar !== void 0 ? updates.avatar : existing.avatar,
+    phone: updates.phone !== void 0 ? updates.phone.trim() : existing.phone,
+    role: updates.role !== void 0 ? updates.role : existing.role,
+    jobTitle: updates.jobTitle !== void 0 ? updates.jobTitle.trim() : existing.jobTitle,
+    departmentName: updates.departmentName !== void 0 ? updates.departmentName.trim() : existing.departmentName,
+    baseSalary: updates.baseSalary !== void 0 ? Number(updates.baseSalary) : existing.baseSalary,
+    commissionRate: updates.commissionRate !== void 0 ? Number(updates.commissionRate) : existing.commissionRate,
+    city: updates.city !== void 0 ? updates.city.trim() : existing.city,
+    assignedZone: updates.assignedZone !== void 0 ? updates.assignedZone.trim() : existing.assignedZone,
+    status: finalStatus,
+    cnssNumber: updates.cnssNumber !== void 0 ? updates.cnssNumber : existing.cnssNumber,
+    emailVerified: finalEmailVerified,
+    // La mise à jour ne génère JAMAIS de code OTP de validation
+    verificationToken: finalEmailVerified ? void 0 : existing.verificationToken,
+    totpSecret: existing.totpSecret,
+    twoFactorEnabled: existing.twoFactorEnabled,
+    updatedAt: now
+  };
+  if (isMySqlConnected && pool) {
+    try {
+      const sql = `
+        UPDATE users SET 
+          name = ?, 
+          avatar = ?, 
+          phone = ?, 
+          role = ?, 
+          job_title = ?, 
+          department_name = ?, 
+          base_salary = ?, 
+          commission_rate = ?, 
+          city = ?, 
+          assigned_zone = ?, 
+          status = ?, 
+          cnss_number = ?, 
+          email_verified = ?, 
+          updated_at = ?
+        WHERE id = ?
+      `;
+      await pool.query(sql, [
+        updatedUser.name,
+        updatedUser.avatar || null,
+        updatedUser.phone,
+        updatedUser.role,
+        updatedUser.jobTitle,
+        updatedUser.departmentName,
+        updatedUser.baseSalary,
+        updatedUser.commissionRate,
+        updatedUser.city,
+        updatedUser.assignedZone,
+        updatedUser.status,
+        updatedUser.cnssNumber || null,
+        updatedUser.emailVerified ? 1 : 0,
+        now,
+        existing.id
+      ]);
+    } catch (err) {
+      console.error("[MySQL Error] updateCollaboratorProfile:", err);
+    }
+  }
+  const idx = memoryStore.users.findIndex((u) => u.id === existing.id);
+  if (idx !== -1) {
+    memoryStore.users[idx] = updatedUser;
+  } else {
+    memoryStore.users.push(updatedUser);
+  }
+  savePersistedUsers();
+  sendProfileUpdatedNotificationEmail(
+    updatedUser.email,
+    updatedUser.name,
+    changes.length > 0 ? changes.join(", ") : void 0
+  ).catch((err) => {
+    console.error("[Hostinger SMTP] Erreur exp\xE9dition notification mise \xE0 jour profil:", err?.message || err);
+  });
+  return updatedUser;
 }
 async function getAllLeaveRequests() {
   return memoryStore.leaveRequests;
@@ -1039,7 +1759,10 @@ function normalizeIdentifier(val) {
   return trimmed.replace(/[\s\-\(\)\.]/g, "");
 }
 async function findUserByIdentifier(rawIdentifier) {
-  const norm = normalizeIdentifier(rawIdentifier);
+  if (!rawIdentifier || typeof rawIdentifier !== "string") return null;
+  const clean = rawIdentifier.trim();
+  if (!clean) return null;
+  const norm = clean.toLowerCase();
   const isSMB = norm === "chezmoi.benin@gmail.com" || norm === normalizeIdentifier(CENTRAL_ADMIN_SMB.phone);
   if (isSMB) {
     if (isMySqlConnected && pool) {
@@ -1086,14 +1809,37 @@ async function findUserByIdentifier(rawIdentifier) {
   }
   if (isMySqlConnected && pool) {
     try {
-      const cleanPhone = norm.replace(/\D/g, "");
-      const sql = `
-        SELECT * FROM users 
-        WHERE LOWER(email) = ? 
-           OR REPLACE(REPLACE(phone, ' ', ''), '+', '') LIKE ?
-        LIMIT 1
-      `;
-      const [rows] = await pool.query(sql, [norm, `%${cleanPhone.slice(-8)}%`]);
+      const isEmail = clean.includes("@");
+      const cleanDigits2 = clean.replace(/\D/g, "");
+      let rows = [];
+      if (isEmail) {
+        const [r] = await pool.query(
+          "SELECT * FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) LIMIT 1",
+          [clean]
+        );
+        rows = r;
+      }
+      if (rows.length === 0 && cleanDigits2.length >= 8) {
+        const last8 = cleanDigits2.slice(-8);
+        const [r] = await pool.query(
+          `SELECT * FROM users 
+           WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '+', ''), '-', ''), '(', ''), ')', '') LIKE ? 
+           LIMIT 1`,
+          [`%${last8}%`]
+        );
+        rows = r;
+      }
+      if (rows.length === 0) {
+        const [r] = await pool.query(
+          `SELECT * FROM users 
+           WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) 
+              OR LOWER(TRIM(email)) = LOWER(TRIM(?)) 
+              OR id = ? 
+           LIMIT 1`,
+          [clean, clean, clean]
+        );
+        rows = r;
+      }
       if (rows && rows.length > 0) {
         const r = rows[0];
         return {
@@ -1105,19 +1851,20 @@ async function findUserByIdentifier(rawIdentifier) {
           role: r.role,
           jobTitle: r.job_title,
           departmentName: r.department_name,
-          baseSalary: Number(r.base_salary),
-          commissionRate: Number(r.commission_rate),
+          baseSalary: Number(r.base_salary || 0),
+          commissionRate: Number(r.commission_rate || 0),
           hireDate: r.hire_date,
           contractType: r.contract_type,
           city: r.city,
           assignedZone: r.assigned_zone || "",
-          rating: Number(r.rating),
-          propertiesCount: Number(r.properties_count),
-          pendingSyncCount: Number(r.pending_sync_count),
-          totalCommissions: Number(r.total_commissions),
+          rating: Number(r.rating || 5),
+          propertiesCount: Number(r.properties_count || 0),
+          pendingSyncCount: Number(r.pending_sync_count || 0),
+          totalCommissions: Number(r.total_commissions || 0),
           status: r.status,
           cnssNumber: r.cnss_number || void 0,
           twoFactorEnabled: Boolean(r.two_factor_enabled || false),
+          totpSecret: r.totp_secret || void 0,
           emailVerified: r.email_verified !== void 0 ? Boolean(r.email_verified) : true,
           verificationToken: r.verification_token || void 0
         };
@@ -1126,17 +1873,51 @@ async function findUserByIdentifier(rawIdentifier) {
       console.error("[MySQL Error] findUserByIdentifier:", err);
     }
   }
+  const cleanDigits = clean.replace(/\D/g, "");
   const found = memoryStore.users.find((u) => {
-    const userEmailNorm = normalizeIdentifier(u.email);
-    const userPhoneNorm = normalizeIdentifier(u.phone);
-    if (norm.includes("@")) {
-      return userEmailNorm === norm;
+    if (!u) return false;
+    if (u.email && u.email.trim().toLowerCase() === norm) {
+      return true;
     }
-    const cleanNorm = norm.replace(/\D/g, "");
-    const cleanUserPhone = userPhoneNorm.replace(/\D/g, "");
-    return cleanUserPhone.endsWith(cleanNorm.slice(-8)) || cleanNorm.endsWith(cleanUserPhone.slice(-8));
+    if (norm.includes("@") && u.email && u.email.includes("@")) {
+      const [uUser, uDomain] = u.email.trim().toLowerCase().split("@");
+      const [qUser, qDomain] = norm.split("@");
+      if (uDomain === qDomain && uUser.replace(/\./g, "") === qUser.replace(/\./g, "")) {
+        return true;
+      }
+    }
+    if (cleanDigits.length >= 8 && u.phone) {
+      const uPhoneDigits = u.phone.replace(/\D/g, "");
+      if (uPhoneDigits && (uPhoneDigits.endsWith(cleanDigits.slice(-8)) || cleanDigits.endsWith(uPhoneDigits.slice(-8)))) {
+        return true;
+      }
+    }
+    if (u.name && u.name.trim().toLowerCase() === norm) {
+      return true;
+    }
+    if (u.id === clean) {
+      return true;
+    }
+    return false;
   });
   return found || null;
+}
+async function activateUserAccount(userId) {
+  const user = memoryStore.users.find((u) => u.id === userId);
+  if (user) {
+    user.status = "ACTIF";
+    user.emailVerified = true;
+    user.verificationToken = void 0;
+    savePersistedUsers();
+  }
+  if (isMySqlConnected && pool) {
+    try {
+      await pool.query('UPDATE users SET status = "ACTIF", email_verified = 1, verification_token = NULL WHERE id = ?', [userId]);
+    } catch (err) {
+      console.error("[MySQL Error] activateUserAccount:", err);
+    }
+  }
+  return user || null;
 }
 function storeOtp(identifier, code, ttlMs = 3e5) {
   const key = normalizeIdentifier(identifier);
@@ -1233,6 +2014,12 @@ async function toggleUser2FA(userId, enabled, totpSecret) {
 async function verifyEmailAccount(tokenOrCode, email) {
   const cleanCode = tokenOrCode.trim();
   const cleanEmail = email ? normalizeIdentifier(email) : "";
+  if (cleanEmail) {
+    const alreadyVerifiedUser = memoryStore.users.find((u) => normalizeIdentifier(u.email) === cleanEmail && u.emailVerified);
+    if (alreadyVerifiedUser) {
+      return { success: true, user: alreadyVerifiedUser, message: "Votre compte est d\xE9j\xE0 v\xE9rifi\xE9 et actif ! Vous pouvez vous connecter en toute s\xE9curit\xE9." };
+    }
+  }
   const user = memoryStore.users.find((u) => {
     const codeMatch = u.verificationToken && u.verificationToken.trim() === cleanCode;
     if (cleanEmail) {
@@ -1379,23 +2166,64 @@ async function generateQrCodeDataUrl(otpauthUri) {
 // server.ts
 dotenv3.config();
 var __filename2 = fileURLToPath2(import.meta.url);
-var __dirname2 = path2.dirname(__filename2);
-var isProduction = process.env.NODE_ENV === "production";
-var PORT = process.env.PORT || 3e3;
+var __dirname2 = path3.dirname(__filename2);
+var isProduction = process.env.NODE_ENV === "production" || __filename2.endsWith("server.js");
+var portArgIdx = process.argv.indexOf("--port");
+var cliPort = portArgIdx !== -1 ? Number(process.argv[portArgIdx + 1]) : NaN;
+var envPort = process.env.PORT ? Number(process.env.PORT) : NaN;
+var PORT = !Number.isNaN(cliPort) ? cliPort : isProduction ? !Number.isNaN(envPort) ? envPort : 3e3 : !Number.isNaN(envPort) && envPort !== 8080 ? envPort : 3e3;
 async function startServer() {
   const app = express();
+  app.set("trust proxy", true);
   app.use(express.json({ limit: "25mb" }));
   app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+  const ALLOWED_CORS_ORIGINS = [
+    "capacitor://localhost",
+    "http://localhost",
+    "https://localhost",
+    "ionic://localhost",
+    "tauri://localhost",
+    "http://tauri.localhost",
+    "https://tauri.localhost",
+    "app://localhost",
+    "https://admin.chezmoi.bj",
+    "http://admin.chezmoi.bj"
+  ];
   app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    const origin = req.headers.origin;
+    if (origin) {
+      if (ALLOWED_CORS_ORIGINS.includes(origin) || origin.startsWith("capacitor://") || origin.startsWith("ionic://") || origin.startsWith("tauri://") || origin.startsWith("app://") || origin.startsWith("http://localhost") || origin.startsWith("https://localhost") || origin.startsWith("http://127.0.0.1") || origin.startsWith("https://127.0.0.1") || origin.endsWith("chezmoi.bj")) {
+        res.header("Access-Control-Allow-Origin", origin);
+        res.header("Access-Control-Allow-Credentials", "true");
+        res.header("Vary", "Origin");
+      } else {
+        res.header("Access-Control-Allow-Origin", "*");
+      }
+    } else {
+      res.header("Access-Control-Allow-Origin", "*");
+    }
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma");
+    res.header("Access-Control-Max-Age", "86400");
+    if (req.path.startsWith("/api")) {
+      res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.header("Pragma", "no-cache");
+      res.header("Expires", "0");
+    }
     if (req.method === "OPTIONS") {
       return res.sendStatus(200);
     }
     next();
   });
-  await initDatabase();
+  const dbReadyPromise = initDatabase().catch((err) => {
+    console.error("[Hostinger MySQL] Erreur initDatabase:", err);
+    return false;
+  });
+  app.use("/api", async (req, res, next) => {
+    if (req.path === "/health") return next();
+    await dbReadyPromise;
+    next();
+  });
   app.get("/api/health", async (req, res) => {
     const status = await getDatabaseStatus();
     res.json({
@@ -1430,6 +2258,14 @@ async function startServer() {
       res.json({ success: true, property: saved });
     } catch (err) {
       res.status(500).json({ error: err?.message || "Erreur lors de la mise \xE0 jour du bien" });
+    }
+  });
+  app.delete("/api/properties/:id", async (req, res) => {
+    try {
+      await deleteProperty(req.params.id);
+      res.json({ success: true, message: "Bien supprim\xE9 avec succ\xE8s" });
+    } catch (err) {
+      res.status(500).json({ error: err?.message || "Erreur lors de la suppression du bien" });
     }
   });
   app.post("/api/sync/push", async (req, res) => {
@@ -1479,18 +2315,25 @@ async function startServer() {
   });
   app.post("/api/users", async (req, res) => {
     try {
-      const saved = await upsertUser(req.body);
-      res.json({ success: true, user: saved });
+      const userData = req.body;
+      const existing = (userData.id ? await findUserById(userData.id) : null) || (userData.email ? await findUserByIdentifier(userData.email) : null);
+      if (existing) {
+        const updated = await updateCollaboratorProfile(existing.id, userData);
+        return res.json({ success: true, user: updated, isNew: false });
+      }
+      const created = await createCollaborator(userData);
+      res.json({ success: true, user: created, isNew: true });
     } catch (err) {
-      res.status(500).json({ error: err?.message || "Erreur mise \xE0 jour utilisateur" });
+      console.error("[POST /api/users Error]", err);
+      res.status(500).json({ error: err?.message || "Erreur enregistrement collaborateur" });
     }
   });
   app.put("/api/users/:id", async (req, res) => {
     try {
-      const userData = { ...req.body, id: req.params.id };
-      const saved = await upsertUser(userData);
-      res.json({ success: true, user: saved });
+      const updated = await updateCollaboratorProfile(req.params.id, req.body);
+      res.json({ success: true, user: updated });
     } catch (err) {
+      console.error("[PUT /api/users/:id Error]", err);
       res.status(500).json({ error: err?.message || "Erreur modification collaborateur" });
     }
   });
@@ -1579,14 +2422,6 @@ async function startServer() {
           error: "Aucun compte associ\xE9 \xE0 cet identifiant dans la base Chezmoi administration. Veuillez v\xE9rifier votre saisie ou contacter l\u2019administrateur."
         });
       }
-      if (user.status === "EN_ATTENTE_VALIDATION" || user.emailVerified === false) {
-        return res.status(403).json({
-          error: "Ce compte est actuellement en attente de validation. Veuillez valider votre adresse e-mail avec le code re\xE7u avant de vous connecter.",
-          pendingVerification: true,
-          email: user.email,
-          userName: user.name
-        });
-      }
       const otpCode = Math.floor(1e5 + Math.random() * 9e5).toString();
       storeOtp(identifier, otpCode, 3e5);
       storeOtp(user.email, otpCode, 3e5);
@@ -1631,18 +2466,12 @@ async function startServer() {
           error: emailVerification.reason || "Code de s\xE9curit\xE9 invalide ou expir\xE9 (OTP email ou Google Authenticator)."
         });
       }
-      if (user.status === "EN_ATTENTE_VALIDATION" || user.emailVerified === false) {
-        return res.status(403).json({
-          error: "Ce compte est en attente de validation e-mail. Veuillez confirmer votre adresse avant de vous connecter.",
-          pendingVerification: true,
-          email: user.email
-        });
-      }
+      const activeUser = await activateUserAccount(user.id) || user;
       const tokenPayload = {
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
+        sub: activeUser.id,
+        email: activeUser.email,
+        role: activeUser.role,
+        name: activeUser.name,
         iat: Math.floor(Date.now() / 1e3),
         exp: Math.floor(Date.now() / 1e3) + 86400 * 7
       };
@@ -1651,7 +2480,7 @@ async function startServer() {
         success: true,
         message: "Authentification r\xE9ussie. Session d\xE9verrouill\xE9e.",
         token,
-        user
+        user: activeUser
       });
     } catch (err) {
       res.status(500).json({ error: err?.message || "Erreur lors de la v\xE9rification OTP" });
@@ -1721,49 +2550,145 @@ async function startServer() {
       res.status(500).json({ error: err?.message || "Erreur lors de la v\xE9rification de l'adresse e-mail" });
     }
   });
-  app.get("/api/auth/verify-email", async (req, res) => {
+  const renderVerificationPage = (success, message, user) => {
+    const targetEmail = user?.email || "";
+    const redirectUrl = success ? `/?email_verified=true&email=${encodeURIComponent(targetEmail)}` : `/?error=${encodeURIComponent(message)}`;
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${success ? "Compte v\xE9rifi\xE9" : "Validation de compte"} - Chezmoi administration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <meta http-equiv="refresh" content="${success ? "3" : "8"};url=${redirectUrl}">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0b0f17;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #f1f5f9;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 40px 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px auto;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .icon-success {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 2px solid rgba(16, 185, 129, 0.35);
+    }
+    .icon-error {
+      background: rgba(250, 48, 85, 0.15);
+      color: #fa3055;
+      border: 2px solid rgba(250, 48, 85, 0.35);
+    }
+    .brand {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fa3055;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+      color: #ffffff;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin: 0 0 28px 0;
+    }
+    .btn {
+      display: inline-block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      background-color: #fa3055;
+      color: #ffffff;
+      padding: 13px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(250, 48, 85, 0.4);
+    }
+    .btn:hover {
+      background-color: #e02045;
+      transform: translateY(-1px);
+    }
+    .timer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">Chezmoi administration</div>
+    <div class="icon ${success ? "icon-success" : "icon-error"}">
+      ${success ? "\u2713" : "\u2715"}
+    </div>
+    <h2>${success ? "Adresse e-mail confirm\xE9e !" : "Validation Impossible"}</h2>
+    <p>${message}</p>
+    <a href="${redirectUrl}" class="btn">
+      ${success ? "Acc\xE9der \xE0 mon espace de travail" : "Retourner \xE0 la page de connexion"}
+    </a>
+    <div class="timer">Redirection automatique vers l'application...</div>
+  </div>
+  <script>
+    setTimeout(function() {
+      window.location.href = "${redirectUrl}";
+    }, ${success ? 2200 : 7e3});
+  </script>
+</body>
+</html>`;
+  };
+  const handleEmailVerificationGet = async (req, res) => {
     try {
       const token = req.query.token || req.query.code;
       const email = req.query.email;
       if (!token) {
-        return res.status(400).send("Jeton ou code de validation manquant.");
+        return res.type("html").send(renderVerificationPage(false, "Le jeton ou le code de validation est manquant."));
       }
       const result = await verifyEmailAccount(token, email);
-      if (!result.success) {
-        return res.status(400).send(`
-          <html>
-            <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #0b0f17; color: #fff;">
-              <div style="background: #151c28; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 32px; text-align: center; max-width: 440px;">
-                <h2 style="color: #fa3055; margin-top: 0;">Validation Impossible</h2>
-                <p style="color: #94a3b8;">${result.message}</p>
-                <a href="/" style="display: inline-block; margin-top: 16px; padding: 10px 20px; background: #fa3055; color: #fff; text-decoration: none; border-radius: 8px;">Retour \xE0 Chezmoi administration</a>
-              </div>
-            </body>
-          </html>
-        `);
-      }
-      res.redirect("/?email_verified=true");
+      return res.type("html").send(renderVerificationPage(result.success, result.message, result.user));
     } catch (err) {
-      res.status(500).send("Erreur lors de la validation.");
+      return res.type("html").send(renderVerificationPage(false, err?.message || "Erreur lors de la validation du compte."));
     }
-  });
-  app.get(["/verify-email", "/verify-account"], async (req, res) => {
-    try {
-      const token = req.query.token || req.query.code;
-      const email = req.query.email;
-      if (!token) {
-        return res.redirect("/?error=token_missing");
-      }
-      const result = await verifyEmailAccount(token, email);
-      if (result.success) {
-        res.redirect("/?email_verified=true");
-      } else {
-        res.redirect(`/?error=${encodeURIComponent(result.message)}`);
-      }
-    } catch {
-      res.redirect("/?error=verification_failed");
-    }
-  });
+  };
+  app.get("/api/auth/verify-email", handleEmailVerificationGet);
+  app.get(["/verify-email", "/verify-account"], handleEmailVerificationGet);
   app.post("/api/auth/toggle-2fa", async (req, res) => {
     try {
       const { userId, enabled, totpSecret } = req.body;
@@ -1796,21 +2721,35 @@ async function startServer() {
       message: "Webhook simul\xE9 avec succ\xE8s vers le point de terminaison sp\xE9cifi\xE9."
     });
   });
+  app.all("/api/*", (req, res) => {
+    res.status(404).json({ error: `Route API introuvable : ${req.method} ${req.originalUrl}` });
+  });
   if (!isProduction) {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa"
+    const vitePromise = import("vite").then(
+      ({ createServer: createViteServer }) => createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa"
+      })
+    );
+    vitePromise.catch((err) => {
+      console.error("Erreur initialisation Vite middleware:", err);
     });
-    app.use(vite.middlewares);
+    app.use(async (req, res, next) => {
+      try {
+        const vite = await vitePromise;
+        return vite.middlewares(req, res, next);
+      } catch (err) {
+        return next(err);
+      }
+    });
   } else {
-    const distPath = path2.resolve(__dirname2, "dist");
+    const distPath = path3.resolve(__dirname2, "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path2.join(distPath, "index.html"));
+      res.sendFile(path3.join(distPath, "index.html"));
     });
   }
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`=======================================================`);
     console.log(` Chezmoi administration Backend Node.js / Express pr\xEAt !`);
     console.log(` Port d'\xE9coute : ${PORT}`);
