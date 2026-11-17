@@ -1,15 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { 
-  X, 
-  Upload, 
-  Camera, 
-  FileText, 
-  Check, 
+import {
+  X,
+  Upload,
+  Camera,
+  FileText,
   AlertCircle,
   FileCheck,
   ShieldCheck,
-  Building,
-  User
 } from 'lucide-react';
 import { LegalDocument, DocumentType } from '../types';
 
@@ -33,7 +30,6 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
   const [ownerName, setOwnerName] = useState('M. Dossou Bio');
   const [fileData, setFileData] = useState<{ name: string; size: string; dataUrl: string; type: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -58,9 +54,8 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
         type: file.type,
       });
 
-      // Auto-remplissage du titre si vide
       if (!title) {
-        const cleanName = file.name.replace(/\.[^/.]+$/, "");
+        const cleanName = file.name.replace(/\.[^/.]+$/, '');
         setTitle(cleanName);
       }
     };
@@ -93,20 +88,24 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs font-sans animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#12151B] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Numériser ou importer un document foncier"
+    >
+      <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-[#13161B] border border-neutral-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-slate-50/70 dark:bg-[#161B22]">
+        <div className="p-5 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between bg-[#FAFAFA] dark:bg-[#181C22]">
           <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-[#FA3055] text-white flex items-center justify-center font-bold">
-              <ShieldCheck className="w-5 h-5" />
+            <span className="w-9 h-9 rounded-xl bg-[#141414] text-white flex items-center justify-center font-bold">
+              <ShieldCheck className="w-4 h-4" />
             </span>
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              <h2 className="text-base font-extrabold text-[#141414] dark:text-white">
                 Numériser / Importer un document foncier
               </h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
                 Archivage certifié et rattaché à la fiche du bien
               </p>
             </div>
@@ -114,31 +113,30 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            aria-label="Fermer"
+            className="w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] flex items-center justify-center text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 text-xs">
-          
           {error && (
             <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center gap-2 text-xs">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Type de Document */}
           <div>
-            <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+            <label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
               Type de pièce légale *
             </label>
             <select
               value={docType}
               onChange={(e) => setDocType(e.target.value as DocumentType)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F9FAF9] dark:bg-[#161B22] border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]/25"
             >
               <option value="TITRE_FONCIER">Titre foncier personnel (ANDF Bénin)</option>
               <option value="MANDAT_GESTION">Mandat de vente ou de gestion locative</option>
@@ -149,9 +147,8 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
             </select>
           </div>
 
-          {/* Titre du Document */}
           <div>
-            <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+            <label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1">
               Intitulé / Nom du document *
             </label>
             <input
@@ -160,14 +157,13 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
               placeholder="ex : Titre Foncier N° 1420 Cotonou Littoral"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F9FAF9] dark:bg-[#161B22] border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FA3055]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-medium text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]/25"
             />
           </div>
 
-          {/* Rapprochement Bien / Propriétaire */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                 Bien associé
               </label>
               <input
@@ -175,11 +171,11 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
                 value={propertyName}
                 onChange={(e) => setPropertyName(e.target.value)}
                 placeholder="ex : Villa Fidjrossè plage"
-                className="w-full px-3 py-2 rounded-xl bg-[#F9FAF9] dark:bg-[#161B22] border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs text-[#141414] dark:text-white"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                 Propriétaire
               </label>
               <input
@@ -187,18 +183,16 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
                 value={ownerName}
                 onChange={(e) => setOwnerName(e.target.value)}
                 placeholder="ex : M. Dossou Bio"
-                className="w-full px-3 py-2 rounded-xl bg-[#F9FAF9] dark:bg-[#161B22] border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs text-[#141414] dark:text-white"
               />
             </div>
           </div>
 
-          {/* Zone de téléchargement / Caméra */}
           <div className="pt-2">
-            <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-2">
+            <label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
               Fichier numérisé (PDF ou image HD) *
             </label>
 
-            {/* Hidden File Inputs */}
             <input
               type="file"
               ref={fileInputRef}
@@ -216,15 +210,15 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
             />
 
             {!fileData ? (
-              <div className="border-2 border-dashed border-slate-200 dark:border-white/15 rounded-2xl p-6 text-center space-y-3 bg-slate-50/50 dark:bg-[#161B22]/50">
-                <div className="w-12 h-12 rounded-2xl bg-[#FA3055]/10 text-[#FA3055] mx-auto flex items-center justify-center">
-                  <FileText className="w-6 h-6" />
+              <div className="border-2 border-dashed border-neutral-200 dark:border-white/15 rounded-xl p-6 text-center space-y-3 bg-[#FAFAFA] dark:bg-[#181C22]">
+                <div className="w-12 h-12 rounded-full bg-neutral-200/70 dark:bg-white/10 text-[#141414] dark:text-white mx-auto flex items-center justify-center">
+                  <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                  <p className="font-bold text-[#141414] dark:text-white text-xs">
                     Glissez un fichier ou sélectionnez une action
                   </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
                     Formats acceptés : PDF, JPG, PNG (Max 25 Mo)
                   </p>
                 </div>
@@ -233,7 +227,7 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-xs cursor-pointer transition-all shadow-xs"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs cursor-pointer transition-colors shadow-xs"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Choisir un fichier</span>
@@ -242,7 +236,7 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer transition-all shadow-xs"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs cursor-pointer transition-colors shadow-xs"
                   >
                     <Camera className="w-3.5 h-3.5" />
                     <span>Scanner avec caméra</span>
@@ -250,15 +244,13 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between gap-3">
+              <div className="p-4 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 font-bold">
-                    <FileCheck className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-xl bg-[#141414] text-white flex items-center justify-center shrink-0 font-bold">
+                    <FileCheck className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-slate-900 dark:text-white truncate text-xs">
-                      {fileData.name}
-                    </p>
+                    <p className="font-bold text-[#141414] dark:text-white truncate text-xs">{fileData.name}</p>
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
                       {fileData.size} • Prêt pour archivage
                     </p>
@@ -268,7 +260,7 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setFileData(null)}
-                  className="px-2.5 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-rose-600 rounded-lg cursor-pointer transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-[11px] font-bold cursor-pointer transition-colors"
                 >
                   Changer
                 </button>
@@ -276,25 +268,22 @@ export const DocumentScanModal: React.FC<DocumentScanModalProps> = ({
             )}
           </div>
 
-          {/* Footer CTA */}
-          <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-end gap-2">
+          <div className="pt-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#FA3055] hover:bg-[#E02045] text-white font-bold cursor-pointer shadow-sm transition-all"
+              className="px-5 py-2.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold cursor-pointer shadow-xs transition-colors"
             >
               Enregistrer dans la GED
             </button>
           </div>
-
         </form>
-
       </div>
     </div>
   );

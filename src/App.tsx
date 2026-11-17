@@ -43,7 +43,20 @@ import {
   canAccessSystemSettings 
 } from './utils/auth';
 import { apiFetch } from './utils/api';
-import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { 
+  ShieldAlert, 
+  ArrowLeft, 
+  Building2, 
+  MapPin, 
+  CreditCard, 
+  Users, 
+  Layers, 
+  User, 
+  Settings as SettingsIcon, 
+  LogOut, 
+  ChevronRight,
+  X
+} from 'lucide-react';
 
 export default function App() {
   // Session & Authentification OTP persistante
@@ -53,10 +66,11 @@ export default function App() {
     return saved ? saved.user : INITIAL_USERS[0];
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
 
   // Theme global persistant (Sombre / Clair)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('chezmoi_theme') as 'dark' | 'light') || 'dark';
+    return (localStorage.getItem('chezmoi_theme') as 'dark' | 'light') || 'light';
   });
 
   useEffect(() => {
@@ -141,6 +155,7 @@ export default function App() {
     clearSession();
     setSession(null);
     setIsProfileModalOpen(false);
+    setMobileDrawerOpen(false);
   };
 
   // Toggle réseau simulateur
@@ -201,13 +216,12 @@ export default function App() {
       setSyncQueue(synced);
     }
 
-    // Si le rôle permet le tableau de bord, y rediriger, sinon rester sur recensement
     if (isRoleAuthorizedForTab(currentUser.role, 'dashboard')) {
       setActiveTab('dashboard');
     }
   };
 
-  // Mise à jour de fiche de bien (Permissions: recenseur assigné, secrétaire, admin, super admin)
+  // Mise à jour de fiche de bien
   const handleUpdateProperty = async (updated: PropertyRecord) => {
     setProperties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     if (selectedProperty?.id === updated.id) {
@@ -364,26 +378,154 @@ export default function App() {
   const isAuthorized = isRoleAuthorizedForTab(currentUser.role, activeTab);
   const roleInfo = ROLE_DEFINITIONS[currentUser.role];
 
+  const mainNavItems = [
+    { id: 'dashboard', label: 'Tableau de bord', icon: Building2 },
+    { id: 'census', label: 'Recensement terrain', icon: MapPin },
+  ].filter((item) => isRoleAuthorizedForTab(currentUser.role, item.id));
+
+  const managementNavItems = [
+    { id: 'accounting', label: 'Facturation (e-MECeF)', icon: CreditCard },
+    { id: 'hr', label: 'Agents & RH', icon: Users },
+    { id: 'ged', label: 'GED foncière', icon: Layers },
+  ].filter((item) => isRoleAuthorizedForTab(currentUser.role, item.id));
+
+  const tabMeta: Record<string, { title: string; breadcrumb: string }> = {
+    dashboard: { title: 'Tableau de bord', breadcrumb: 'Portefeuille immobilier' },
+    census: { title: 'Recensement terrain', breadcrumb: 'Nouvelle fiche foncière' },
+    accounting: { title: 'Facturation & Dépenses', breadcrumb: 'Norme e-MECeF DGI' },
+    hr: { title: 'Agents & RH', breadcrumb: 'Personnel & paie' },
+    ged: { title: 'GED foncière', breadcrumb: 'Archives certifiées' },
+  };
+  const currentMeta = tabMeta[activeTab] || { title: 'Tableau de bord', breadcrumb: 'Administration' };
+
+  const renderSidebarLinks = (onAfterSelect?: () => void) => (
+    <div className="space-y-6">
+      {mainNavItems.length > 0 && (
+        <div>
+          <p className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+            Principal
+          </p>
+          <div className="space-y-1">
+            {mainNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    onAfterSelect?.();
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer ${
+                    isActive
+                      ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40 font-bold shadow-2xs'
+                      : 'opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {managementNavItems.length > 0 && (
+        <div>
+          <p className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+            Gestion
+          </p>
+          <div className="space-y-1">
+            {managementNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    onAfterSelect?.();
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer ${
+                    isActive
+                      ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40 font-bold shadow-2xs'
+                      : 'opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <p className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+          Compte
+        </p>
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => {
+              setIsProfileModalOpen(true);
+              onAfterSelect?.();
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white opacity-85 hover:opacity-100 transition-all cursor-pointer"
+          >
+            <User className="w-4 h-4 shrink-0" />
+            <span className="truncate">Mon Profil & 2FA</span>
+          </button>
+
+          {canAccessSystemSettings(currentUser.role) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSettingsOpen(true);
+                onAfterSelect?.();
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white opacity-85 hover:opacity-100 transition-all cursor-pointer"
+            >
+              <SettingsIcon className="w-4 h-4 shrink-0" />
+              <span className="truncate">Paramètres API</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white opacity-85 hover:opacity-100 transition-all cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span className="truncate">Déconnexion</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // Rendu du contenu selon l'onglet autorisé
   const renderActiveTabContent = () => {
     if (!isAuthorized) {
       return (
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 text-center max-w-lg mx-auto my-12 shadow-sm">
-          <div className="w-14 h-14 bg-rose-50 text-[#FA3055] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-100">
-            <ShieldAlert className="w-7 h-7" />
+        <div className="bg-white rounded-2xl p-8 sm:p-12 border border-neutral-200 text-center max-w-lg mx-auto my-12">
+          <div className="w-14 h-14 bg-neutral-100 text-[#141414] rounded-full flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert className="w-6 h-6" />
           </div>
-          <span className="text-[10px] font-bold text-[#FA3055] uppercase tracking-wider">
-            Sécurité & Contrôle d'accès
-          </span>
-          <h3 className="font-extrabold text-slate-900 text-xl mt-1 mb-2">
+          <h3 className="font-extrabold text-[#141414] text-xl mb-2">
             Module non autorisé pour votre profil
           </h3>
-          <p className="text-xs sm:text-sm text-slate-500 mb-6 leading-relaxed">
+          <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
             Votre compte est configuré avec le rôle <strong>{roleInfo.label}</strong>. Ce module est réservé aux départements accrédités.
           </p>
           <button
+            type="button"
             onClick={() => setActiveTab(getDefaultTabForRole(currentUser.role))}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FA3055] hover:bg-[#E01E42] text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-xs"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold rounded-xl cursor-pointer transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Revenir à mon espace de travail</span>
@@ -453,11 +595,10 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
-      theme === 'dark' ? 'dark text-[#E2E8F0]' : 'text-slate-800'
-    } bg-transparent`}>
-      
-      {/* Top Application Header - Cleaned & Perfectly Aligned */}
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${
+      theme === 'dark' ? 'dark bg-[#0B0D10] text-neutral-100' : 'bg-[#FAFAFA] text-[#141414]'
+    }`}>
+      {/* Top Application Header */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -474,35 +615,75 @@ export default function App() {
         currentUser={currentUser}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOpenMobileMenu={() => setMobileDrawerOpen(true)}
       />
 
-      {/* Main Content Area - Aligned exactly with max-w-7xl mx-auto */}
-      <main className="flex-1 px-3 sm:px-6 lg:px-8 py-5 w-full">
-        {viewMode === 'mobile' ? (
-          /* Responsive Mobile Frame */
-          <div className="max-w-xl sm:max-w-2xl w-full mx-auto my-3 bg-slate-950 p-3 sm:p-5 rounded-[44px] shadow-2xl ring-8 ring-slate-800/80 border-4 border-slate-700">
-            {/* Phone notch */}
-            <div className="w-36 h-4 bg-black rounded-b-xl mx-auto mb-3 flex items-center justify-center">
-              <div className="w-12 h-1.5 bg-slate-800 rounded-full" />
+      {/* Mobile Drawer Navigation */}
+      {mobileDrawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+            onClick={() => setMobileDrawerOpen(false)}
+          />
+          <aside className="relative w-72 max-w-[82vw] bg-[#F7F7F8] dark:bg-[#111419] border-r border-neutral-200 dark:border-white/10 h-full p-5 overflow-y-auto z-10">
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-neutral-200 dark:border-white/10">
+              <span className="font-extrabold text-sm text-[#141414] dark:text-white">Navigation</span>
+              <button
+                type="button"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
+            {renderSidebarLinks(() => setMobileDrawerOpen(false))}
+          </aside>
+        </div>
+      )}
 
-            {/* Inner screen */}
-            <div className={`${theme === 'dark' ? 'bg-[#12151B] text-[#E2E8F0]' : 'bg-[#F8FAFC] text-slate-800'} rounded-[32px] overflow-hidden min-h-[740px] max-h-[880px] overflow-y-auto p-3 sm:p-5 w-full`}>
+      {/* Workspace Body: Left Sidebar + Right Main Canvas (Listeo Dashboard Shell) */}
+      <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
+        {viewMode === 'desktop' && (
+          <aside className="hidden lg:block w-60 shrink-0 border-r border-neutral-200 dark:border-white/10 bg-[#F7F7F8] dark:bg-[#101318] px-4 py-6">
+            <div className="sticky top-20">
+              {renderSidebarLinks()}
+            </div>
+          </aside>
+        )}
+
+        <main className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-6">
+          {viewMode === 'mobile' ? (
+            /* Responsive Mobile Preview Frame */
+            <div className="max-w-xl sm:max-w-2xl w-full mx-auto my-2 bg-neutral-950 p-3 sm:p-5 rounded-[44px] shadow-2xl ring-4 ring-neutral-800 border-2 border-neutral-700">
+              <div className="w-36 h-4 bg-black rounded-b-xl mx-auto mb-3 flex items-center justify-center">
+                <div className="w-12 h-1.5 bg-neutral-800 rounded-full" />
+              </div>
+              <div className={`${theme === 'dark' ? 'bg-[#0B0D10] text-neutral-100' : 'bg-[#FAFAFA] text-[#141414]'} rounded-[32px] overflow-hidden min-h-[740px] max-h-[880px] overflow-y-auto p-3 sm:p-5 w-full`}>
+                {renderActiveTabContent()}
+              </div>
+              <div className="w-32 h-1.5 bg-neutral-700 rounded-full mx-auto mt-3" />
+            </div>
+          ) : (
+            <div className="max-w-7xl mx-auto w-full space-y-5">
+              {/* Listeo Breadcrumb + Page Header */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#141414] dark:text-white">
+                  {currentMeta.title}
+                </h1>
+                <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-medium">
+                  <span>Accueil</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  <span className="text-[#141414] dark:text-white font-semibold">{currentMeta.breadcrumb}</span>
+                </div>
+              </div>
+
               {renderActiveTabContent()}
             </div>
+          )}
+        </main>
+      </div>
 
-            {/* Phone bottom indicator bar */}
-            <div className="w-32 h-1.5 bg-slate-600 rounded-full mx-auto mt-3" />
-          </div>
-        ) : (
-          /* Standard Desktop View - Pristine alignment */
-          <div className="max-w-7xl mx-auto w-full">
-            {renderActiveTabContent()}
-          </div>
-        )}
-      </main>
-
-      {/* Property Details Modal with Live Edit Permission */}
+      {/* Property Details Modal */}
       <PropertyDetailModal
         property={selectedProperty}
         onClose={() => setSelectedProperty(null)}
@@ -513,7 +694,7 @@ export default function App() {
         onUpdatePropertyStatus={handleUpdatePropertyStatus}
       />
 
-      {/* Settings Modal (WhatsApp, Gmail, Docs, WordPress, Gemini, e-MECeF, Maps) */}
+      {/* Settings Modal */}
       <SettingsModal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -527,7 +708,6 @@ export default function App() {
         onUpdateUser={handleUpdateUser}
         onLogout={handleLogout}
       />
-
     </div>
   );
 }

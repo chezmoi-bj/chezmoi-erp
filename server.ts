@@ -121,8 +121,18 @@ async function startServer() {
     next();
   });
 
-  // Initialisation de la base MySQL / MariaDB Hostinger
-  await initDatabase();
+  // Initialisation asynchrone non-bloquante de la base MySQL / MariaDB Hostinger
+  const dbReadyPromise = initDatabase().catch((err) => {
+    console.error('[Hostinger MySQL] Erreur initDatabase:', err);
+    return false;
+  });
+
+  // S'assurer que la base est prête avant toute route API métier (hors /api/health qui répond instantanément)
+  app.use('/api', async (req, res, next) => {
+    if (req.path === '/health') return next();
+    await dbReadyPromise;
+    next();
+  });
 
   // --------------------------------------------------------------------------
   // API ROUTES
@@ -731,13 +741,25 @@ async function startServer() {
   // FRONTEND SERVING (DEVELOPMENT vs PRODUCTION HOSTINGER)
   // --------------------------------------------------------------------------
   if (!isProduction) {
-    // Mode Développement : montage du serveur Vite
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
+    // Mode Développement : initialisation asynchrone du serveur Vite pour libérer le port immédiatement
+    const vitePromise = import('vite').then(({ createServer: createViteServer }) =>
+      createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      })
+    );
+    vitePromise.catch((err) => {
+      console.error('Erreur initialisation Vite middleware:', err);
     });
-    app.use(vite.middlewares);
+
+    app.use(async (req: Request, res: Response, next) => {
+      try {
+        const vite = await vitePromise;
+        return vite.middlewares(req, res, next);
+      } catch (err) {
+        return next(err);
+      }
+    });
   } else {
     // Mode Production Hostinger Cloud : servir le build statique dist/
     const distPath = path.resolve(__dirname, 'dist');
@@ -747,7 +769,7 @@ async function startServer() {
     });
   }
 
-  // Démarrage du serveur
+  // Démarrage immédiat du serveur sur le port configuré
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(` Chezmoi administration Backend Node.js / Express prêt !`);

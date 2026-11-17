@@ -1,30 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  UserPlus, 
-  ShieldCheck, 
-  Award, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Star, 
-  DollarSign, 
-  CheckCircle2, 
-  FileText, 
-  Building,
-  Calendar,
-  Briefcase,
+import {
+  Users,
+  UserPlus,
+  DollarSign,
   FileCheck,
-  Clock,
+  Calendar,
   Printer,
-  ChevronRight,
-  TrendingUp,
   Edit3,
   UserCheck,
   Upload,
-  Camera,
   Save,
-  X
+  Award,
+  Clock,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LeaveRequest, PayslipRecord, Role, UserAccount } from '../types';
@@ -56,33 +43,30 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'employees' | 'payroll' | 'leaves' | 'performance'>('employees');
   const [roleFilter, setRoleFilter] = useState<'ALL' | Role>('ALL');
-  
-  // Modal states
+  const [failedAvatars, setFailedAvatars] = useState<Record<string, boolean>>({});
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isPayrollModalOpen, setIsPayrollModalOpen] = useState(false);
 
-  // New employee form
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('+229 97 ');
   const [newRole, setNewRole] = useState<Role>('AGENT_RECENSEUR');
-  const [newCity, setNewCity] = useState('Cotonou');
+  const [newCity] = useState('Cotonou');
   const [newSalary, setNewSalary] = useState<number>(220000);
-  const [newCommissionRate, setNewCommissionRate] = useState<number>(3.5);
-  const [newJobTitle, setNewJobTitle] = useState('Agent recenseur foncier terrain');
+  const [newCommissionRate] = useState<number>(3.5);
+  const [newJobTitle] = useState('Agent recenseur foncier terrain');
   const [newAvatar, setNewAvatar] = useState<string>('');
 
-  // Leave form
   const [leaveEmployeeId, setLeaveEmployeeId] = useState(agents[0]?.id || '');
-  const [leaveType, setLeaveType] = useState<'CONGE_PAYE' | 'PERMISSION_EXCEPTIONNELLE' | 'MALADIE'>('CONGE_PAYE');
+  const [leaveType] = useState<'CONGE_PAYE' | 'PERMISSION_EXCEPTIONNELLE' | 'MALADIE'>('CONGE_PAYE');
   const [leaveStart, setLeaveStart] = useState('2026-10-25');
   const [leaveEnd, setLeaveEnd] = useState('2026-10-31');
   const [leaveReason, setLeaveReason] = useState('Congé annuel légal');
 
-  // Payroll generator form
   const [payrollEmployeeId, setPayrollEmployeeId] = useState(agents[0]?.id || '');
   const [payrollMonth, setPayrollMonth] = useState('Octobre 2026');
   const [payrollBonus, setPayrollBonus] = useState<number>(25000);
@@ -94,7 +78,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
     return `${amount.toLocaleString('fr-FR')} FCFA`;
   };
 
-  const filteredEmployees = agents.filter(a => {
+  const filteredEmployees = agents.filter((a) => {
     if (roleFilter === 'ALL') return true;
     return a.role === roleFilter;
   });
@@ -117,7 +101,9 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
     const newEmp: UserAccount = {
       id: `user_${Date.now()}`,
       name: newName,
-      avatar: newAvatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+      avatar:
+        newAvatar ||
+        `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
       phone: newPhone,
       email: newEmail,
       role: newRole,
@@ -138,7 +124,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
     };
 
     onAddAgent(newEmp);
-    confetti({ particleCount: 35, spread: 50, colors: ['#FA3055', '#1E293B'] });
+    confetti({ particleCount: 35, spread: 50, colors: ['#141414', '#10B981'] });
     setIsAddModalOpen(false);
     setNewName('');
     setNewEmail('');
@@ -147,7 +133,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 
   const handleCreateLeave = (e: React.FormEvent) => {
     e.preventDefault();
-    const emp = agents.find(a => a.id === leaveEmployeeId) || agents[0];
+    const emp = agents.find((a) => a.id === leaveEmployeeId) || agents[0];
     const newReq: LeaveRequest = {
       id: `leave_${Date.now()}`,
       employeeId: emp.id,
@@ -167,13 +153,13 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 
   const handleCreatePayroll = (e: React.FormEvent) => {
     e.preventDefault();
-    const emp = agents.find(a => a.id === payrollEmployeeId) || agents[0];
+    const emp = agents.find((a) => a.id === payrollEmployeeId) || agents[0];
     const base = emp.baseSalary || 220000;
     const comms = Math.round((emp.totalCommissions || 500000) * 0.15);
     const bonus = Number(payrollBonus);
     const gross = base + comms + bonus;
-    const cnss = Math.round(gross * 0.036); // 3.6% CNSS salarié Bénin
-    const ipts = Math.round(gross * 0.06); // IPTS simplifié
+    const cnss = Math.round(gross * 0.036);
+    const ipts = Math.round(gross * 0.06);
     const net = gross - cnss - ipts;
 
     const newSlip: PayslipRecord = {
@@ -198,115 +184,123 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
     onGeneratePayslip(newSlip);
     setSelectedPayslip(newSlip);
     setIsPayrollModalOpen(false);
-    confetti({ particleCount: 40, spread: 55, colors: ['#FA3055', '#10B981'] });
+    confetti({ particleCount: 40, spread: 55, colors: ['#141414', '#10B981'] });
   };
 
   const totalPayrollMonth = payslips.reduce((acc, p) => acc + p.netPayable, 0);
 
   return (
     <div className="space-y-6 pb-12 w-full max-w-7xl mx-auto">
-      
       {/* Top Banner */}
-      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs">
+      <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-7 border border-neutral-200 dark:border-white/10 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#FA3055] text-white">
+              <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-neutral-100 dark:bg-white/10 text-[#141414] dark:text-white">
                 Direction des ressources humaines
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700">
+              <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-neutral-100 dark:bg-white/10 text-neutral-600 dark:text-neutral-300">
                 Législation du travail Bénin & CNSS
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#141414] dark:text-white mt-2 tracking-tight">
               Gestion des ressources humaines, paie & équipes
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">
-              Fiches collaborateurs, émission des bulletins de paie, validation des congés et suivi de la performance des recenseurs.
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium mt-1">
+              Fiches collaborateurs, émission des bulletins de paie, validation des congés et suivi de la performance.
             </p>
           </div>
 
-          {/* Navigation Pill */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-[#F4F6F5] p-1 rounded-full text-xs font-semibold self-start lg:self-center">
-            <button
-              onClick={() => setActiveTab('employees')}
-              className={`px-3.5 py-2 rounded-full cursor-pointer transition-all ${
-                activeTab === 'employees' ? 'bg-[#FA3055] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Collaborateurs ({agents.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('payroll')}
-              className={`px-3.5 py-2 rounded-full cursor-pointer transition-all ${
-                activeTab === 'payroll' ? 'bg-[#FA3055] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Bulletins de paie ({payslips.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('leaves')}
-              className={`px-3.5 py-2 rounded-full cursor-pointer transition-all ${
-                activeTab === 'leaves' ? 'bg-[#FA3055] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Congés & absences ({leaveRequests.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('performance')}
-              className={`px-3.5 py-2 rounded-full cursor-pointer transition-all ${
-                activeTab === 'performance' ? 'bg-[#FA3055] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Quotas & objectifs
-            </button>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold self-start lg:self-center">
+            {[
+              { id: 'employees', label: `Collaborateurs (${agents.length})` },
+              { id: 'payroll', label: `Bulletins de paie (${payslips.length})` },
+              { id: 'leaves', label: `Congés (${leaveRequests.length})` },
+              { id: 'performance', label: 'Quotas & objectifs' },
+            ].map((t) => {
+              const isActive = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={`px-3.5 py-2 rounded-lg cursor-pointer transition-all bg-[#141414] hover:bg-[#2C2C2C] text-white tabular-nums ${
+                    isActive ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Global HR Key Indicators */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-5 border-t border-slate-100">
-          <div className="p-4 rounded-2xl bg-[#FA3055]/5 border border-[#FA3055]/15">
-            <span className="text-xs font-semibold text-[#FA3055]">Effectif total</span>
-            <p className="text-2xl font-bold text-[#FA3055] mt-1">{agents.length} employés</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">100% déclarés CNSS</p>
+        {/* Pastel Listeo KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-5 border-t border-neutral-200 dark:border-white/10">
+          <div className="p-4 rounded-xl bg-neutral-100/80 dark:bg-white/5 border border-neutral-200/80 dark:border-white/10 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Effectif total</span>
+              <p className="text-2xl font-extrabold text-[#141414] dark:text-white mt-1 tabular-nums">
+                {agents.length} employés
+              </p>
+              <p className="text-[11px] text-neutral-500 mt-0.5">100% déclarés CNSS</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/10 border border-neutral-200 dark:border-white/10 flex items-center justify-center text-neutral-700 dark:text-neutral-200">
+              <Users className="w-5 h-5" />
+            </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-            <span className="text-xs font-semibold text-emerald-800">Masse salariale mensuelle</span>
-            <p className="text-2xl font-bold text-emerald-950 mt-1">{formatMoney(totalPayrollMonth)}</p>
-            <p className="text-[10px] text-emerald-700 mt-0.5">Salaires de base + primes</p>
+          <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/25 border border-emerald-200/80 dark:border-emerald-800/40 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Masse salariale</span>
+              <p className="text-xl font-extrabold text-emerald-950 dark:text-white mt-1 tabular-nums">
+                {formatMoney(totalPayrollMonth)}
+              </p>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">Salaires + primes</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/80 dark:bg-white/10 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
+              <DollarSign className="w-5 h-5" />
+            </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200">
-            <span className="text-xs font-semibold text-sky-800">Agents recenseurs actifs</span>
-            <p className="text-2xl font-bold text-sky-950 mt-1">
-              {agents.filter(a => a.role === 'AGENT_RECENSEUR' && a.status === 'ACTIF').length} sur le terrain
-            </p>
-            <p className="text-[10px] text-sky-700 mt-0.5">Cotonou, Calavi, Ouidah</p>
+          <div className="p-4 rounded-xl bg-sky-50/70 dark:bg-sky-950/25 border border-sky-200/80 dark:border-sky-800/40 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-sky-800 dark:text-sky-300">Recenseurs actifs</span>
+              <p className="text-2xl font-extrabold text-sky-950 dark:text-white mt-1 tabular-nums">
+                {agents.filter((a) => a.role === 'AGENT_RECENSEUR' && a.status === 'ACTIF').length} terrain
+              </p>
+              <p className="text-[11px] text-sky-700 dark:text-sky-400 mt-0.5">Cotonou, Calavi, Ouidah</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/80 dark:bg-white/10 border border-sky-200 dark:border-sky-800/40 flex items-center justify-center text-sky-700 dark:text-sky-300">
+              <Award className="w-5 h-5" />
+            </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
-            <span className="text-xs font-semibold text-amber-800">Demandes de congés</span>
-            <p className="text-2xl font-bold text-amber-950 mt-1">
-              {leaveRequests.filter(l => l.status === 'EN_ATTENTE').length} en attente
-            </p>
-            <p className="text-[10px] text-amber-700 mt-0.5">À arbitrer par les RH</p>
+          <div className="p-4 rounded-xl bg-amber-50/75 dark:bg-amber-950/25 border border-amber-200/80 dark:border-amber-800/40 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">Demandes de congés</span>
+              <p className="text-2xl font-extrabold text-amber-950 dark:text-white mt-1 tabular-nums">
+                {leaveRequests.filter((l) => l.status === 'EN_ATTENTE').length} en attente
+              </p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">À arbitrer par les RH</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/80 dark:bg-white/10 border border-amber-200 dark:border-amber-800/40 flex items-center justify-center text-amber-700 dark:text-amber-300">
+              <Clock className="w-5 h-5" />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* TAB 1: EMPLOYEES & ACCESS (Fiches employés & comptes) */}
-      {/* ========================================================================= */}
+      {/* TAB 1: EMPLOYEES */}
       {activeTab === 'employees' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs space-y-5">
+        <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-7 border border-neutral-200 dark:border-white/10 shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-extrabold text-[#141414] dark:text-white">
                 Répertoire du personnel & profils RBAC
               </h3>
-              <p className="text-xs text-slate-500">
-                Comptes autorisés par l'administrateur principal (aucun auto-enregistrement).
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Comptes autorisés par l'administrateur principal.
               </p>
             </div>
 
@@ -314,7 +308,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value as any)}
-                className="bg-[#F4F6F5] border border-slate-200 text-xs py-2 px-3 rounded-full font-semibold cursor-pointer"
+                className="bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs py-2 px-3 rounded-lg font-semibold cursor-pointer"
               >
                 <option value="ALL">Tous les rôles</option>
                 <option value="SUPER_ADMIN">Super Admin</option>
@@ -326,8 +320,9 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
               </select>
 
               <button
+                type="button"
                 onClick={() => setIsAddModalOpen(true)}
-                className="px-4 py-2 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
+                className="px-4 py-2 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>Nouveau collaborateur</span>
@@ -335,63 +330,76 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
             </div>
           </div>
 
-          {/* Employees List */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredEmployees.map((emp) => (
-              <div 
-                key={emp.id} 
-                className="p-4 rounded-2xl border border-slate-200 hover:border-slate-300 bg-white transition-all hover:shadow-xs space-y-3"
+              <div
+                key={emp.id}
+                className="p-4 rounded-xl border border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:hover:border-white/20 bg-white dark:bg-[#181C22] transition-all space-y-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={emp.avatar}
-                      alt={emp.name}
-                      className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#FA3055]/20 flex-shrink-0"
-                    />
+                    {emp.avatar && !failedAvatars[emp.id] ? (
+                      <img
+                        src={emp.avatar}
+                        alt={emp.name}
+                        referrerPolicy="no-referrer"
+                        onError={() => setFailedAvatars((prev) => ({ ...prev, [emp.id]: true }))}
+                        className="w-12 h-12 rounded-xl object-cover ring-1 ring-neutral-200 dark:ring-white/15 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-[#141414] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                        {emp.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div className="min-w-0">
-                      <h4 className="font-bold text-sm text-slate-900 truncate">{emp.name}</h4>
-                      <p className="text-[11px] text-slate-500 truncate">{emp.jobTitle}</p>
-                      <span className="text-[10px] font-semibold text-[#FA3055] bg-[#FA3055]/10 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                      <h4 className="font-bold text-sm text-[#141414] dark:text-white truncate">{emp.name}</h4>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">{emp.jobTitle}</p>
+                      <span className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-white/10 px-2 py-0.5 rounded-md inline-block mt-0.5">
                         {emp.role}
                       </span>
                     </div>
                   </div>
 
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                    emp.status === 'ACTIF' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[9px] font-bold shrink-0 ${
+                      emp.status === 'ACTIF'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}
+                  >
                     {emp.status}
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-xs">
-                  <div className="flex justify-between text-slate-600">
+                <div className="p-2.5 rounded-lg bg-[#FAFAFA] dark:bg-[#13161B] border border-neutral-200/70 dark:border-white/10 space-y-1 text-xs">
+                  <div className="flex justify-between text-neutral-600 dark:text-neutral-300">
                     <span>Salaire de base :</span>
-                    <strong className="text-slate-900">{formatMoney(emp.baseSalary)}</strong>
+                    <strong className="text-[#141414] dark:text-white tabular-nums">{formatMoney(emp.baseSalary)}</strong>
                   </div>
-                  <div className="flex justify-between text-slate-600">
+                  <div className="flex justify-between text-neutral-600 dark:text-neutral-300">
                     <span>Commission terrain :</span>
-                    <strong className="text-[#FA3055]">{emp.commissionRate}%</strong>
+                    <strong className="text-[#141414] dark:text-white tabular-nums">{emp.commissionRate}%</strong>
                   </div>
-                  <div className="flex justify-between text-slate-600">
+                  <div className="flex justify-between text-neutral-600 dark:text-neutral-300">
                     <span>Zone d'affectation :</span>
                     <span className="truncate max-w-[150px]">{emp.assignedZone}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1 text-xs">
+                <div className="flex items-center justify-between gap-2 pt-1 text-xs">
                   <button
+                    type="button"
                     onClick={() => onSelectUser(emp)}
-                    className="text-[#FA3055] font-bold hover:underline cursor-pointer flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
                   >
                     <UserCheck className="w-3.5 h-3.5" />
                     <span>Se connecter</span>
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setEditingUser(emp)}
-                    className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
                   >
                     <Edit3 className="w-3 h-3" />
                     <span>Modifier</span>
@@ -403,24 +411,23 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAB 2: PAYROLL & SALARIES (Bulletins de paie) */}
-      {/* ========================================================================= */}
+      {/* TAB 2: PAYROLL */}
       {activeTab === 'payroll' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs space-y-5">
+        <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-7 border border-neutral-200 dark:border-white/10 shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-extrabold text-[#141414] dark:text-white">
                 Gestion des salaires & bulletins de paie (Bénin)
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Calcul des rémunérations brutes, cotisations CNSS et versement net aux collaborateurs.
               </p>
             </div>
 
             <button
+              type="button"
               onClick={() => setIsPayrollModalOpen(true)}
-              className="px-4 py-2 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+              className="px-4 py-2 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 self-start sm:self-auto transition-colors"
             >
               <FileCheck className="w-3.5 h-3.5" />
               <span>Générer un bulletin de paie</span>
@@ -430,7 +437,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
+                <tr className="border-b border-neutral-200 dark:border-white/10 text-neutral-400 font-bold uppercase text-[10px]">
                   <th className="py-2.5 px-3">Réf. bulletin</th>
                   <th className="py-2.5 px-3">Collaborateur</th>
                   <th className="py-2.5 px-3">Mois</th>
@@ -441,20 +448,23 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                   <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-neutral-100 dark:divide-white/5">
                 {payslips.map((slip) => (
-                  <tr key={slip.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3 font-mono font-bold text-slate-900">{slip.slipNumber}</td>
-                    <td className="py-3 px-3 font-semibold text-slate-800">{slip.employeeName}</td>
-                    <td className="py-3 px-3 text-slate-600">{slip.month}</td>
-                    <td className="py-3 px-3 font-mono">{formatMoney(slip.baseSalary)}</td>
-                    <td className="py-3 px-3 font-mono text-[#FA3055]">+{formatMoney(slip.commissions + slip.bonuses)}</td>
-                    <td className="py-3 px-3 font-mono text-slate-500">-{formatMoney(slip.cnssEmployee)}</td>
-                    <td className="py-3 px-3 font-mono font-bold text-emerald-700">{formatMoney(slip.netPayable)}</td>
+                  <tr key={slip.id} className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="py-3 px-3 font-mono font-bold text-[#141414] dark:text-white">{slip.slipNumber}</td>
+                    <td className="py-3 px-3 font-semibold text-[#141414] dark:text-white">{slip.employeeName}</td>
+                    <td className="py-3 px-3 text-neutral-600 dark:text-neutral-300">{slip.month}</td>
+                    <td className="py-3 px-3 font-mono tabular-nums">{formatMoney(slip.baseSalary)}</td>
+                    <td className="py-3 px-3 font-mono tabular-nums">+{formatMoney(slip.commissions + slip.bonuses)}</td>
+                    <td className="py-3 px-3 font-mono text-neutral-500 tabular-nums">-{formatMoney(slip.cnssEmployee)}</td>
+                    <td className="py-3 px-3 font-mono font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                      {formatMoney(slip.netPayable)}
+                    </td>
                     <td className="py-3 px-3 text-right">
                       <button
+                        type="button"
                         onClick={() => setSelectedPayslip(slip)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer"
+                        className="px-3 py-1 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer transition-colors"
                       >
                         Aperçu
                       </button>
@@ -467,24 +477,23 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAB 3: LEAVES & ABSENCES (Congés & absences) */}
-      {/* ========================================================================= */}
+      {/* TAB 3: LEAVES */}
       {activeTab === 'leaves' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs space-y-5">
+        <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-7 border border-neutral-200 dark:border-white/10 shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-extrabold text-[#141414] dark:text-white">
                 Registre des congés & autorisations d'absence
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Validation formelle par le service RH et suivi du temps de repos légal.
               </p>
             </div>
 
             <button
+              type="button"
               onClick={() => setIsLeaveModalOpen(true)}
-              className="px-4 py-2 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+              className="px-4 py-2 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 self-start sm:self-auto transition-colors"
             >
               <Calendar className="w-3.5 h-3.5" />
               <span>Demande de congé</span>
@@ -493,45 +502,50 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 
           <div className="space-y-3">
             {leaveRequests.map((req) => (
-              <div 
+              <div
                 key={req.id}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-slate-300 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                className="p-4 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#181C22] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-sm text-slate-900">{req.employeeName}</h4>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                    <h4 className="font-bold text-sm text-[#141414] dark:text-white">{req.employeeName}</h4>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-200">
                       {req.type === 'CONGE_PAYE' ? 'Congé payé' : req.type === 'MALADIE' ? 'Maladie' : 'Permission exceptionnelle'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600">
-                    Du <strong className="text-slate-800">{req.startDate}</strong> au <strong className="text-slate-800">{req.endDate}</strong> ({req.daysCount} jours)
+                  <p className="text-xs text-neutral-600 dark:text-neutral-300 tabular-nums">
+                    Du <strong className="text-[#141414] dark:text-white">{req.startDate}</strong> au{' '}
+                    <strong className="text-[#141414] dark:text-white">{req.endDate}</strong> ({req.daysCount} jours)
                   </p>
-                  <p className="text-xs text-slate-500 italic">Motif : {req.reason}</p>
+                  <p className="text-xs text-neutral-500 italic">Motif : {req.reason}</p>
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center">
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                    req.status === 'APPROUVE' 
-                      ? 'bg-emerald-100 text-emerald-800' 
-                      : req.status === 'REJETE'
-                      ? 'bg-rose-100 text-rose-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}>
+                  <span
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
+                      req.status === 'APPROUVE'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : req.status === 'REJETE'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}
+                  >
                     {req.status === 'APPROUVE' ? 'Validé RH' : req.status === 'REJETE' ? 'Rejeté' : 'En attente RH'}
                   </span>
 
                   {req.status === 'EN_ATTENTE' && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <button
+                        type="button"
                         onClick={() => onUpdateLeaveStatus(req.id, 'APPROUVE')}
-                        className="px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs cursor-pointer transition-colors"
                       >
                         Approuver
                       </button>
                       <button
+                        type="button"
                         onClick={() => onUpdateLeaveStatus(req.id, 'REJETE')}
-                        className="px-3 py-1 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs cursor-pointer transition-colors"
                       >
                         Rejeter
                       </button>
@@ -544,122 +558,147 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAB 4: PERFORMANCE & QUOTAS */}
-      {/* ========================================================================= */}
+      {/* TAB 4: PERFORMANCE */}
       {activeTab === 'performance' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs space-y-5">
+        <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-7 border border-neutral-200 dark:border-white/10 shadow-xs space-y-5">
           <div>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-extrabold text-[#141414] dark:text-white">
               Suivi de la performance des recenseurs terrain
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
               Quotas mensuels de parcelles et villas recensées avec coordonnées GPS et photos.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {agents.filter(a => a.role === 'AGENT_RECENSEUR').map((agent) => {
-              const quotaTarget = 50;
-              const progressPct = Math.min(100, Math.round((agent.propertiesCount / quotaTarget) * 100));
+            {agents
+              .filter((a) => a.role === 'AGENT_RECENSEUR')
+              .map((agent) => {
+                const quotaTarget = 50;
+                const progressPct = Math.min(100, Math.round((agent.propertiesCount / quotaTarget) * 100));
 
-              return (
-                <div key={agent.id} className="p-4 rounded-2xl border border-slate-200 bg-[#F9FAF9] space-y-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={agent.avatar}
-                      alt={agent.name}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-[#FA3055]/20"
-                    />
+                return (
+                  <div
+                    key={agent.id}
+                    className="p-4 rounded-xl border border-neutral-200 dark:border-white/10 bg-[#FAFAFA] dark:bg-[#181C22] space-y-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      {agent.avatar && !failedAvatars[agent.id] ? (
+                        <img
+                          src={agent.avatar}
+                          alt={agent.name}
+                          referrerPolicy="no-referrer"
+                          onError={() => setFailedAvatars((prev) => ({ ...prev, [agent.id]: true }))}
+                          className="w-10 h-10 rounded-full object-cover ring-1 ring-neutral-200 dark:ring-white/15 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#141414] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                          {agent.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-bold text-sm text-[#141414] dark:text-white">{agent.name}</h4>
+                        <p className="text-[10px] text-neutral-500">
+                          {agent.city} • Zone {agent.assignedZone}
+                        </p>
+                      </div>
+                    </div>
+
                     <div>
-                      <h4 className="font-bold text-sm text-slate-900">{agent.name}</h4>
-                      <p className="text-[10px] text-slate-500">{agent.city} • Zone {agent.assignedZone}</p>
+                      <div className="flex justify-between text-xs font-semibold mb-1 tabular-nums">
+                        <span>
+                          Progression quota ({agent.propertiesCount}/{quotaTarget})
+                        </span>
+                        <strong className="text-[#141414] dark:text-white">{progressPct}%</strong>
+                      </div>
+                      <div className="w-full bg-neutral-200 dark:bg-white/10 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[#141414] dark:bg-white h-full rounded-full transition-all duration-500"
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span>Progression quota ({agent.propertiesCount}/{quotaTarget})</span>
-                      <strong className="text-[#FA3055]">{progressPct}%</strong>
-                    </div>
-                    <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-[#FA3055] h-full rounded-full transition-all duration-500"
-                        style={{ width: `${progressPct}%` }}
-                      />
+                    <div className="flex justify-between text-xs pt-2 border-t border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-300 tabular-nums">
+                      <span>Commissions débloquées :</span>
+                      <strong className="text-[#141414] dark:text-white">{formatMoney(agent.totalCommissions || 0)}</strong>
                     </div>
                   </div>
-
-                  <div className="flex justify-between text-xs pt-2 border-t border-slate-200 text-slate-600">
-                    <span>Commissions débloquées :</span>
-                    <strong className="text-slate-900">{formatMoney(agent.totalCommissions || 0)}</strong>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       )}
 
       {/* Payslip View Modal */}
       {selectedPayslip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Bulletin de paie certifié"
+        >
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200 dark:border-white/10 space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-3">
               <div>
-                <span className="text-[10px] font-bold text-[#FA3055] uppercase">Chezmoi Immobilier SARL</span>
-                <h3 className="text-base font-bold text-slate-900">Bulletin de paie certifié</h3>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Chezmoi Immobilier SARL</span>
+                <h3 className="text-base font-extrabold text-[#141414] dark:text-white">Bulletin de paie certifié</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedPayslip(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"
+                aria-label="Fermer le bulletin"
+                className="w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] flex items-center justify-center text-white cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-2 text-xs font-sans">
+            <div className="printable-invoice space-y-2 text-xs p-3 rounded-xl bg-white text-slate-900 border border-neutral-200">
               <div className="flex justify-between">
                 <span className="text-slate-500">N° Bulletin :</span>
                 <strong className="font-mono text-slate-900">{selectedPayslip.slipNumber}</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Collaborateur :</span>
-                <strong className="text-slate-900">{selectedPayslip.employeeName} ({selectedPayslip.role})</strong>
+                <strong className="text-slate-900">
+                  {selectedPayslip.employeeName} ({selectedPayslip.role})
+                </strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Période :</span>
                 <span>{selectedPayslip.month}</span>
               </div>
-              
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 pt-2">
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 pt-2">
                 <div className="flex justify-between">
                   <span>Salaire fixe de base :</span>
-                  <span className="font-mono">{formatMoney(selectedPayslip.baseSalary)}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(selectedPayslip.baseSalary)}</span>
                 </div>
-                <div className="flex justify-between text-[#FA3055]">
+                <div className="flex justify-between">
                   <span>Commissions & primes terrain :</span>
-                  <span className="font-mono">+{formatMoney(selectedPayslip.commissions + selectedPayslip.bonuses)}</span>
+                  <span className="font-mono tabular-nums">+{formatMoney(selectedPayslip.commissions + selectedPayslip.bonuses)}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Cotisation sociale CNSS (3.6%) :</span>
-                  <span className="font-mono">-{formatMoney(selectedPayslip.cnssEmployee)}</span>
+                  <span className="font-mono tabular-nums">-{formatMoney(selectedPayslip.cnssEmployee)}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Impôt sur salaires (IPTS) :</span>
-                  <span className="font-mono">-{formatMoney(selectedPayslip.iptsTax)}</span>
+                  <span className="font-mono tabular-nums">-{formatMoney(selectedPayslip.iptsTax)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-black text-emerald-800 pt-2 border-t border-slate-200">
                   <span>Net versé :</span>
-                  <span className="font-mono">{formatMoney(selectedPayslip.netPayable)}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(selectedPayslip.netPayable)}</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
+                type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Imprimer le bulletin</span>
@@ -671,26 +710,38 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 
       {/* Create Employee Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Ajouter un nouveau collaborateur</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ajouter un nouveau collaborateur"
+        >
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-neutral-200 dark:border-white/10 space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-3">
+              <h3 className="text-base font-extrabold text-[#141414] dark:text-white">Ajouter un nouveau collaborateur</h3>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                aria-label="Fermer"
+                className="w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
 
             <form onSubmit={handleCreateEmployee} className="space-y-3 text-xs">
-              {/* Photo de profil (Avatar) Upload */}
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="flex items-center gap-3 p-3 bg-[#FAFAFA] dark:bg-[#181C22] rounded-xl border border-neutral-200 dark:border-white/10">
                 <img
                   src={newAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                   alt="Aperçu photo"
-                  className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#FA3055]/30 flex-shrink-0 bg-white"
+                  referrerPolicy="no-referrer"
+                  className="w-12 h-12 rounded-xl object-cover ring-1 ring-neutral-200 shrink-0 bg-white"
                 />
                 <div className="flex-1 min-w-0">
-                  <label className="block font-bold text-slate-800 mb-0.5">Photo de profil (Avatar)</label>
-                  <p className="text-[10px] text-slate-500 mb-1.5">Importer une photo depuis l'ordinateur ou le mobile</p>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-[#FA3055] text-slate-700 font-semibold text-[11px] cursor-pointer transition-colors shadow-2xs">
-                    <Upload className="w-3.5 h-3.5 text-[#FA3055]" />
+                  <label className="block font-bold text-[#141414] dark:text-white mb-0.5">Photo de profil (Avatar)</label>
+                  <p className="text-[10px] text-neutral-500 mb-1.5">Importer une photo depuis l'ordinateur ou le mobile</p>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold text-[11px] cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
                     <span>Choisir une image...</span>
                     <input
                       type="file"
@@ -703,7 +754,7 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                     <button
                       type="button"
                       onClick={() => setNewAvatar('')}
-                      className="ml-2 text-[10px] text-rose-500 hover:underline"
+                      className="ml-2 px-2.5 py-1 rounded-md bg-[#141414] hover:bg-[#2C2C2C] text-white text-[10px] font-semibold cursor-pointer"
                     >
                       Supprimer
                     </button>
@@ -712,46 +763,46 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Nom et prénom(s)</label>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Nom et prénom(s)</label>
                 <input
                   type="text"
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Email professionnel</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Email professionnel</label>
                   <input
                     type="email"
                     required
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Téléphone Bénin</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Téléphone Bénin</label>
                   <input
                     type="text"
                     required
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Rôle dans la société</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Rôle dans la société</label>
                   <select
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value as Role)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 font-bold"
                   >
                     <option value="AGENT_RECENSEUR">Agent recenseur terrain</option>
                     <option value="COMPTABLE">Comptable</option>
@@ -763,12 +814,12 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Salaire mensuel de base (FCFA)</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Salaire mensuel de base (FCFA)</label>
                   <input
                     type="number"
                     value={newSalary}
                     onChange={(e) => setNewSalary(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-[#FA3055]"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 font-bold tabular-nums"
                   />
                 </div>
               </div>
@@ -777,13 +828,13 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-full border border-slate-200 text-slate-600 font-semibold"
+                  className="px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-full bg-[#FA3055] text-white font-bold"
+                  className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold cursor-pointer"
                 >
                   Créer le compte
                 </button>
@@ -793,18 +844,25 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
         </div>
       )}
 
-      {/* Edit Employee Modal - Totalement modifiable par l'administrateur */}
+      {/* Edit Employee Modal */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Modifier le collaborateur"
+        >
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-neutral-200 dark:border-white/10 space-y-4 my-6">
+            <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-3">
               <div>
-                <span className="text-[10px] font-bold text-[#FA3055] uppercase tracking-wider">Administration RH</span>
-                <h3 className="text-base font-bold text-slate-900 mt-0.5">Modifier le collaborateur</h3>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Administration RH</span>
+                <h3 className="text-base font-extrabold text-[#141414] dark:text-white mt-0.5">Modifier le collaborateur</h3>
               </div>
-              <button 
-                onClick={() => setEditingUser(null)} 
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                aria-label="Fermer"
+                className="w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] flex items-center justify-center text-white cursor-pointer"
               >
                 ✕
               </button>
@@ -814,23 +872,23 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
               onSubmit={(e) => {
                 e.preventDefault();
                 onUpdateAgent(editingUser);
-                confetti({ particleCount: 30, spread: 45, colors: ['#FA3055', '#10B981'] });
+                confetti({ particleCount: 30, spread: 45, colors: ['#141414', '#10B981'] });
                 setEditingUser(null);
               }}
               className="space-y-3.5 text-xs"
             >
-              {/* Photo de profil (Avatar) Upload & Preview */}
-              <div className="flex items-center gap-3.5 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="flex items-center gap-3.5 p-3 bg-[#FAFAFA] dark:bg-[#181C22] rounded-xl border border-neutral-200 dark:border-white/10">
                 <img
                   src={editingUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                   alt={editingUser.name}
-                  className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#FA3055]/30 flex-shrink-0 bg-white"
+                  referrerPolicy="no-referrer"
+                  className="w-14 h-14 rounded-xl object-cover ring-1 ring-neutral-200 shrink-0 bg-white"
                 />
                 <div className="flex-1 min-w-0">
-                  <label className="block font-bold text-slate-800 mb-0.5">Photo de profil</label>
-                  <p className="text-[10px] text-slate-500 mb-1.5">Mettre à jour la photo du collaborateur</p>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-[#FA3055] text-slate-700 font-semibold text-[11px] cursor-pointer transition-colors shadow-2xs">
-                    <Upload className="w-3.5 h-3.5 text-[#FA3055]" />
+                  <label className="block font-bold text-[#141414] dark:text-white mb-0.5">Photo de profil</label>
+                  <p className="text-[10px] text-neutral-500 mb-1.5">Mettre à jour la photo du collaborateur</p>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold text-[11px] cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
                     <span>Changer la photo...</span>
                     <input
                       type="file"
@@ -846,49 +904,45 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                 </div>
               </div>
 
-              {/* Nom & Téléphone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Nom et prénom(s)</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Nom et prénom(s)</label>
                   <input
                     type="text"
                     required
                     value={editingUser.name}
                     onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 font-bold"
                   />
                 </div>
-
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Téléphone Bénin</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Téléphone Bénin</label>
                   <input
                     type="text"
                     required
                     value={editingUser.phone}
                     onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
               </div>
 
-              {/* Email & Rôle */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Email (Identifiant de connexion)</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Email (Identifiant)</label>
                   <input
                     type="email"
                     value={editingUser.email}
                     disabled
-                    className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 cursor-not-allowed"
+                    className="w-full px-3 py-2 rounded-xl bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500 cursor-not-allowed"
                   />
                 </div>
-
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Rôle & Droits RBAC</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Rôle & Droits RBAC</label>
                   <select
                     value={editingUser.role}
                     onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as Role })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 font-bold"
                   >
                     <option value="SUPER_ADMIN">Super Admin (Direction générale)</option>
                     <option value="ADMIN">Admin Opérations (Foncier & e-MECeF)</option>
@@ -900,74 +954,69 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                 </div>
               </div>
 
-              {/* Poste & Département */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Intitulé du poste</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Intitulé du poste</label>
                   <input
                     type="text"
                     value={editingUser.jobTitle}
                     onChange={(e) => setEditingUser({ ...editingUser, jobTitle: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
-
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Département</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Département</label>
                   <input
                     type="text"
                     value={editingUser.departmentName}
                     onChange={(e) => setEditingUser({ ...editingUser, departmentName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
               </div>
 
-              {/* Ville & Zone d'affectation */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Ville d'affectation</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Ville d'affectation</label>
                   <input
                     type="text"
                     value={editingUser.city}
                     onChange={(e) => setEditingUser({ ...editingUser, city: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
-
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Zone d'intervention</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Zone d'intervention</label>
                   <input
                     type="text"
                     value={editingUser.assignedZone}
                     onChange={(e) => setEditingUser({ ...editingUser, assignedZone: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
               </div>
 
-              {/* Salaire & Statut */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Salaire mensuel de base (FCFA)</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Salaire mensuel de base (FCFA)</label>
                   <input
                     type="number"
                     value={editingUser.baseSalary}
                     onChange={(e) => setEditingUser({ ...editingUser, baseSalary: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-[#FA3055]"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 font-bold tabular-nums"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block font-semibold text-slate-700">Statut du compte</label>
+                    <label className="block font-semibold text-neutral-700 dark:text-neutral-200">Statut du compte</label>
                     {editingUser.emailVerified ? (
-                      <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                        ✓ E-mail validé
+                      <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        E-mail validé
                       </span>
                     ) : (
-                      <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
-                        ⏳ En attente validation
+                      <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                        En attente validation
                       </span>
                     )}
                   </div>
@@ -975,13 +1024,10 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                     value={editingUser.status}
                     onChange={(e) => {
                       const nextStatus = e.target.value as any;
-                      // Si le compte est déjà validé, interdire le repassage en EN_ATTENTE_VALIDATION
-                      if (editingUser.emailVerified && nextStatus === 'EN_ATTENTE_VALIDATION') {
-                        return;
-                      }
+                      if (editingUser.emailVerified && nextStatus === 'EN_ATTENTE_VALIDATION') return;
                       setEditingUser({ ...editingUser, status: nextStatus });
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 font-bold"
                   >
                     <option value="ACTIF">ACTIF (Accès autorisé)</option>
                     {!editingUser.emailVerified && (
@@ -989,28 +1035,23 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                     )}
                     <option value="SUSPENDU">SUSPENDU (Accès bloqué)</option>
                   </select>
-                  {editingUser.emailVerified && (
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Ce compte a déjà été validé par son titulaire. Les modifications enregistrées n'affectent pas son accès.
-                    </p>
-                  )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 rounded-full border border-slate-200 text-slate-600 font-semibold"
+                  className="px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Enregistrer les modifications</span>
+                  <span>Enregistrer</span>
                 </button>
               </div>
             </form>
@@ -1020,52 +1061,59 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 
       {/* Leave Modal */}
       {isLeaveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Soumettre une demande de congé</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Soumettre une demande de congé"
+        >
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-neutral-200 dark:border-white/10 space-y-4">
+            <h3 className="text-base font-extrabold text-[#141414] dark:text-white">Soumettre une demande de congé</h3>
             <form onSubmit={handleCreateLeave} className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Collaborateur concerné</label>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Collaborateur concerné</label>
                 <select
                   value={leaveEmployeeId}
                   onChange={(e) => setLeaveEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                 >
-                  {agents.map(a => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.role})</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({a.role})
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Date début</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Date début</label>
                   <input
                     type="date"
                     value={leaveStart}
                     onChange={(e) => setLeaveStart(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Date fin</label>
+                  <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Date fin</label>
                   <input
                     type="date"
                     value={leaveEnd}
                     onChange={(e) => setLeaveEnd(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                    className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Motif de l'absence</label>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Motif de l'absence</label>
                 <input
                   type="text"
                   required
                   value={leaveReason}
                   onChange={(e) => setLeaveReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                 />
               </div>
 
@@ -1073,13 +1121,13 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsLeaveModalOpen(false)}
-                  className="px-4 py-2 rounded-full border border-slate-200"
+                  className="px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-full bg-[#FA3055] text-white font-bold"
+                  className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold cursor-pointer"
                 >
                   Transmettre aux RH
                 </button>
@@ -1091,40 +1139,49 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
 
       {/* Payroll Modal */}
       {isPayrollModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Émettre un bulletin de paie</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Émettre un bulletin de paie"
+        >
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-neutral-200 dark:border-white/10 space-y-4">
+            <h3 className="text-base font-extrabold text-[#141414] dark:text-white">Émettre un bulletin de paie</h3>
             <form onSubmit={handleCreatePayroll} className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Collaborateur</label>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Collaborateur</label>
                 <select
                   value={payrollEmployeeId}
                   onChange={(e) => setPayrollEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                 >
-                  {agents.map(a => (
-                    <option key={a.id} value={a.id}>{a.name} ({formatMoney(a.baseSalary)})</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({formatMoney(a.baseSalary)})
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Mois de paie</label>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">Mois de paie</label>
                 <input
                   type="text"
                   value={payrollMonth}
                   onChange={(e) => setPayrollMonth(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Primes de rendement / panier (FCFA)</label>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-200 mb-1">
+                  Primes de rendement / panier (FCFA)
+                </label>
                 <input
                   type="number"
                   value={payrollBonus}
                   onChange={(e) => setPayrollBonus(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 font-bold tabular-nums"
                 />
               </div>
 
@@ -1132,13 +1189,13 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPayrollModalOpen(false)}
-                  className="px-4 py-2 rounded-full border border-slate-200"
+                  className="px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-full bg-[#FA3055] text-white font-bold"
+                  className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold cursor-pointer"
                 >
                   Calculer & émettre
                 </button>
@@ -1147,7 +1204,6 @@ export const HRAndAgents: React.FC<HRAndAgentsProps> = ({
           </div>
         </div>
       )}
-
     </div>
   );
 };

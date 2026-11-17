@@ -1,41 +1,38 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Search, 
-  ChevronDown, 
-  Phone, 
-  Mail, 
-  ArrowUpRight, 
-  Star, 
-  MapPin, 
-  SlidersHorizontal, 
-  Plus, 
+import {
+  Search,
+  ChevronDown,
+  Phone,
+  Mail,
+  Star,
+  MapPin,
+  SlidersHorizontal,
+  Plus,
   Building2,
   Home,
   Store,
   Briefcase,
   Layers,
   Sparkles,
-  ExternalLink,
   CheckCircle2,
-  Filter,
   Eye,
   Trash2,
-  AlertTriangle,
   Tag,
-  TrendingUp,
   KeyRound,
-  Coins
+  Coins,
+  LayoutGrid,
+  List,
+  RotateCcw,
 } from 'lucide-react';
-import { 
-  AgentRecenseur, 
-  PropertyRecord, 
+import {
+  AgentRecenseur,
+  PropertyRecord,
   UserAccount,
-  OFFICIAL_PROPERTY_CATEGORIES, 
-  OfficialPropertyCategory, 
+  OFFICIAL_PROPERTY_CATEGORIES,
   normalizePropertyCategory,
   PropertyOperationalStatus,
   OPERATIONAL_STATUS_CONFIG,
-  getPropertyStatus
+  getPropertyStatus,
 } from '../types';
 import { BENIN_TERRITORIES } from '../data/beninTerritories';
 
@@ -69,12 +66,11 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'TOUS' | PropertyOperationalStatus>('TOUS');
   const [dashboardSearchQuery, setDashboardSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'recent' | 'price_asc' | 'price_desc' | 'area_desc'>('recent');
-  const [selectedAgentId, setSelectedAgentId] = useState<string>('agent_1');
+  const [listingLayout, setListingLayout] = useState<'grid' | 'list'>('grid');
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(agents[0]?.id || 'user_smb_central');
   const [propertyToDelete, setPropertyToDelete] = useState<PropertyRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  const [statusMenuOpenId, setStatusMenuOpenId] = useState<string | null>(null);
 
-  // Vérification de permission de modification ou suppression
   const canUserManage = (prop: PropertyRecord) => {
     if (!currentUser) return false;
     return (
@@ -85,7 +81,6 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
     );
   };
 
-  // Formatage monétaire
   const formatMoney = (amountXOF: number) => {
     if (currency === 'USD') {
       const usd = Math.round(amountXOF / 600);
@@ -94,25 +89,26 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
     return `${amountXOF.toLocaleString('fr-FR')} FCFA`;
   };
 
-  // Liste des 77 Communes du Bénin
   const allCommunesList = useMemo(() => {
-    return BENIN_TERRITORIES.flatMap(d => d.communes.map(c => ({ id: c.id, name: c.name, dept: d.name })));
+    return BENIN_TERRITORIES.flatMap((d) =>
+      d.communes.map((c) => ({ id: c.id, name: c.name, dept: d.name }))
+    );
   }, []);
 
-  // Quartiers de la commune sélectionnée
   const availableDistricts = useMemo(() => {
     if (selectedCity === 'Toutes les villes') {
       return ['Tous les quartiers'];
     }
-    const found = BENIN_TERRITORIES.flatMap(d => d.communes).find(
-      c => c.name.toLowerCase() === selectedCity.toLowerCase() || c.id === selectedCity.toLowerCase()
+    const found = BENIN_TERRITORIES.flatMap((d) => d.communes).find(
+      (c) =>
+        c.name.toLowerCase() === selectedCity.toLowerCase() ||
+        c.id === selectedCity.toLowerCase()
     );
     if (!found) return ['Tous les quartiers'];
-    const qList = found.arrondissements.flatMap(a => a.quartiers);
+    const qList = found.arrondissements.flatMap((a) => a.quartiers);
     return ['Tous les quartiers', ...Array.from(new Set(qList))];
   }, [selectedCity]);
 
-  // Compteurs dynamiques par catégorie officielle de chezmoi.bj
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {
       Toutes: properties.length,
@@ -132,7 +128,6 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
     return counts;
   }, [properties]);
 
-  // Statistiques officielles du portefeuille immobilier
   const portfolioStats = useMemo(() => {
     let totalVal = 0;
     let available = 0;
@@ -156,14 +151,12 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
     };
   }, [properties]);
 
-  // Filtrage dynamique des biens
   const filteredProperties = useMemo(() => {
-    let result = properties.filter((prop) => {
+    const result = properties.filter((prop) => {
       const propNormCategory = normalizePropertyCategory(prop.category);
 
       const matchCategory =
-        selectedCategory === 'Toutes' ||
-        propNormCategory === selectedCategory;
+        selectedCategory === 'Toutes' || propNormCategory === selectedCategory;
 
       const matchCity =
         selectedCity === 'Toutes les villes' ||
@@ -175,23 +168,22 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
         prop.district.toLowerCase().includes(selectedDistrict.toLowerCase()) ||
         selectedDistrict.toLowerCase().includes(prop.district.toLowerCase());
 
+      const q = dashboardSearchQuery.trim().toLowerCase();
       const matchSearch =
-        !dashboardSearchQuery ||
-        prop.title.toLowerCase().includes(dashboardSearchQuery.toLowerCase()) ||
-        prop.address.toLowerCase().includes(dashboardSearchQuery.toLowerCase()) ||
-        prop.district.toLowerCase().includes(dashboardSearchQuery.toLowerCase()) ||
-        prop.codeReference.toLowerCase().includes(dashboardSearchQuery.toLowerCase()) ||
-        propNormCategory.toLowerCase().includes(dashboardSearchQuery.toLowerCase());
+        !q ||
+        prop.title.toLowerCase().includes(q) ||
+        prop.address.toLowerCase().includes(q) ||
+        prop.district.toLowerCase().includes(q) ||
+        prop.codeReference.toLowerCase().includes(q) ||
+        propNormCategory.toLowerCase().includes(q);
 
       const propStatus = getPropertyStatus(prop);
       const matchStatus =
-        selectedStatusFilter === 'TOUS' ||
-        propStatus === selectedStatusFilter;
+        selectedStatusFilter === 'TOUS' || propStatus === selectedStatusFilter;
 
       return matchCategory && matchCity && matchDistrict && matchSearch && matchStatus;
     });
 
-    // Tri dynamique
     if (sortBy === 'price_asc') {
       result.sort((a, b) => a.priceAmount - b.priceAmount);
     } else if (sortBy === 'price_desc') {
@@ -203,56 +195,110 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
     }
 
     return result;
-  }, [properties, selectedCategory, selectedCity, selectedDistrict, selectedStatusFilter, dashboardSearchQuery, sortBy]);
+  }, [
+    properties,
+    selectedCategory,
+    selectedCity,
+    selectedDistrict,
+    selectedStatusFilter,
+    dashboardSearchQuery,
+    sortBy,
+  ]);
 
-  // Icône associée à chaque catégorie officielle
+  const hasActiveFilters =
+    selectedCategory !== 'Toutes' ||
+    selectedCity !== 'Toutes les villes' ||
+    selectedDistrict !== 'Tous les quartiers' ||
+    selectedStatusFilter !== 'TOUS' ||
+    dashboardSearchQuery.trim() !== '';
+
+  const resetAllFilters = () => {
+    setSelectedCategory('Toutes');
+    setSelectedCity('Toutes les villes');
+    setSelectedDistrict('Tous les quartiers');
+    setSelectedStatusFilter('TOUS');
+    setDashboardSearchQuery('');
+  };
+
   const getCategoryIcon = (cat: string) => {
     switch (cat) {
       case 'Terrains':
-        return <Layers className="w-3.5 h-3.5" />;
+        return <Layers className="w-4 h-4" />;
       case 'Appartements':
-        return <Building2 className="w-3.5 h-3.5" />;
+        return <Building2 className="w-4 h-4" />;
       case 'Boutiques et Magasins':
-        return <Store className="w-3.5 h-3.5" />;
+        return <Store className="w-4 h-4" />;
       case 'Maisons & Villas':
-        return <Home className="w-3.5 h-3.5" />;
+        return <Home className="w-4 h-4" />;
       case 'Résidences Meublées':
-        return <Sparkles className="w-3.5 h-3.5" />;
+        return <Sparkles className="w-4 h-4" />;
       case 'Bureaux':
-        return <Briefcase className="w-3.5 h-3.5" />;
+        return <Briefcase className="w-4 h-4" />;
       default:
-        return <Building2 className="w-3.5 h-3.5" />;
+        return <Building2 className="w-4 h-4" />;
     }
+  };
+
+  const renderCategoryItem = (cat: string, label: string, count: number) => {
+    const isSelected = selectedCategory === cat;
+    return (
+      <a
+        key={cat}
+        href={`#categorie-${encodeURIComponent(cat)}`}
+        onClick={(e) => {
+          e.preventDefault();
+          setSelectedCategory(cat);
+        }}
+        className={`flex items-center justify-between gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer group ${
+          isSelected
+            ? 'bg-white dark:bg-[#181C22] border-[#141414] dark:border-white/50 ring-1 ring-[#141414]/15 dark:ring-white/20 shadow-2xs'
+            : 'bg-white dark:bg-[#13161B] border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:hover:border-white/25'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+              isSelected
+                ? 'bg-[#141414] text-white dark:bg-white dark:text-[#141414]'
+                : 'bg-neutral-100 dark:bg-white/10 text-[#141414] dark:text-neutral-200 group-hover:bg-[#141414] group-hover:text-white'
+            }`}
+          >
+            {getCategoryIcon(cat)}
+          </div>
+          <span className="text-xs font-bold text-[#141414] dark:text-white truncate">
+            {label}
+          </span>
+        </div>
+        <span className="w-6 h-6 rounded-full bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-200 text-[11px] font-bold tabular-nums flex items-center justify-center shrink-0">
+          {count}
+        </span>
+      </a>
+    );
   };
 
   return (
     <div className="space-y-5 pb-12">
-      
-      {/* 1. BARRE DE NAVIGATION PAR CATÉGORIES OFFICIELLES CHEZMOI.BJ */}
-      <div className="bg-white rounded-3xl p-3 sm:p-4 border border-slate-200/80 shadow-2xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-[#FA3055]/10 text-[#FA3055]">
-              <Filter className="w-4 h-4" />
-            </span>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 tracking-tight">
-                Offres immobilières par catégories officielles
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Nomenclature officielle du portail national <strong className="text-slate-800">chezmoi.bj</strong>
-              </p>
-            </div>
+      {/* 1. LISTEO CATEGORY GRID & HEADER BAR */}
+      <section className="bg-white dark:bg-[#13161B] rounded-2xl p-4 sm:p-5 border border-neutral-200 dark:border-white/10 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-neutral-100 dark:border-white/10">
+          <div>
+            <h2 className="text-sm sm:text-base font-extrabold text-[#141414] dark:text-white tracking-tight">
+              Parcourir par catégorie officielle
+            </h2>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Nomenclature officielle du portail national <strong className="text-[#141414] dark:text-white">chezmoi.bj</strong>
+            </p>
           </div>
 
-          {/* Sélecteur de devise & Bouton Nouveau recensement */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-[#F4F6F5] p-0.5 rounded-full text-xs font-semibold text-slate-700">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => setCurrency('FCFA')}
-                className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-                  currency === 'FCFA' ? 'bg-[#FA3055] text-white shadow-2xs font-bold' : 'text-slate-500'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer whitespace-nowrap ${
+                  currency === 'FCFA'
+                    ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40'
+                    : 'opacity-75 hover:opacity-100'
                 }`}
               >
                 FCFA (XOF)
@@ -260,8 +306,10 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setCurrency('USD')}
-                className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-                  currency === 'USD' ? 'bg-[#FA3055] text-white shadow-2xs font-bold' : 'text-slate-500'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer whitespace-nowrap ${
+                  currency === 'USD'
+                    ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40'
+                    : 'opacity-75 hover:opacity-100'
                 }`}
               >
                 USD ($)
@@ -271,7 +319,7 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
             <button
               type="button"
               onClick={onOpenCensus}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#FA3055] hover:bg-[#d82244] text-white font-bold text-xs shadow-sm cursor-pointer transition-transform active:scale-95"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs cursor-pointer transition-colors whitespace-nowrap shrink-0"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span className="hidden sm:inline">Nouveau recensement terrain</span>
@@ -280,270 +328,290 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
           </div>
         </div>
 
-        {/* Boutons de filtrage par Catégories (Inspirés directement de chezmoi.bj) */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 overflow-x-auto pb-1">
-          {/* Toutes les catégories */}
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('Toutes')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-              selectedCategory === 'Toutes'
-                ? 'bg-[#FA3055] text-white shadow-sm ring-2 ring-[#FA3055]/30'
-                : 'bg-[#F4F6F5] hover:bg-slate-200/80 text-slate-700'
-            }`}
-          >
-            <span>Toutes les offres</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-              selectedCategory === 'Toutes' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {categoryCounts.Toutes}
-            </span>
-          </button>
-
-          {/* Les 6 catégories officielles */}
-          {OFFICIAL_PROPERTY_CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat;
-            const count = categoryCounts[cat] || 0;
-
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-                  isSelected
-                    ? 'bg-[#FA3055] text-white shadow-sm ring-2 ring-[#FA3055]/30'
-                    : 'bg-[#F4F6F5] hover:bg-slate-200/80 text-slate-700'
-                }`}
-              >
-                {getCategoryIcon(cat)}
-                <span>{cat}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                  isSelected ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+        {/* Listeo Category Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-2.5">
+          {renderCategoryItem('Toutes', 'Toutes les offres', categoryCounts.Toutes)}
+          {OFFICIAL_PROPERTY_CATEGORIES.map((cat) =>
+            renderCategoryItem(cat, cat, categoryCounts[cat] || 0)
+          )}
         </div>
-      </div>
+      </section>
 
-      {/* 2. STATISTIQUES OFFICIELLES DU PORTEFEUILLE FONCIER */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {/* Total Biens */}
-        <div 
-          onClick={() => setSelectedStatusFilter('TOUS')}
-          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+      {/* 2. KPI SUMMARY CARDS (Listeo Dashboard Pastel Stat Cards) */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <a
+          href="#statut-tous"
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedStatusFilter('TOUS');
+          }}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
             selectedStatusFilter === 'TOUS'
-              ? 'bg-white border-[#FA3055]/40 shadow-sm ring-2 ring-[#FA3055]/10'
-              : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-2xs'
+              ? 'bg-neutral-100 dark:bg-[#1B2028] border-[#141414] dark:border-white/40 ring-1 ring-[#141414]/15'
+              : 'bg-neutral-100/70 dark:bg-[#15181E] border-neutral-200 dark:border-white/10 hover:border-neutral-300'
           }`}
         >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Portefeuille total</span>
-            <Building2 className="w-4 h-4 text-slate-700" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <strong className="text-xl font-extrabold text-slate-900 tracking-tight font-mono">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-neutral-600 dark:text-neutral-400 block truncate">
+              Portefeuille total
+            </span>
+            <strong className="text-2xl font-extrabold text-[#141414] dark:text-white tracking-tight tabular-nums block mt-0.5">
               {portfolioStats.total}
             </strong>
-            <span className="text-[10px] text-slate-400 font-medium">biens recensés</span>
+            <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium">
+              biens recensés
+            </span>
           </div>
-        </div>
+          <Building2 className="w-7 h-7 text-neutral-400 dark:text-neutral-500 shrink-0 stroke-[1.75]" />
+        </a>
 
-        {/* Disponibles */}
-        <div 
-          onClick={() => setSelectedStatusFilter('DISPONIBLE')}
-          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+        <a
+          href="#statut-disponible"
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedStatusFilter('DISPONIBLE');
+          }}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
             selectedStatusFilter === 'DISPONIBLE'
-              ? 'bg-emerald-50/70 border-emerald-400 shadow-sm ring-2 ring-emerald-500/20'
-              : 'bg-white border-slate-200/80 hover:border-emerald-200 shadow-2xs'
+              ? 'bg-emerald-50 dark:bg-emerald-950/35 border-emerald-500 ring-1 ring-emerald-500/25'
+              : 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-500/20 hover:border-emerald-300'
           }`}
         >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Disponibles</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <strong className="text-xl font-extrabold text-emerald-800 tracking-tight font-mono">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 block truncate">
+              Disponibles
+            </span>
+            <strong className="text-2xl font-extrabold text-emerald-900 dark:text-emerald-200 tracking-tight tabular-nums block mt-0.5">
               {portfolioStats.available}
             </strong>
-            <span className="text-[10px] text-emerald-600 font-semibold">offres libres</span>
+            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+              offres libres
+            </span>
           </div>
-        </div>
+          <CheckCircle2 className="w-7 h-7 text-emerald-500 shrink-0 stroke-[1.75]" />
+        </a>
 
-        {/* En location */}
-        <div 
-          onClick={() => setSelectedStatusFilter('EN_LOCATION')}
-          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+        <a
+          href="#statut-location"
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedStatusFilter('EN_LOCATION');
+          }}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
             selectedStatusFilter === 'EN_LOCATION'
-              ? 'bg-amber-50/70 border-amber-400 shadow-sm ring-2 ring-amber-500/20'
-              : 'bg-white border-slate-200/80 hover:border-amber-200 shadow-2xs'
+              ? 'bg-amber-50 dark:bg-amber-950/35 border-amber-500 ring-1 ring-amber-500/25'
+              : 'bg-amber-50/75 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-500/20 hover:border-amber-300'
           }`}
         >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">En location</span>
-            <KeyRound className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <strong className="text-xl font-extrabold text-amber-800 tracking-tight font-mono">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 block truncate">
+              En location
+            </span>
+            <strong className="text-2xl font-extrabold text-amber-900 dark:text-amber-200 tracking-tight tabular-nums block mt-0.5">
               {portfolioStats.inRent}
             </strong>
-            <span className="text-[10px] text-amber-600 font-semibold">occupés / gérés</span>
+            <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+              occupés / gérés
+            </span>
           </div>
-        </div>
+          <KeyRound className="w-7 h-7 text-amber-500 shrink-0 stroke-[1.75]" />
+        </a>
 
-        {/* Vendus */}
-        <div 
-          onClick={() => setSelectedStatusFilter('VENDU')}
-          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+        <a
+          href="#statut-vendu"
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedStatusFilter('VENDU');
+          }}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
             selectedStatusFilter === 'VENDU'
-              ? 'bg-slate-100 border-slate-400 shadow-sm ring-2 ring-slate-400/20'
-              : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-2xs'
+              ? 'bg-rose-50 dark:bg-rose-950/35 border-rose-500 ring-1 ring-rose-500/25'
+              : 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-500/20 hover:border-rose-300'
           }`}
         >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Vendus</span>
-            <Tag className="w-4 h-4 text-slate-500" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <strong className="text-xl font-extrabold text-slate-800 tracking-tight font-mono">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-rose-800 dark:text-rose-300 block truncate">
+              Vendus
+            </span>
+            <strong className="text-2xl font-extrabold text-rose-900 dark:text-rose-200 tracking-tight tabular-nums block mt-0.5">
               {portfolioStats.sold}
             </strong>
-            <span className="text-[10px] text-slate-500 font-semibold">actes conclus</span>
+            <span className="text-[11px] text-rose-700 dark:text-rose-400 font-medium">
+              actes conclus
+            </span>
           </div>
-        </div>
+          <Tag className="w-7 h-7 text-rose-500 shrink-0 stroke-[1.75]" />
+        </a>
 
-        {/* Valeur totale du portefeuille */}
-        <div className="col-span-2 sm:col-span-1 lg:col-span-1 p-3.5 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/60 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#FA3055]">Valeur globale</span>
-            <Coins className="w-4 h-4 text-[#FA3055]" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <strong className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight font-mono truncate" title={formatMoney(portfolioStats.totalVal)}>
-              {formatMoney(portfolioStats.totalVal)}
+        <div className="col-span-2 sm:col-span-1 p-4 rounded-2xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#13161B] flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 block truncate">
+              Valeur globale
+            </span>
+            <strong
+              className="text-[15px] xl:text-lg font-extrabold text-[#141414] dark:text-white tracking-tight tabular-nums block mt-1 whitespace-nowrap"
+              title={formatMoney(portfolioStats.totalVal)}
+            >
+              {currency === 'USD'
+                ? `$${Math.round(portfolioStats.totalVal / 600).toLocaleString('en-US')}`
+                : portfolioStats.totalVal.toLocaleString('fr-FR')}
             </strong>
+            <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium block">
+              {currency === 'USD' ? 'USD · estimation active' : 'FCFA · estimation active'}
+            </span>
           </div>
+          <Coins className="w-6 h-6 text-neutral-400 dark:text-neutral-500 shrink-0 stroke-[1.75]" />
         </div>
-      </div>
+      </section>
 
-      {/* 3. BARRE DE RECHERCHE GÉOGRAPHIQUE & TRI */}
-      <div className="bg-white rounded-3xl p-3 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto flex-1">
-          
-          {/* Sélecteur de Commune / Ville */}
-          <div className="relative">
-            <select
-              value={selectedCity}
-              onChange={(e) => {
-                setSelectedCity(e.target.value);
-                setSelectedDistrict('Tous les quartiers');
-              }}
-              className="appearance-none bg-[#F4F6F5] hover:bg-slate-200/70 text-slate-800 font-semibold text-xs py-2 pl-3.5 pr-8 rounded-full cursor-pointer focus:outline-none transition-colors max-w-[210px] truncate"
-            >
-              <option value="Toutes les villes">Toutes les 77 communes (Bénin)</option>
-              {allCommunesList.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name} ({c.dept})
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-
-          {/* Sélecteur de Quartier */}
-          <div className="relative">
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="appearance-none bg-[#F4F6F5] hover:bg-slate-200/70 text-slate-700 font-medium text-xs py-2 pl-3.5 pr-8 rounded-full cursor-pointer focus:outline-none transition-colors max-w-[190px] truncate"
-            >
-              {availableDistricts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-
-          {/* Recherche textuelle libre */}
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={dashboardSearchQuery}
-              onChange={(e) => setDashboardSearchQuery(e.target.value)}
-              placeholder="Rechercher référence, quartier, titre..."
-              className="w-full bg-[#F4F6F5] text-xs py-2 pl-8 pr-4 rounded-full text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
-            />
-          </div>
-
-          {/* Filtre dynamique par statut opérationnel */}
-          <div className="relative">
-            <select
-              value={selectedStatusFilter}
-              onChange={(e) => setSelectedStatusFilter(e.target.value as any)}
-              className="appearance-none bg-[#F4F6F5] hover:bg-slate-200/70 text-slate-800 font-semibold text-xs py-2 pl-3.5 pr-8 rounded-full cursor-pointer focus:outline-none transition-colors"
-            >
-              <option value="TOUS">Tous les statuts ({properties.length})</option>
-              <option value="DISPONIBLE">● Disponible ({properties.filter(p => getPropertyStatus(p) === 'DISPONIBLE').length})</option>
-              <option value="EN_LOCATION">● En location ({properties.filter(p => getPropertyStatus(p) === 'EN_LOCATION').length})</option>
-              <option value="VENDU">● Vendu ({properties.filter(p => getPropertyStatus(p) === 'VENDU').length})</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-
-        </div>
-
-        {/* Tri des offres */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-600">
-          <span className="font-semibold text-slate-500 hidden sm:inline">Trier par :</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-[#F4F6F5] text-slate-800 font-bold text-xs py-1.5 px-3 rounded-full cursor-pointer focus:outline-none"
-          >
-            <option value="recent">Plus récents</option>
-            <option value="price_asc">Prix croissant</option>
-            <option value="price_desc">Prix décroissant</option>
-            <option value="area_desc">Superficie décroissante</option>
-          </select>
-        </div>
-      </div>
-
-      {/* 4. CONTENU PRINCIPAL DU TABLEAU DE BORD */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* ========================================================================= */}
-        {/* COLONNE GAUCHE : Contacts & Personnel Terrain (3 cols)                   */}
-        {/* ========================================================================= */}
+      {/* 3. BROWSE LISTINGS SHELL (Left Filters + Contacts | Right Listings Grid/List) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* LEFT COLUMN (3 cols): Listeo Search/Territory Filters + Contacts */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-2xs">
-            
-            {/* Titre Contacts */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Contacts</h2>
-              <button 
-                title="Filtrer les contacts"
-                className="w-8 h-8 rounded-full bg-[#F4F6F5] hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-              </button>
+          {/* Filters Card */}
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl p-4 sm:p-5 border border-neutral-200 dark:border-white/10 space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/10 pb-3">
+              <h3 className="text-sm font-extrabold text-[#141414] dark:text-white flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Filtres</span>
+              </h3>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-[11px] font-semibold cursor-pointer transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Réinitialiser</span>
+                </button>
+              )}
             </div>
 
-            {/* Onglets Contacts */}
-            <div className="flex items-center gap-1 mb-5 bg-[#F4F6F5] p-1 rounded-full">
+            {/* Search Input */}
+            <div>
+              <label
+                htmlFor="dashboard-search-input"
+                className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5"
+              >
+                Recherche
+              </label>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  id="dashboard-search-input"
+                  type="text"
+                  value={dashboardSearchQuery}
+                  onChange={(e) => setDashboardSearchQuery(e.target.value)}
+                  placeholder="Référence, quartier, titre..."
+                  className="w-full bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs py-2.5 pl-8 pr-3 rounded-xl text-[#141414] dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-[#141414] dark:focus:border-white/40"
+                />
+              </div>
+            </div>
+
+            {/* Commune */}
+            <div>
+              <label
+                htmlFor="filter-commune"
+                className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5"
+              >
+                Commune / Ville (77)
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-commune"
+                  value={selectedCity}
+                  onChange={(e) => {
+                    setSelectedCity(e.target.value);
+                    setSelectedDistrict('Tous les quartiers');
+                  }}
+                  className="w-full appearance-none bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-[#141414] dark:text-white font-semibold text-xs py-2.5 pl-3 pr-8 rounded-xl cursor-pointer focus:outline-none focus:border-[#141414]"
+                >
+                  <option value="Toutes les villes">Toutes les 77 communes (Bénin)</option>
+                  {allCommunesList.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name} ({c.dept})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Quartier */}
+            <div>
+              <label
+                htmlFor="filter-district"
+                className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5"
+              >
+                Quartier / Village
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-district"
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  className="w-full appearance-none bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-[#141414] dark:text-white font-semibold text-xs py-2.5 pl-3 pr-8 rounded-xl cursor-pointer focus:outline-none focus:border-[#141414]"
+                >
+                  {availableDistricts.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Statut opérationnel */}
+            <div>
+              <label
+                htmlFor="filter-status"
+                className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5"
+              >
+                Statut opérationnel
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-status"
+                  value={selectedStatusFilter}
+                  onChange={(e) => setSelectedStatusFilter(e.target.value as 'TOUS' | PropertyOperationalStatus)}
+                  className="w-full appearance-none bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-[#141414] dark:text-white font-semibold text-xs py-2.5 pl-3 pr-8 rounded-xl cursor-pointer focus:outline-none focus:border-[#141414]"
+                >
+                  <option value="TOUS">Tous les statuts ({properties.length})</option>
+                  <option value="DISPONIBLE">
+                    Disponible ({portfolioStats.available})
+                  </option>
+                  <option value="EN_LOCATION">
+                    En location ({portfolioStats.inRent})
+                  </option>
+                  <option value="VENDU">Vendu ({portfolioStats.sold})</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Contacts & Équipe Terrain Card */}
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl p-4 sm:p-5 border border-neutral-200 dark:border-white/10 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-[#141414] dark:text-white">
+                Contacts terrain
+              </h3>
+              <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 tabular-nums">
+                {agents.length} membres
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
               {(['realtors', 'builders', 'clients'] as const).map((tab) => (
                 <button
                   key={tab}
+                  type="button"
                   onClick={() => setContactTab(tab)}
-                  className={`flex-1 py-1.5 text-[11px] font-bold rounded-full capitalize transition-all cursor-pointer ${
+                  className={`py-1.5 text-[11px] font-bold rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer ${
                     contactTab === tab
-                      ? 'bg-[#FA3055] text-white shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40'
+                      : 'opacity-75 hover:opacity-100'
                   }`}
                 >
                   {tab === 'realtors' ? 'Agents' : tab === 'builders' ? 'Bailleurs' : 'Clients'}
@@ -551,31 +619,17 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
               ))}
             </div>
 
-            {/* En-tête recenseurs */}
-            <div className="flex items-center justify-between text-xs text-slate-400 font-medium px-1 mb-2">
-              <div className="flex items-center gap-1.5 text-slate-800 font-bold">
-                <span className="w-5 h-5 rounded-full bg-[#FA3055] text-white flex items-center justify-center text-[10px]">
-                  {agents.length}
-                </span>
-                <span>{selectedCity}</span>
-              </div>
-              <span className="text-[11px]">Recenseurs</span>
-            </div>
-
-            {/* Liste des recenseurs réels de production */}
-            <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-1">
-              {agents.map((agent, index) => {
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {agents.map((agent) => {
                 const isSelected = selectedAgentId === agent.id;
-                const isFirst = index === 0;
-
                 return (
                   <div
                     key={agent.id}
                     onClick={() => setSelectedAgentId(agent.id)}
-                    className={`p-3.5 rounded-2xl transition-all cursor-pointer border ${
-                      isSelected || (isFirst && !selectedAgentId)
-                        ? 'bg-[#FA3055] border-[#E02045] text-white shadow-sm'
-                        : 'bg-[#F9FAF9] hover:bg-[#F2F6F5] border-slate-100 text-slate-800'
+                    className={`p-3 rounded-xl transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'bg-[#FAFAFA] dark:bg-[#181C22] border-[#141414] dark:border-white/40'
+                        : 'bg-white dark:bg-[#13161B] border-neutral-200 dark:border-white/10 hover:border-neutral-300'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -583,311 +637,369 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
                         <img
                           src={agent.avatar}
                           alt={agent.name}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-white/60 shrink-0"
+                          referrerPolicy="no-referrer"
+                          className="w-9 h-9 rounded-full object-cover border border-neutral-200 dark:border-white/15 shrink-0 bg-neutral-100"
                         />
                         <div className="min-w-0">
-                          <h4 className={`text-xs font-bold truncate ${isSelected || (isFirst && !selectedAgentId) ? 'text-white' : 'text-slate-900'}`}>
+                          <h4 className="text-xs font-bold text-[#141414] dark:text-white truncate">
                             {agent.name}
                           </h4>
-                          <p className={`text-[10px] truncate ${isSelected || (isFirst && !selectedAgentId) ? 'text-rose-100' : 'text-slate-500'}`}>
-                            {agent.propertiesCount} biens • {agent.city}
+                          <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate tabular-nums">
+                            {agent.propertiesCount} biens · {agent.city}
                           </p>
                         </div>
                       </div>
 
-                      {/* Note */}
-                      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold shadow-2xs shrink-0 ${
-                        isSelected || (isFirst && !selectedAgentId) ? 'bg-white/20 text-white' : 'bg-white text-slate-900'
-                      }`}>
-                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-neutral-700 dark:text-neutral-200 tabular-nums shrink-0">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                         <span>{agent.rating}</span>
                       </div>
                     </div>
 
-                    {/* Actions d'appel et d'e-mail */}
-                    <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-neutral-100 dark:border-white/10">
                       <a
                         href={`tel:${agent.phone}`}
                         onClick={(e) => e.stopPropagation()}
                         title={`Appeler ${agent.name}`}
-                        className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-105 ${
-                          isSelected || (isFirst && !selectedAgentId) ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white text-slate-800 hover:bg-slate-100'
-                        }`}
+                        className="w-7 h-7 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white flex items-center justify-center transition-colors"
                       >
-                        <Phone className="w-3 h-3" />
+                        <Phone className="w-3.5 h-3.5" />
                       </a>
                       <a
                         href={`mailto:${agent.email}`}
                         onClick={(e) => e.stopPropagation()}
                         title={`Envoyer un email à ${agent.name}`}
-                        className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-105 ${
-                          isSelected || (isFirst && !selectedAgentId) ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white text-slate-800 hover:bg-slate-100'
-                        }`}
+                        className="w-7 h-7 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white flex items-center justify-center transition-colors"
                       >
-                        <Mail className="w-3 h-3" />
+                        <Mail className="w-3.5 h-3.5" />
                       </a>
                     </div>
                   </div>
                 );
               })}
             </div>
-
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* COLONNE DROITE : PORTFOLIO IMMOBILIER FONCTIONNEL ÉPURÉ (9 cols)          */}
-        {/* (Suppression totale d'Arasaka Tower et des plans 3D superflus)           */}
-        {/* ========================================================================= */}
+        {/* RIGHT COLUMN (9 cols): Listings Directory Toolbar + Cards / Empty State */}
         <div className="lg:col-span-9 space-y-4">
-          
-          {/* En-tête des résultats de filtrage */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl px-5 py-3 border border-slate-200/80 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-slate-900">
-                {selectedCategory === 'Toutes' ? 'Toutes les offres immobilières' : `Catégorie : ${selectedCategory}`}
+          {/* Directory Result & Sort Bar (164.png inspired) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#13161B] rounded-2xl px-4 py-3 border border-neutral-200 dark:border-white/10">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-extrabold text-[#141414] dark:text-white text-sm">
+                {selectedCategory === 'Toutes' ? 'Toutes les offres immobilières' : selectedCategory}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-                {filteredProperties.length} {filteredProperties.length > 1 ? 'biens disponibles' : 'bien disponible'}
+              <span className="text-neutral-400" aria-hidden="true">·</span>
+              <span className="font-semibold text-neutral-500 dark:text-neutral-400 tabular-nums">
+                {filteredProperties.length} {filteredProperties.length > 1 ? 'biens' : 'bien'}
               </span>
             </div>
 
-            {selectedCategory !== 'Toutes' && (
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('Toutes')}
-                className="text-xs font-bold text-[#FA3055] hover:underline cursor-pointer"
-              >
-                Réinitialiser la catégorie
-              </button>
-            )}
-          </div>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <select
+                  aria-label="Trier les offres"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="appearance-none bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-[#141414] dark:text-white font-bold text-xs py-2 pl-3 pr-8 rounded-xl cursor-pointer focus:outline-none"
+                >
+                  <option value="recent">Plus récents</option>
+                  <option value="price_asc">Prix croissant</option>
+                  <option value="price_desc">Prix décroissant</option>
+                  <option value="area_desc">Superficie décroissante</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
 
-          {/* Grille de cartes réelles de biens */}
-          {filteredProperties.length === 0 ? (
-            <div className="bg-white rounded-3xl p-10 border border-slate-200/80 shadow-2xs text-center space-y-4">
-              <div className="w-16 h-16 rounded-3xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
-                {getCategoryIcon(selectedCategory)}
-              </div>
-              <div className="max-w-md mx-auto space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">
-                  Aucun bien disponible dans « {selectedCategory} »
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Aucune offre ne correspond aux critères sélectionnés (commune ou recherche textuelle).
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              <div className="inline-flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedCategory('Toutes');
-                    setSelectedCity('Toutes les villes');
-                    setSelectedDistrict('Tous les quartiers');
-                    setDashboardSearchQuery('');
-                  }}
-                  className="px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer"
+                  onClick={() => setListingLayout('grid')}
+                  title="Vue grille"
+                  aria-label="Vue grille"
+                  className={`w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white flex items-center justify-center cursor-pointer transition-all ${
+                    listingLayout === 'grid'
+                      ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40'
+                      : 'opacity-75 hover:opacity-100'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setListingLayout('list')}
+                  title="Vue liste"
+                  aria-label="Vue liste"
+                  className={`w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white flex items-center justify-center cursor-pointer transition-all ${
+                    listingLayout === 'list'
+                      ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40'
+                      : 'opacity-75 hover:opacity-100'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Empty State (162.png inspired) OR Property Cards */}
+          {filteredProperties.length === 0 ? (
+            <div className="bg-white dark:bg-[#13161B] rounded-2xl p-10 sm:p-14 border border-neutral-200 dark:border-white/10 text-center space-y-4">
+              <div className="w-14 h-14 rounded-full bg-neutral-100 dark:bg-white/10 text-[#141414] dark:text-white mx-auto flex items-center justify-center">
+                {getCategoryIcon(selectedCategory)}
+              </div>
+              <div className="max-w-md mx-auto space-y-1.5">
+                <h3 className="text-lg font-extrabold text-[#141414] dark:text-white">
+                  Aucun bien trouvé pour ces critères
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                  Aucune offre ne correspond aux filtres sélectionnés ({selectedCategory}, {selectedCity}).
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="px-4 py-2.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-colors cursor-pointer"
                 >
                   Afficher toutes les offres
                 </button>
                 <button
                   type="button"
                   onClick={onOpenCensus}
-                  className="px-4 py-2 rounded-full bg-[#FA3055] hover:bg-[#d82244] text-white text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-colors cursor-pointer"
                 >
-                  Recenser un bien dans cette catégorie
+                  Recenser un bien
                 </button>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div
+              className={
+                listingLayout === 'grid'
+                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'
+                  : 'space-y-3'
+              }
+            >
               {filteredProperties.map((prop) => {
                 const normCat = normalizePropertyCategory(prop.category);
-                const hasCoordinates = prop.coordinates && prop.coordinates.latitude && prop.coordinates.longitude;
+                const hasCoordinates =
+                  prop.coordinates &&
+                  prop.coordinates.latitude &&
+                  prop.coordinates.longitude;
+                const opStatus = getPropertyStatus(prop);
+                const statusCfg = OPERATIONAL_STATUS_CONFIG[opStatus];
+                const isList = listingLayout === 'list';
 
                 return (
                   <div
                     key={prop.id}
                     onClick={() => onSelectProperty(prop)}
-                    className="group bg-white rounded-3xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col justify-between"
+                    className={`group bg-white dark:bg-[#13161B] rounded-2xl p-4 border border-neutral-200 dark:border-white/10 hover:border-neutral-400 dark:hover:border-white/30 transition-all cursor-pointer ${
+                      isList
+                        ? 'flex flex-col sm:flex-row gap-4 items-stretch'
+                        : 'flex flex-col justify-between'
+                    }`}
                   >
-                    <div>
-                      {/* Image du bien avec Tag Catégorie Officielle chezmoi.bj en Rouge (#FA3055) */}
-                      <div className="relative h-44 rounded-2xl overflow-hidden bg-slate-100 mb-3.5">
+                    {/* Media Container with Graceful CSS/SVG Fallback */}
+                    <div
+                      className={`relative rounded-xl overflow-hidden bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-[#181C22] dark:to-[#222731] shrink-0 ${
+                        isList ? 'h-44 sm:h-auto sm:w-56' : 'h-44 mb-3.5'
+                      }`}
+                    >
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-neutral-400 dark:text-neutral-500 pointer-events-none">
+                        <Building2 className="w-8 h-8 mb-1 opacity-60" />
+                        <span className="text-[10px] font-semibold">{normCat}</span>
+                      </div>
+                      {prop.photos?.[0]?.url && (
                         <img
-                          src={prop.photos[0]?.url || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'}
+                          src={prop.photos[0].url}
                           alt={prop.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                          className="relative z-10 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
+                      )}
+                      <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none" />
+                      <div className="absolute bottom-2.5 left-2.5 z-20">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-md ${statusCfg.badgeBg} text-white font-bold text-[10px] shadow-2xs`}
+                        >
+                          {statusCfg.label}
+                        </span>
+                      </div>
+                    </div>
 
-                        {/* Tag officiel en rouge style chezmoi.bj (identique à l'image_05f51623.png) */}
-                        <div className="absolute top-2.5 left-2.5">
-                          <span className="px-3 py-1 rounded-full bg-[#FA3055] text-white font-bold text-[11px] shadow-sm tracking-wide">
-                            {normCat}
-                          </span>
-                        </div>
-
-                        {/* Référence foncière */}
-                        <div className="absolute top-2.5 right-2.5">
-                          <span className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-xs text-white font-mono font-bold text-[10px]">
+                    {/* Content Body */}
+                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        {/* Quiet unboxed metadata line */}
+                        <div className="flex items-center justify-between gap-2 text-[11px] text-neutral-500 dark:text-neutral-400 font-semibold mb-1">
+                          <span className="truncate">{normCat}</span>
+                          <span className="font-mono text-[10px] text-neutral-600 dark:text-neutral-300 shrink-0">
                             {prop.codeReference}
                           </span>
                         </div>
 
-                        {/* Statut opérationnel dynamique */}
-                        <div className="absolute bottom-2.5 left-2.5">
-                          {(() => {
-                            const opStatus = getPropertyStatus(prop);
-                            const statusCfg = OPERATIONAL_STATUS_CONFIG[opStatus];
-                            return (
-                              <span className={`px-2.5 py-0.5 rounded-full ${statusCfg.badgeBg} text-white font-bold text-[10px] flex items-center gap-1 shadow-sm`}>
-                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                <span>{statusCfg.label}</span>
-                              </span>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Titre & Localisation */}
-                      <div className="space-y-1 mb-3">
-                        <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#FA3055] transition-colors line-clamp-1">
+                        <h3 className="font-extrabold text-sm text-[#141414] dark:text-white line-clamp-1">
                           {prop.title}
                         </h3>
-                        <p className="text-xs text-slate-500 flex items-center gap-1 truncate">
-                          <MapPin className="w-3.5 h-3.5 text-[#FA3055] shrink-0" />
-                          <span>{prop.district}, {prop.city}</span>
+
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1 truncate mt-1 mb-3">
+                          <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          <span className="truncate">
+                            {prop.district}, {prop.city}
+                          </span>
                         </p>
+
+                        {/* Specs strip */}
+                        <div className="grid grid-cols-3 gap-1.5 py-2 px-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-100 dark:border-white/10 text-center mb-3 text-[11px]">
+                          <div>
+                            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 block">
+                              Surface
+                            </span>
+                            <strong className="text-[#141414] dark:text-white font-bold tabular-nums">
+                              {prop.areaSqMeters} m²
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 block">
+                              Pièces
+                            </span>
+                            <strong className="text-[#141414] dark:text-white font-bold tabular-nums">
+                              {prop.roomsCount || '-'}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 block">
+                              Chambres
+                            </span>
+                            <strong className="text-[#141414] dark:text-white font-bold tabular-nums">
+                              {prop.bedroomsCount || '-'}
+                            </strong>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Caractéristiques Clés */}
-                      <div className="grid grid-cols-3 gap-1.5 py-2 px-2.5 rounded-2xl bg-[#F9FAF9] border border-slate-100 text-center mb-3 text-[11px]">
-                        <div>
-                          <span className="text-[10px] text-slate-400 block font-medium">Surface</span>
-                          <strong className="text-slate-900 font-bold">{prop.areaSqMeters} m²</strong>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 block font-medium">Pièces</span>
-                          <strong className="text-slate-900 font-bold">{prop.roomsCount || '-'}</strong>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 block font-medium">Chambres</span>
-                          <strong className="text-slate-900 font-bold">{prop.bedroomsCount || '-'}</strong>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Prix & Boutons d'actions directs */}
-                    <div className="pt-3 border-t border-slate-100 space-y-3">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-[11px] font-semibold text-slate-400">Prix demandé</span>
-                        <div className="text-right">
-                          <strong className="text-base font-extrabold text-[#FA3055] font-mono tracking-tight block">
+                      {/* Price & Action Footer */}
+                      <div className="pt-3 border-t border-neutral-100 dark:border-white/10 space-y-2.5">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
+                            Prix demandé
+                          </span>
+                          <strong className="text-base font-extrabold text-[#141414] dark:text-white tabular-nums tracking-tight">
                             {formatMoney(prop.priceAmount)}
                           </strong>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* Bouton Consulter la fiche */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectProperty(prop);
-                          }}
-                          className="flex-1 min-w-[120px] py-2 px-3 rounded-xl bg-slate-900 hover:bg-[#FA3055] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Consulter</span>
-                        </button>
-
-                        {/* Sélecteur de statut opérationnel rapide si autorisé */}
-                        {canUserManage(prop) && onUpdatePropertyStatus && (
-                          <select
-                            value={getPropertyStatus(prop)}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              onUpdatePropertyStatus(prop.id, e.target.value as PropertyOperationalStatus);
-                            }}
-                            title="Changer le statut en 1 clic"
-                            className="py-2 px-2 rounded-xl bg-[#F4F6F5] hover:bg-slate-200 text-slate-800 text-[10px] font-bold border border-slate-200 cursor-pointer focus:outline-none transition-colors"
-                          >
-                            <option value="DISPONIBLE">Disponible</option>
-                            <option value="EN_LOCATION">En location</option>
-                            <option value="VENDU">Vendu</option>
-                          </select>
-                        )}
-
-                        {/* Bouton Google Maps direct */}
-                        {hasCoordinates && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const gMaps = `https://www.google.com/maps/search/?api=1&query=${prop.coordinates.latitude},${prop.coordinates.longitude}`;
-                              window.open(gMaps, '_blank', 'noopener,noreferrer');
+                              onSelectProperty(prop);
                             }}
-                            title="Ouvrir dans Google Maps"
-                            className="p-2 rounded-xl bg-[#F4F6F5] hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 transition-colors cursor-pointer"
+                            className="flex-1 min-w-[110px] py-2 px-3 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                           >
-                            <MapPin className="w-4 h-4 text-emerald-600" />
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Consulter</span>
                           </button>
-                        )}
 
-                        {/* Bouton Supprimer si autorisé */}
-                        {canUserManage(prop) && onDeleteProperty && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPropertyToDelete(prop);
-                            }}
-                            title="Supprimer ce bien"
-                            className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4 text-rose-600" />
-                          </button>
-                        )}
+                          {canUserManage(prop) && onUpdatePropertyStatus && (
+                            <select
+                              aria-label={`Statut de ${prop.title}`}
+                              value={opStatus}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                onUpdatePropertyStatus(
+                                  prop.id,
+                                  e.target.value as PropertyOperationalStatus
+                                );
+                              }}
+                              title="Changer le statut en 1 clic"
+                              className="py-2 px-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] text-[#141414] dark:text-white text-[11px] font-bold border border-neutral-200 dark:border-white/15 cursor-pointer focus:outline-none"
+                            >
+                              <option value="DISPONIBLE">Disponible</option>
+                              <option value="EN_LOCATION">En location</option>
+                              <option value="VENDU">Vendu</option>
+                            </select>
+                          )}
+
+                          {hasCoordinates && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const gMaps = `https://www.google.com/maps/search/?api=1&query=${prop.coordinates.latitude},${prop.coordinates.longitude}`;
+                                window.open(gMaps, '_blank', 'noopener,noreferrer');
+                              }}
+                              aria-label={`Localisation Google Maps de ${prop.title}`}
+                              title="Ouvrir dans Google Maps"
+                              className="p-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer"
+                            >
+                              <MapPin className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {canUserManage(prop) && onDeleteProperty && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPropertyToDelete(prop);
+                              }}
+                              aria-label={`Supprimer ${prop.title}`}
+                              title="Supprimer ce bien"
+                              className="p-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4 text-rose-400" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-
                   </div>
                 );
               })}
             </div>
           )}
-
         </div>
-
       </div>
 
-      {/* ========================================================================= */}
-      {/* MODALE DE SÉCURITÉ DE CONFIRMATION DE SUPPRESSION D'UN BIEN               */}
-      {/* ========================================================================= */}
+      {/* MODALE DE SÉCURITÉ DE CONFIRMATION DE SUPPRESSION D'UN BIEN */}
       {propertyToDelete && (
         <div className="fixed inset-0 z-70 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150">
-            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center mx-auto shadow-2xs">
-              <Trash2 className="w-7 h-7 text-rose-600" />
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl p-6 sm:p-7 max-w-md w-full border border-neutral-200 dark:border-white/10 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
             </div>
 
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-bold text-slate-900 leading-snug">
+              <h3 className="text-lg font-extrabold text-[#141414] dark:text-white leading-snug">
                 Êtes-vous sûr de vouloir supprimer ce bien ?
               </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Cette action supprimera définitivement le bien <strong>« {propertyToDelete.title} »</strong> (Réf. <span className="font-mono text-slate-800 font-bold">{propertyToDelete.codeReference}</span>) de la base de données. Les données associées seront effacées en temps réel.
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                Cette action supprimera définitivement le bien{' '}
+                <strong className="text-[#141414] dark:text-white">
+                  « {propertyToDelete.title} »
+                </strong>{' '}
+                (Réf.{' '}
+                <span className="font-mono text-[#141414] dark:text-white font-bold">
+                  {propertyToDelete.codeReference}
+                </span>
+                ) de la base de données. Les données associées seront effacées en temps réel.
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-100 dark:border-white/10">
               <button
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setPropertyToDelete(null)}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-colors cursor-pointer"
               >
                 Annuler
               </button>
@@ -906,13 +1018,13 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
                     setIsDeleting(false);
                   }
                 }}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {isDeleting ? (
                   <span>Suppression en cours...</span>
                 ) : (
                   <>
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 text-rose-400" />
                     <span>Confirmer la suppression</span>
                   </>
                 )}
@@ -921,7 +1033,6 @@ export const ArcheDashboard: React.FC<ArcheDashboardProps> = ({
           </div>
         </div>
       )}
-
     </div>
   );
 };

@@ -1,131 +1,199 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  *, ::before, ::after {
-    font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  *:not(#emecef-official-sheet):not(#emecef-official-sheet *):not(.dgi-paper-sheet):not(.dgi-paper-sheet *):not(.printable-invoice):not(.printable-invoice *),
+  ::before,
+  ::after {
+    font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-sizing: border-box;
   }
-  
+
+  .font-mono,
+  code,
+  pre {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  }
+
   html.dark {
     color-scheme: dark;
   }
 
   body {
-    font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #F8FAFC;
-    background-image: radial-gradient(rgba(15, 23, 42, 0.08) 1.25px, transparent 1.25px);
-    background-size: 24px 24px;
-    background-attachment: fixed;
-    color: #1E293B;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #FAFAFA;
+    color: #141414;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    -webkit-font-smoothing: antialiased;
   }
 
   html.dark body {
-    background-color: #0A0C0F;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1.25px, transparent 1.25px);
-    background-size: 24px 24px;
-    background-attachment: fixed;
-    color: #E2E8F0;
+    background-color: #0B0D10;
+    color: #F3F4F6;
   }
 
   ::selection {
-    background-color: #F91942;
+    background-color: #141414;
+    color: #FFFFFF;
+  }
+
+  html.dark ::selection {
+    background-color: #2C2C2C;
     color: #FFFFFF;
   }
 }
 
+/* Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ==========================================================================
-   PROPAGATION GLOBALE DU THÈME SOMBRE (ERP CHEZMOI)
-   S'applique uniformément à tous les modules, briques, tables et modales.
+   PROPAGATION GLOBALE DU THÈME SOMBRE (HORS FEUILLES PDF / DGI)
    ========================================================================== */
 
-html.dark .bg-white:not(.dgi-paper-sheet):not(.dgi-paper-sheet *) {
-  background-color: #11141A !important;
+html.dark .bg-white:not(.dgi-paper-sheet):not(.dgi-paper-sheet *):not(#emecef-official-sheet):not(#emecef-official-sheet *) {
+  background-color: #13161B !important;
 }
 
 html.dark .bg-white\/95,
 html.dark .bg-white\/90,
 html.dark .bg-white\/80 {
-  background-color: rgba(17, 20, 26, 0.94) !important;
+  background-color: rgba(19, 22, 27, 0.94) !important;
 }
 
+html.dark .bg-\[\#FAFAFA\],
+html.dark .bg-\[\#F7F7F8\],
 html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-\[\#F9FAF9\],
 html.dark .bg-\[\#F4F6F5\],
-html.dark .bg-slate-50:not(.dgi-paper-sheet *) {
-  background-color: #161A22 !important;
+html.dark .bg-slate-50:not(.dgi-paper-sheet *):not(#emecef-official-sheet *) {
+  background-color: #181C22 !important;
 }
 
-html.dark .bg-slate-100:not(.dgi-paper-sheet *) {
-  background-color: #1B202A !important;
+html.dark .bg-slate-100:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .bg-neutral-100:not(.dgi-paper-sheet *):not(#emecef-official-sheet *) {
+  background-color: #1E232B !important;
 }
 
-html.dark .bg-slate-200:not(.dgi-paper-sheet *) {
-  background-color: #242A38 !important;
+html.dark .bg-slate-200:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .bg-neutral-200:not(.dgi-paper-sheet *):not(#emecef-official-sheet *) {
+  background-color: #262C36 !important;
 }
 
-html.dark .border-slate-100:not(.dgi-paper-sheet *),
-html.dark .border-slate-200:not(.dgi-paper-sheet *),
-html.dark .border-slate-200\/80:not(.dgi-paper-sheet *),
-html.dark .border-slate-300:not(.dgi-paper-sheet *) {
-  border-color: rgba(255, 255, 255, 0.09) !important;
+html.dark .border-neutral-100:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .border-neutral-200:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .border-neutral-200\/80:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .border-slate-100:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .border-slate-200:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .border-slate-200\/80:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .border-slate-200\/90:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .border-slate-300:not(.dgi-paper-sheet *):not(#emecef-official-sheet *) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-html.dark .text-slate-900:not(.dgi-paper-sheet *),
-html.dark .text-slate-800:not(.dgi-paper-sheet *) {
-  color: #F8FAFC !important;
+html.dark .text-neutral-900:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-\[\#141414\]:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-slate-950:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-slate-900:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-slate-800:not(.dgi-paper-sheet *):not(#emecef-official-sheet *) {
+  color: #F3F4F6 !important;
 }
 
-html.dark .text-slate-700:not(.dgi-paper-sheet *),
-html.dark .text-slate-600:not(.dgi-paper-sheet *) {
+html.dark .text-neutral-700:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-neutral-600:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-slate-700:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-slate-600:not(.dgi-paper-sheet *):not(#emecef-official-sheet *) {
   color: #CBD5E1 !important;
 }
 
-html.dark .text-slate-500:not(.dgi-paper-sheet *),
-html.dark .text-slate-400:not(.dgi-paper-sheet *) {
-  color: #94A3B8 !important;
+html.dark .text-neutral-500:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-neutral-400:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-slate-500:not(.dgi-paper-sheet *):not(#emecef-official-sheet *),
+html.dark .text-slate-400:not(.dgi-paper-sheet *):not(#emecef-official-sheet *) {
+  color: #9CA3AF !important;
 }
 
-html.dark input:not([type="checkbox"]):not([type="radio"]):not(#emecef-official-sheet *):not(.dgi-paper-sheet *), 
-html.dark select:not(#emecef-official-sheet *):not(.dgi-paper-sheet *), 
+html.dark input:not([type="checkbox"]):not([type="radio"]):not(#emecef-official-sheet *):not(.dgi-paper-sheet *),
+html.dark select:not(#emecef-official-sheet *):not(.dgi-paper-sheet *),
 html.dark textarea:not(#emecef-official-sheet *):not(.dgi-paper-sheet *) {
-  background-color: #151820 !important;
-  color: #F8FAFC !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: #161A20 !important;
+  color: #F3F4F6 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
 }
 
 html.dark input::placeholder,
 html.dark textarea::placeholder {
-  color: #64748B !important;
+  color: #6B7280 !important;
 }
 
 html.dark select option {
-  background-color: #151820;
-  color: #F8FAFC;
+  background-color: #161A20;
+  color: #F3F4F6;
 }
 
-/* Modales & Fenêtres flottantes */
-html.dark .shadow-sm,
-html.dark .shadow-md,
-html.dark .shadow-lg,
-html.dark .shadow-xl,
-html.dark .shadow-2xl {
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7) !important;
-}
-
-/* Scrollbars discrètes */
 html.dark ::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.16);
   border-radius: 4px;
 }
 
+html.dark ::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
 /* ==========================================================================
-   PRÉSERVATION DU PAPIER DE FACTURE OFFICIELLE DGI (Toujours blanc pur)
-   Permet d'avoir un aperçu fidèle à l'impression réelle A4 et ticket 80mm
+   PRÉSERVATION STRICTE DU PAPIER DE FACTURE OFFICIELLE DGI & PDF
+   Polices d'origine et fond blanc papier préservés
    ========================================================================== */
 html.dark #emecef-official-sheet,
 #emecef-official-sheet {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+#emecef-official-sheet *:not(button):not(button *) {
+  color: #0F172A !important;
+}
+
+#emecef-official-sheet .invoice-title,
+#emecef-official-sheet h2 {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+#emecef-official-sheet table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+#emecef-official-sheet table th.border-r,
+#emecef-official-sheet table td.border-r {
+  border-right: 1.5px solid #ffffff !important;
+}
+
+#emecef-official-sheet table th.border-b,
+#emecef-official-sheet table td.border-b,
+#emecef-official-sheet table tr.border-b > td {
+  border-bottom: 1.5px solid #ffffff !important;
+}
+
+#emecef-official-sheet input {
+  background-color: transparent !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+#emecef-official-sheet input:focus {
+  background-color: #f8fafc !important;
+  border-color: #141414 !important;
 }
 
 html.dark #emecef-official-sheet .bg-slate-100 {
@@ -170,17 +238,17 @@ html.dark #emecef-official-sheet .border-slate-800 {
   border-color: #0F172A !important;
 }
 
-html.dark ::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
 @media print {
-  header, nav, button {
+  header, nav, aside, button, .no-print {
     display: none !important;
   }
   body {
     background-color: #FFFFFF !important;
     color: #000000 !important;
+  }
+  #emecef-official-sheet,
+  #emecef-official-sheet * {
+    visibility: visible !important;
   }
   .printable-invoice,
   .printable-invoice * {

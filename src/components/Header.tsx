@@ -1,21 +1,22 @@
 import React from 'react';
-import { 
-  Building2, 
-  Wifi, 
-  WifiOff, 
-  RefreshCw, 
-  Smartphone, 
-  Monitor, 
-  Settings as SettingsIcon, 
-  MapPin, 
-  Users, 
-  CreditCard, 
+import {
+  Building2,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  Smartphone,
+  Monitor,
+  Settings as SettingsIcon,
+  MapPin,
+  Users,
+  CreditCard,
   Layers,
-  UserCheck,
   LogOut,
-  ShieldCheck,
   Sun,
-  Moon
+  Moon,
+  Menu,
+  ChevronRight,
+  User
 } from 'lucide-react';
 import { ChezmoiLogo } from './ChezmoiLogo';
 import { UserAccount } from '../types';
@@ -37,6 +38,7 @@ interface HeaderProps {
   currentUser: UserAccount;
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
+  onOpenMobileMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,7 +46,6 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   isOnline,
   toggleNetwork,
-  pendingSyncCount,
   triggerSync,
   isSyncing,
   viewMode,
@@ -55,207 +56,205 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   theme = 'light',
   onToggleTheme,
+  onOpenMobileMenu,
 }) => {
-  // Liste nettoyée des onglets principaux (Sans sync ni code)
   const allTabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Building2 },
-    { id: 'census', label: 'Recensement terrain', icon: MapPin },
-    { id: 'accounting', label: 'Facturation & dépenses (e-MECeF)', icon: CreditCard },
+    { id: 'census', label: 'Recensement', icon: MapPin },
+    { id: 'accounting', label: 'e-MECeF', icon: CreditCard },
     { id: 'hr', label: 'Agents & RH', icon: Users },
     { id: 'ged', label: 'GED foncière', icon: Layers },
   ];
 
-  // Filtrage selon la matrice RBAC du rôle de l'utilisateur
   const allowedTabIds = getAllowedTabsForRole(currentUser.role);
-  const tabs = allTabs.filter(t => allowedTabIds.includes(t.id));
-
+  const tabs = allTabs.filter((t) => allowedTabIds.includes(t.id));
   const roleInfo = ROLE_DEFINITIONS[currentUser.role];
   const canAccessSettings = currentUser.role === 'SUPER_ADMIN';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#12151B]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-2.5 sm:px-6 lg:px-8 py-2 sm:py-2.5 transition-all">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-4">
-        
-        {/* Brand & Official Chezmoi Logo */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-          <ChezmoiLogo size={34} className="sm:w-10 sm:h-10" />
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-black text-slate-900 dark:text-white tracking-tight text-base sm:text-lg">chezmoi</span>
-              {/* Badge masqué sur mobile (< sm) pour libérer l'espace horizontal, visible sur desktop/tablette */}
-              <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded-full bg-[#FA3055] text-white font-black tracking-wider">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#13161B]/95 backdrop-blur-md border-b border-neutral-200 dark:border-white/10 px-2.5 sm:px-6 py-2.5 transition-colors">
+      <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-1.5 sm:gap-2">
+        {/* Left: Mobile drawer trigger + Chezmoi Brand */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink-0">
+          {onOpenMobileMenu && (
+            <button
+              type="button"
+              onClick={onOpenMobileMenu}
+              title="Ouvrir le menu"
+              aria-label="Ouvrir le menu"
+              className="lg:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer shrink-0"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+          )}
+
+          <div
+            onClick={() => allowedTabIds.includes('dashboard') && setActiveTab('dashboard')}
+            className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer"
+          >
+            <ChezmoiLogo size={26} className="sm:w-9 sm:h-9 shrink-0" />
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-[#141414] dark:text-white tracking-tight text-sm sm:text-lg whitespace-nowrap">
+                chezmoi
+              </span>
+              {/* Masqué sur mobile (< sm) pour garantir l'affichage complet à droite sans scroll */}
+              <span className="hidden sm:inline-flex text-[11px] px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-200 font-semibold border border-neutral-200 dark:border-white/10 whitespace-nowrap">
                 administration
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block">
-              Chezmoi administration • Plateforme Foncière
-            </p>
           </div>
         </div>
 
-        {/* Center Navigation Pills (Desktop) - Strictly filtered by role */}
-        <nav className="hidden lg:flex items-center gap-1 bg-[#F4F6F5] p-1 rounded-full border border-slate-200/80 shadow-2xs" aria-label="Navigation principale">
+        {/* Center Quick Links (Desktop) */}
+        <nav className="hidden xl:flex items-center gap-1.5" aria-label="Navigation rapide">
           {tabs.map((tab) => {
-            const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   isActive
-                    ? 'bg-[#FA3055] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-[#FA3055] hover:bg-slate-200/50'
+                    ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40 font-bold'
+                    : 'opacity-80 hover:opacity-100'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : ''}`} />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* Right Action Bar - Réagencée pour tenir intégralement sur écran mobile visible */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          
-          {/* Network Simulator Toggle */}
+        {/* Right Action Controls — Optimisés pour tenir dans 360-390px mobile sans défilement horizontal */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Network Status Toggle */}
           <button
+            type="button"
             onClick={toggleNetwork}
             title={isOnline ? 'En ligne (cliquer pour simuler hors-ligne)' : 'Hors-ligne (cliquer pour reconnecter)'}
-            className={`flex items-center justify-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all border cursor-pointer shrink-0 ${
-              isOnline
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
-                : 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse hover:bg-rose-100'
-            }`}
+            aria-label={isOnline ? 'En ligne' : 'Hors-ligne'}
+            className="inline-flex items-center justify-center gap-1 sm:gap-1.5 h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap"
           >
             {isOnline ? (
               <>
-                <Wifi className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shrink-0" />
+                <Wifi className="w-3.5 h-3.5 text-emerald-400 sm:hidden shrink-0" />
                 <span className="hidden sm:inline">En ligne</span>
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-400 animate-pulse shrink-0" />
+                <WifiOff className="w-3.5 h-3.5 text-rose-400 sm:hidden shrink-0" />
                 <span className="hidden sm:inline">Hors-ligne</span>
               </>
             )}
           </button>
 
-          {/* Quick Manual Sync Button */}
+          {/* Sync Button */}
           <button
+            type="button"
             onClick={triggerSync}
             disabled={!isOnline || isSyncing}
             title="Synchroniser les données"
-            className={`flex items-center justify-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-semibold border transition-all shrink-0 ${
-              isSyncing
-                ? 'bg-amber-50 text-amber-700 border-amber-300 cursor-wait'
-                : !isOnline
-                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                : 'bg-white text-slate-700 border-slate-200 hover:border-[#FA3055]/30 hover:bg-[#F4F6F5] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs'
-            }`}
+            aria-label="Synchroniser les données"
+            className="inline-flex items-center justify-center gap-1.5 w-7 h-8 sm:w-auto sm:h-9 sm:px-3 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
           >
-            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isSyncing ? 'animate-spin text-amber-600' : 'text-[#FA3055]'}`} />
-            <span className="hidden xl:inline">{isSyncing ? 'Sync...' : 'Sync'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isSyncing ? 'animate-spin text-amber-300' : ''}`} />
+            <span className="hidden 2xl:inline">{isSyncing ? 'Sync...' : 'Sync'}</span>
           </button>
 
-          {/* Viewport Frame Toggle (Desktop/Tablette uniquement) */}
-          <div className="hidden sm:flex items-center bg-[#F4F6F5] dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+          {/* Desktop / Mobile Viewport Toggle (md+) */}
+          <div className="hidden md:flex items-center gap-1 shrink-0">
             <button
-              onClick={() => setViewMode('desktop')}
-              title="Vue écran PC"
-              className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                viewMode === 'desktop' ? 'bg-white dark:bg-slate-900 text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-              }`}
+              type="button"
+              onClick={() => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop')}
+              title={viewMode === 'desktop' ? 'Aperçu mobile' : 'Vue bureau'}
+              aria-label={viewMode === 'desktop' ? 'Aperçu mobile' : 'Vue bureau'}
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-colors cursor-pointer shrink-0"
             >
-              <Monitor className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode('mobile')}
-              title="Vue mobile agent terrain"
-              className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                viewMode === 'mobile' ? 'bg-white dark:bg-slate-900 text-[#FA3055] shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
+              {viewMode === 'desktop' ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
             </button>
           </div>
 
-          {/* Settings modal trigger (Accessible to Super Admin & Ops) */}
+          {/* Super Admin Settings */}
           {canAccessSettings && (
             <button
+              type="button"
               onClick={openSettings}
-              title="Paramètres API (WhatsApp, Gmail, Docs, WordPress, Gemini, e-MECeF)"
-              className="p-1.5 rounded-full text-slate-600 dark:text-slate-300 hover:text-[#FA3055] hover:bg-[#F4F6F5] dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+              title="Paramètres API & connecteurs"
+              aria-label="Paramètres API & connecteurs"
+              className="inline-flex items-center justify-center w-7 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer shrink-0"
             >
-              <SettingsIcon className="w-4 h-4" />
+              <SettingsIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           )}
 
-          {/* Theme Toggle Button (Sombre / Clair) */}
+          {/* Theme Toggle */}
           {onToggleTheme && (
             <button
+              type="button"
               onClick={onToggleTheme}
-              title={theme === 'dark' ? 'Basculer en mode clair' : 'Basculer en mode sombre'}
-              className="p-1.5 rounded-full text-slate-600 dark:text-slate-300 hover:text-[#FA3055] hover:bg-[#F4F6F5] dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+              title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              className="inline-flex items-center justify-center w-7 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer shrink-0"
             >
               {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-amber-400" />
+                <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
               ) : (
-                <Moon className="w-4 h-4 text-indigo-500" />
+                <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </button>
           )}
 
-          {/* Authenticated User Profile Button - Compact sur mobile */}
+          {/* Profile Button */}
           <button
+            type="button"
             onClick={openProfileModal}
-            title="Consulter le profil & paramétrer la double authentification (2FA)"
-            className="flex items-center gap-1.5 p-0.5 sm:pl-1.5 sm:pr-2.5 sm:py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0"
+            title="Mon profil & 2FA"
+            aria-label="Mon profil & 2FA"
+            className="inline-flex items-center justify-center gap-2 h-8 sm:h-9 px-1 sm:pl-1.5 sm:pr-3 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap"
           >
-            <div className="relative">
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-[#FA3055]/30 flex-shrink-0"
-              />
-              {currentUser.twoFactorEnabled && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" title="2FA Activée" />
-              )}
-            </div>
-            <div className="hidden xl:block text-left text-xs leading-tight">
-              <p className="font-bold text-slate-900 dark:text-white truncate max-w-[120px]">{currentUser.name}</p>
-              <p className="text-[10px] text-[#FA3055] font-semibold">{roleInfo.label}</p>
-            </div>
-            <UserCheck className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+            <img
+              src={currentUser.avatar}
+              alt={currentUser.name}
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-white/20 shrink-0"
+            />
+            <span className="hidden md:inline max-w-[110px] truncate">{currentUser.name}</span>
+            <span className="hidden lg:inline text-[10px] text-neutral-300">({roleInfo.label})</span>
           </button>
 
-          {/* Direct Logout Icon Button - Toujours visible sur mobile sans scroll */}
+          {/* Direct Logout Button */}
           <button
+            type="button"
             onClick={onLogout}
-            title="Se déconnecter de la session"
-            className="p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer transition-colors shrink-0"
+            title="Se déconnecter"
+            aria-label="Déconnexion"
+            className="inline-flex items-center justify-center gap-1.5 w-7 h-8 sm:w-auto sm:h-9 sm:px-3 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden xl:inline">Déconnexion</span>
           </button>
-
         </div>
-
       </div>
 
-      {/* Mobile sub-navigation bar - Strictly inside max-w-7xl with equal horizontal alignment */}
-      <div className="lg:hidden max-w-7xl mx-auto pt-2.5 pb-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      {/* Mobile Compact Module Tabs (below top bar on < lg screens) */}
+      <div className="lg:hidden pt-2 mt-2 border-t border-neutral-100 dark:border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
-                isActive ? 'bg-[#FA3055] text-white shadow-xs' : 'bg-[#F4F6F5] text-slate-600 hover:bg-slate-200/70'
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white whitespace-nowrap cursor-pointer transition-all shrink-0 ${
+                isActive
+                  ? 'ring-2 ring-offset-1 ring-[#141414] dark:ring-white/40 font-bold'
+                  : 'opacity-80 hover:opacity-100'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3.5 h-3.5 shrink-0" />
               <span>{tab.label}</span>
             </button>
           );

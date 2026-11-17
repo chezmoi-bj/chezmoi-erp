@@ -404,56 +404,60 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
     <div className="max-w-5xl mx-auto space-y-6 pb-16 w-full">
       
       {/* Header Banner */}
-      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs">
+      <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-7 border border-neutral-200 dark:border-white/10 shadow-2xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#FA3055] text-white">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-[#141414] text-white">
                 Direction financière & comptable
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50">
                 Norme DGI e-MECeF Bénin
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#141414] dark:text-white tracking-tight mt-2">
               Facturation, dépenses & bilans comptables
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium mt-1">
               Émission certifiée DGI, gestion des salaires et impression des bilans journaliers, hebdomadaires, mensuels et annuels.
             </p>
           </div>
 
-          {/* Navigation Pill */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-[#F4F6F5] p-1 rounded-full text-xs font-semibold self-start lg:self-center">
+          {/* Navigation Tabs */}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold self-start lg:self-center">
             <button
+              type="button"
               onClick={() => setActiveTab('invoices')}
-              className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-                activeTab === 'invoices' ? 'bg-[#FA3055] text-white shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer ${
+                activeTab === 'invoices' ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-75 hover:opacity-100'
               }`}
             >
               Facture normalisée
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('new_expense')}
-              className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
-                activeTab === 'new_expense' ? 'bg-[#FA3055] text-white shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'new_expense' ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-75 hover:opacity-100'
               }`}
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Enregistrer une dépense</span>
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('cashbook')}
-              className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-                activeTab === 'cashbook' ? 'bg-[#FA3055] text-white shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer ${
+                activeTab === 'cashbook' ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-75 hover:opacity-100'
               }`}
             >
               Journal de caisse ({transactions.length})
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('reports')}
-              className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
-                activeTab === 'reports' ? 'bg-[#FA3055] text-white shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'reports' ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-75 hover:opacity-100'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
@@ -463,43 +467,43 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
         </div>
 
         {/* Caisse Balance Indicators */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-5 border-t border-slate-100">
-          <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200">
-            <div className="flex items-center justify-between text-emerald-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-6 pt-5 border-t border-neutral-100 dark:border-white/10">
+          <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40">
+            <div className="flex items-center justify-between text-emerald-800 dark:text-emerald-300">
               <span className="text-xs font-semibold">Total entrées (recettes)</span>
-              <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+              <ArrowDownLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <p className="text-xl font-bold text-emerald-950 mt-1">
+            <p className="text-xl font-extrabold text-emerald-950 dark:text-emerald-100 mt-1.5 tabular-nums">
               {totalEntrees.toLocaleString('fr-FR')} FCFA
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200">
-            <div className="flex items-center justify-between text-rose-800">
+          <div className="p-4 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/40">
+            <div className="flex items-center justify-between text-rose-800 dark:text-rose-300">
               <span className="text-xs font-semibold">Total dépenses de la société</span>
-              <ArrowUpRight className="w-4 h-4 text-[#FA3055]" />
+              <ArrowUpRight className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             </div>
-            <p className="text-xl font-bold text-[#FA3055] mt-1">
+            <p className="text-xl font-extrabold text-rose-950 dark:text-rose-100 mt-1.5 tabular-nums">
               {totalSorties.toLocaleString('fr-FR')} FCFA
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200">
-            <div className="flex items-center justify-between text-purple-800">
+          <div className="p-4 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/40">
+            <div className="flex items-center justify-between text-purple-800 dark:text-purple-300">
               <span className="text-xs font-semibold">Salaires & rémunérations</span>
-              <Wallet className="w-4 h-4 text-purple-600" />
+              <Wallet className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             </div>
-            <p className="text-xl font-bold text-purple-950 mt-1">
+            <p className="text-xl font-extrabold text-purple-950 dark:text-purple-100 mt-1.5 tabular-nums">
               {totalSalaires.toLocaleString('fr-FR')} FCFA
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-xs">
-            <div className="flex items-center justify-between text-slate-300">
+          <div className="p-4 rounded-xl bg-neutral-100/80 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
+            <div className="flex items-center justify-between text-neutral-700 dark:text-neutral-300">
               <span className="text-xs font-semibold">Solde net trésorerie</span>
-              <ShieldCheck className="w-4 h-4 text-[#FA3055]" />
+              <ShieldCheck className="w-4 h-4 text-[#141414] dark:text-white" />
             </div>
-            <p className="text-xl font-bold text-white mt-1">
+            <p className="text-xl font-extrabold text-[#141414] dark:text-white mt-1.5 tabular-nums">
               {soldeCaisse.toLocaleString('fr-FR')} FCFA
             </p>
           </div>
@@ -507,113 +511,20 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* ========================================================================= */}
       {/* TAB 1: E-MECEF / E-SFE DGI BÉNIN MULTI-ARTICLES INVOICING INTERFACE     */}
       {/* ========================================================================= */}
       {activeTab === 'invoices' && (
         <div className="space-y-6">
-
-          {/* Style d'impression et de rendu papier dédié (toujours blanc avec police Courier New) */}
-          <style>{`
-            #emecef-official-sheet, 
-            #emecef-official-sheet * {
-              color: #0f172a !important;
-            }
-            #emecef-official-sheet {
-              background-color: #ffffff !important;
-            }
-            #emecef-official-sheet .text-slate-600,
-            #emecef-official-sheet .text-slate-500 {
-              color: #475569 !important;
-            }
-            #emecef-official-sheet .bg-slate-100 {
-              background-color: #f1f5f9 !important;
-            }
-            #emecef-official-sheet .bg-slate-50 {
-              background-color: #f8fafc !important;
-            }
-            #emecef-official-sheet table,
-            #emecef-official-sheet td,
-            #emecef-official-sheet th,
-            #emecef-official-sheet tr {
-              border-color: #cbd5e1 !important;
-            }
-            #emecef-official-sheet .border-slate-400 {
-              border-color: #94a3b8 !important;
-            }
-            #emecef-official-sheet .border-slate-300 {
-              border-color: #cbd5e1 !important;
-            }
-            #emecef-official-sheet .border-slate-200 {
-              border-color: #e2e8f0 !important;
-            }
-            #emecef-official-sheet .border-slate-900 {
-              border-color: #0f172a !important;
-            }
-            #emecef-official-sheet .text-\\[\\#FA3055\\] {
-              color: #fa3055 !important;
-            }
-            #emecef-official-sheet .invoice-title,
-            #emecef-official-sheet h2 {
-              font-family: 'Montserrat', sans-serif !important;
-            }
-            #emecef-official-sheet input {
-              background-color: transparent !important;
-              color: #0f172a !important;
-              border-color: #cbd5e1 !important;
-            }
-            #emecef-official-sheet input:focus {
-              background-color: #f8fafc !important;
-              border-color: #fa3055 !important;
-            }
-            #emecef-official-sheet table {
-              border-collapse: separate !important;
-              border-spacing: 0 !important;
-            }
-            #emecef-official-sheet table th.border-r,
-            #emecef-official-sheet table td.border-r {
-              border-right: 1.5px solid #ffffff !important;
-            }
-            #emecef-official-sheet table th.border-b,
-            #emecef-official-sheet table td.border-b,
-            #emecef-official-sheet table tr.border-b > td {
-              border-bottom: 1.5px solid #ffffff !important;
-            }
-
-            @media print {
-              body * {
-                visibility: hidden !important;
-              }
-              #emecef-official-sheet, #emecef-official-sheet * {
-                visibility: visible !important;
-              }
-              #emecef-official-sheet {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 10mm !important;
-                background: white !important;
-                border: none !important;
-                box-shadow: none !important;
-              }
-              .no-print {
-                display: none !important;
-              }
-            }
-          `}</style>
-
           {/* Top Control Bar matching e-SFE */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white dark:bg-[#13161B] rounded-2xl p-4 border border-neutral-200 dark:border-white/10 shadow-2xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5">
               {/* Type de facture */}
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-slate-600 hidden sm:inline">Type :</span>
+                <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 hidden sm:inline">Type :</span>
                 <select
                   value={invoiceType}
                   onChange={(e) => setInvoiceType(e.target.value as any)}
-                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
+                  className="px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-bold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                 >
                   <option value="FACTURE_VENTE">FACTURE DE VENTE (FV)</option>
                   <option value="FACTURE_PROFORMA">FACTURE PROFORMA</option>
@@ -624,11 +535,11 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
 
               {/* Sélecteur de format */}
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-slate-600 hidden sm:inline">Format :</span>
+                <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 hidden sm:inline">Format :</span>
                 <select
                   value={printFormat}
                   onChange={(e) => setPrintFormat(e.target.value as any)}
-                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
+                  className="px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-bold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                 >
                   <option value="A4_COULEUR">A4 EN COULEUR</option>
                   <option value="A4_NB">A4 EN NOIR ET BLANC</option>
@@ -636,11 +547,11 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                 </select>
               </div>
 
-              {/* Bouton Imprimer vert conforme e-SFE */}
+              {/* Bouton Imprimer */}
               <button
                 type="button"
                 onClick={handlePrint}
-                className="px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Imprimer / PDF</span>
@@ -650,10 +561,10 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPrintOptionsModalOpen(true)}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Choisir les éléments et articles à imprimer"
               >
-                <Sliders className="w-3.5 h-3.5 text-slate-600" />
+                <Sliders className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Sélection d'impression</span>
               </button>
 
@@ -661,9 +572,9 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCatalogModalOpen(true)}
-                className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <Search className="w-3.5 h-3.5 text-purple-600" />
+                <Search className="w-3.5 h-3.5" />
                 <span>Catalogue DGI ({PREDEFINED_DGI_SERVICES.length})</span>
               </button>
             </div>
@@ -674,10 +585,10 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                 type="button"
                 onClick={handleSealInvoice}
                 disabled={invoiceItems.length === 0}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs ${
                   invoiceItems.length > 0
-                    ? 'bg-[#FA3055] hover:bg-[#E02045] text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    ? 'cursor-pointer'
+                    : 'opacity-45 cursor-not-allowed'
                 }`}
               >
                 <ShieldCheck className="w-4 h-4" />
@@ -688,7 +599,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
               <button
                 type="button"
                 onClick={handleResetInvoice}
-                className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Nouvelle facture / Vider"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -701,7 +612,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
             {/* DOCUMENT OFFICIEL (Feuille conforme e-SFE DGI Bénin sur bureau de travail) */}
-            <div className="lg:col-span-9 bg-slate-200/80 dark:bg-[#0c0f15] rounded-3xl p-3 sm:p-6 border border-slate-300 dark:border-slate-800 shadow-inner overflow-x-auto">
+            <div className="lg:col-span-9 bg-neutral-200/70 dark:bg-[#0c0f15] rounded-2xl p-3 sm:p-6 border border-neutral-300 dark:border-white/10 shadow-inner overflow-x-auto">
               
               <div
                 id="emecef-official-sheet"
@@ -806,8 +717,9 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                               const promptVal = window.prompt('Nom du prestataire :', sellerName);
                               if (promptVal !== null) setSellerName(promptVal.trim());
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-[#FA3055] transition-opacity no-print cursor-pointer"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md bg-[#141414] hover:bg-[#2C2C2C] text-white transition-opacity no-print cursor-pointer"
                             title="Modifier le nom du prestataire"
+                            aria-label="Modifier le nom du prestataire"
                           >
                             <Edit2 className="w-3 h-3" />
                           </button>
@@ -904,12 +816,13 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                                     type="button"
                                     onClick={() => handleToggleArticlePrint(index)}
                                     title={isIncludedInPrint ? "Exclure de l'impression" : "Inclure dans l'impression"}
-                                    className="text-slate-600 hover:text-slate-900 cursor-pointer"
+                                    aria-label={isIncludedInPrint ? `Exclure ${item.designation} de l'impression` : `Inclure ${item.designation} dans l'impression`}
+                                    className="p-1 rounded-md bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer inline-flex items-center justify-center"
                                   >
                                     {isIncludedInPrint ? (
-                                      <CheckSquare className="w-4 h-4 text-emerald-600 inline" />
+                                      <CheckSquare className="w-3.5 h-3.5 text-emerald-400 inline" />
                                     ) : (
-                                      <Square className="w-4 h-4 text-slate-400 inline" />
+                                      <Square className="w-3.5 h-3.5 text-neutral-300 inline" />
                                     )}
                                   </button>
                                 </td>
@@ -918,16 +831,18 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => handleOpenEditArticle(index)}
-                                      className="p-1 rounded hover:bg-blue-50 text-blue-600 transition-colors cursor-pointer"
+                                      className="p-1.5 rounded-md bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer"
                                       title="Modifier"
+                                      aria-label={`Modifier ${item.designation}`}
                                     >
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteArticle(index)}
-                                      className="p-1 rounded hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer"
+                                      className="p-1.5 rounded-md bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer"
                                       title="Supprimer"
+                                      aria-label={`Supprimer ${item.designation}`}
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1043,75 +958,75 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
               </div>
             </div>
 
-            {/* BARRE D'ACTIONS LATÉRALE (Boutons e-SFE conformes à la capture Capture_d__cran_2026-10-24_163523_c63d4217.png) */}
+            {/* BARRE D'ACTIONS LATÉRALE */}
             <div className="lg:col-span-3 space-y-3 no-print">
               
-              {/* Bouton 1: Gérer le client (Bleu plein) */}
+              {/* Bouton 1: Gérer le client */}
               <button
                 type="button"
                 onClick={() => setIsClientModalOpen(true)}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#1d63bf] hover:bg-[#1853a1] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <User className="w-4 h-4" />
                 <span>Gérer le client</span>
               </button>
 
-              {/* Bouton 2: Description supplémentaire (Bordure Cyan/Teal) */}
+              {/* Bouton 2: Description supplémentaire */}
               <button
                 type="button"
                 onClick={() => setIsDescModalOpen(true)}
-                className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-cyan-50/50 text-[#0e7490] border-2 border-[#06b6d4] text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-[#06b6d4]" />
+                <FileText className="w-4 h-4" />
                 <span>Description supplémentaire</span>
               </button>
 
-              {/* Bouton 3: Ajouter un nouvel article (Bleu plein) */}
+              {/* Bouton 3: Ajouter un nouvel article */}
               <button
                 type="button"
                 onClick={handleOpenAddArticle}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#1d63bf] hover:bg-[#1853a1] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Ajouter un nouvel article</span>
               </button>
 
-              {/* Bouton 4: Gérer le paiement (Bleu plein) */}
+              {/* Bouton 4: Gérer le paiement */}
               <button
                 type="button"
                 onClick={() => setIsPaymentModalOpen(true)}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#1d63bf] hover:bg-[#1853a1] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <PaymentIcon className="w-4 h-4" />
                 <span>Gérer le paiement</span>
               </button>
 
               {/* Carte Récapitulative Totaux */}
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2 mt-4">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              <div className="p-4 rounded-2xl bg-white dark:bg-[#13161B] border border-neutral-200 dark:border-white/10 shadow-2xs space-y-2 mt-4">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
                   Résumé de la facture
                 </span>
-                <div className="flex justify-between text-xs text-slate-600">
+                <div className="flex justify-between text-xs text-neutral-600 dark:text-neutral-300">
                   <span>Articles :</span>
-                  <span className="font-bold text-slate-900">{invoiceItems.length}</span>
+                  <span className="font-bold text-[#141414] dark:text-white tabular-nums">{invoiceItems.length}</span>
                 </div>
-                <div className="flex justify-between text-xs text-slate-600">
+                <div className="flex justify-between text-xs text-neutral-600 dark:text-neutral-300">
                   <span>Base Imposable :</span>
-                  <span className="font-mono">{invoiceTotals.totalHT.toLocaleString('fr-FR')} F</span>
+                  <span className="font-mono tabular-nums">{invoiceTotals.totalHT.toLocaleString('fr-FR')} F</span>
                 </div>
-                <div className="flex justify-between text-xs text-slate-600">
+                <div className="flex justify-between text-xs text-neutral-600 dark:text-neutral-300">
                   <span>TVA totale (18%) :</span>
-                  <span className="font-mono">{invoiceTotals.totalTVA.toLocaleString('fr-FR')} F</span>
+                  <span className="font-mono tabular-nums">{invoiceTotals.totalTVA.toLocaleString('fr-FR')} F</span>
                 </div>
                 {invoiceTotals.totalSpecificTax > 0 && (
-                  <div className="flex justify-between text-xs text-amber-800">
+                  <div className="flex justify-between text-xs text-amber-700 dark:text-amber-300">
                     <span>Taxe spécifique :</span>
-                    <span className="font-mono">{invoiceTotals.totalSpecificTax.toLocaleString('fr-FR')} F</span>
+                    <span className="font-mono tabular-nums">{invoiceTotals.totalSpecificTax.toLocaleString('fr-FR')} F</span>
                   </div>
                 )}
-                <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-sm font-black text-[#FA3055]">
+                <div className="pt-2 border-t border-neutral-200 dark:border-white/10 flex justify-between items-center text-sm font-extrabold text-[#141414] dark:text-white">
                   <span>Total net TTC :</span>
-                  <span className="font-mono">{invoiceTotals.totalTTC.toLocaleString('fr-FR')} FCFA</span>
+                  <span className="font-mono tabular-nums">{invoiceTotals.totalTTC.toLocaleString('fr-FR')} FCFA</span>
                 </div>
               </div>
 
@@ -1120,28 +1035,29 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           </div>
 
           {/* ========================================================================= */}
-          {/* MODALE 1: AJOUTER / MODIFIER L'ARTICLE (Conforme Capture 102 / 104)       */}
+          {/* MODALE 1: AJOUTER / MODIFIER L'ARTICLE                                    */}
           {/* ========================================================================= */}
           {isArticleModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 sm:p-7 border border-slate-200 space-y-5 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+              <div className="bg-white dark:bg-[#13161B] rounded-2xl shadow-2xl max-w-xl w-full p-6 sm:p-7 border border-neutral-200 dark:border-white/10 space-y-5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/10 pb-3">
+                  <h3 className="text-base sm:text-lg font-extrabold text-[#141414] dark:text-white">
                     {editingItemIndex !== null ? "Modifier l'article" : "Ajouter un article à la facture"}
                   </h3>
                   <button
                     type="button"
                     onClick={() => setIsArticleModalOpen(false)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    aria-label="Fermer la fenêtre article"
+                    className="p-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <form onSubmit={handleSaveArticle} className="space-y-4">
                   {/* Champ 1: Designation */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       Designation
                     </label>
                     <input
@@ -1150,23 +1066,23 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       value={itemDesignation}
                       onChange={(e) => setItemDesignation(e.target.value)}
                       placeholder="Ex: Prestation topographique, Honoraires de vente..."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
                   {/* Champ 2: Groupe de taxation obligatoire */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                      <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
                         <span>Groupe de taxation</span>
-                        <Info className="w-3.5 h-3.5 text-slate-400" />
+                        <Info className="w-3.5 h-3.5 text-neutral-400" />
                       </label>
-                      <span className="text-[10px] text-slate-500 font-medium">Norme e-MECeF DGI</span>
+                      <span className="text-[10px] text-neutral-500 font-medium">Norme e-MECeF DGI</span>
                     </div>
                     <select
                       value={itemGroup}
                       onChange={(e) => setItemGroup(e.target.value as DgiTaxGroup)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1d63bf] bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-bold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     >
                       <option value="A">Groupe A : Exonéré (0%)</option>
                       <option value="B">Groupe B : Taxable (TVA 18%)</option>
@@ -1179,7 +1095,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
 
                   {/* Champ 3: Prix unitaire (T.T.C.) */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       Prix unitaire (T.T.C.)
                     </label>
                     <input
@@ -1189,17 +1105,17 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       value={itemUnitPrice === 0 ? '' : itemUnitPrice}
                       onChange={(e) => setItemUnitPrice(e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-mono font-bold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
                   {/* Champ 4: Quantité (Gestion des décimales max 3 décimales) */}
                   <div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
-                      <label className="text-xs font-semibold text-slate-700">
+                      <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                         Quantité
                       </label>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] text-neutral-500">
                         La quantité peut être décimale (maximum 3 décimales)
                       </span>
                     </div>
@@ -1210,17 +1126,17 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       min={0.001}
                       value={itemQuantity}
                       onChange={(e) => setItemQuantity(e.target.value === '' ? 0 : Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-mono font-bold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
                   {/* Champ 5: Taxe spécifique (T.S.) */}
                   <div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
-                      <label className="text-xs font-semibold text-slate-700">
+                      <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                         Taxe spécifique (T.S.)
                       </label>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] text-neutral-500">
                         T.S. montant pour la quantité totale
                       </span>
                     </div>
@@ -1230,38 +1146,38 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       value={itemSpecificTax === 0 ? '' : itemSpecificTax}
                       onChange={(e) => setItemSpecificTax(e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-mono font-bold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
-                  {/* Bloc Sommaire (Total, Imposable, Impôt) conforme Capture 102 */}
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
-                    <div className="flex justify-between items-center text-slate-700">
+                  {/* Bloc Sommaire (Total, Imposable, Impôt) */}
+                  <div className="p-4 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center text-neutral-700 dark:text-neutral-300">
                       <span className="font-bold">Total :</span>
-                      <span className="font-mono font-bold text-slate-950">{modalTotalTTC.toLocaleString('fr-FR')} FCFA</span>
+                      <span className="font-mono font-bold text-[#141414] dark:text-white tabular-nums">{modalTotalTTC.toLocaleString('fr-FR')} FCFA</span>
                     </div>
-                    <div className="flex justify-between items-center text-slate-600">
+                    <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-400">
                       <span>Imposable :</span>
-                      <span className="font-mono">{modalBaseImposable.toLocaleString('fr-FR')} FCFA</span>
+                      <span className="font-mono tabular-nums">{modalBaseImposable.toLocaleString('fr-FR')} FCFA</span>
                     </div>
-                    <div className="flex justify-between items-center text-slate-600">
+                    <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-400">
                       <span>Impôt :</span>
-                      <span className="font-mono">{modalTax.toLocaleString('fr-FR')} FCFA</span>
+                      <span className="font-mono tabular-nums">{modalTax.toLocaleString('fr-FR')} FCFA</span>
                     </div>
                   </div>
 
                   {/* Boutons Annuler et OK */}
-                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-100 dark:border-white/10">
                     <button
                       type="button"
                       onClick={() => setIsArticleModalOpen(false)}
-                      className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                      className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold opacity-80 hover:opacity-100 transition-all cursor-pointer"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-2 rounded-xl bg-[#1d63bf] hover:bg-[#1853a1] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                      className="px-6 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
                     >
                       OK
                     </button>
@@ -1272,18 +1188,18 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           )}
 
           {/* ========================================================================= */}
-          {/* MODALE 2: CATALOGUE DES PRESTATIONS DGI (Conforme Capture 100)           */}
+          {/* MODALE 2: CATALOGUE DES PRESTATIONS DGI                                   */}
           {/* ========================================================================= */}
           {isCatalogModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 sm:p-7 border border-slate-200 space-y-4 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+              <div className="bg-white dark:bg-[#13161B] rounded-2xl shadow-2xl max-w-2xl w-full p-6 sm:p-7 border border-neutral-200 dark:border-white/10 space-y-4 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 dark:border-white/10 pb-3">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">
+                    <h3 className="text-base font-extrabold text-[#141414] dark:text-white">
                       Gestion des articles
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Total articles : <strong className="text-emerald-700">{PREDEFINED_DGI_SERVICES.length}</strong>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Total articles : <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{PREDEFINED_DGI_SERVICES.length}</strong>
                     </p>
                   </div>
                   <button
@@ -1292,9 +1208,9 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       setIsCatalogModalOpen(false);
                       handleOpenAddArticle();
                     }}
-                    className="px-3.5 py-1.5 rounded-xl border border-emerald-600 hover:bg-emerald-50 text-emerald-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                   >
-                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Ajouter un article non programmé à la facture</span>
                   </button>
                 </div>
@@ -1302,20 +1218,20 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                 {/* Recherche dans le catalogue */}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-neutral-400" />
                     <input
                       type="text"
                       placeholder="Chercher une prestation foncière..."
                       value={catalogSearch}
                       onChange={(e) => setCatalogSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#1d63bf]"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
                   {catalogSearch && (
                     <button
                       type="button"
                       onClick={() => setCatalogSearch('')}
-                      className="px-3 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold hover:bg-slate-200 cursor-pointer"
+                      className="px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold cursor-pointer"
                     >
                       Effacer
                     </button>
@@ -1323,29 +1239,29 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                 </div>
 
                 {/* Tableau catalogue */}
-                <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-200">
+                <div className="max-h-80 overflow-y-auto rounded-xl border border-neutral-200 dark:border-white/10">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-50 text-slate-700 font-bold sticky top-0 border-b border-slate-200">
+                    <thead className="bg-[#FAFAFA] dark:bg-[#181C22] text-neutral-700 dark:text-neutral-300 font-bold sticky top-0 border-b border-neutral-200 dark:border-white/10">
                       <tr>
-                        <th className="py-2 px-3 w-8">#</th>
-                        <th className="py-2 px-3">Designation</th>
-                        <th className="py-2 px-3 text-right">Prix unitaire (T.T.C.)</th>
-                        <th className="py-2 px-3 text-center">Groupe</th>
-                        <th className="py-2 px-3 text-center w-20">Action</th>
+                        <th className="py-2.5 px-3 w-8">#</th>
+                        <th className="py-2.5 px-3">Designation</th>
+                        <th className="py-2.5 px-3 text-right">Prix unitaire (T.T.C.)</th>
+                        <th className="py-2.5 px-3 text-center">Groupe</th>
+                        <th className="py-2.5 px-3 text-center w-20">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-neutral-100 dark:divide-white/10">
                       {PREDEFINED_DGI_SERVICES
                         .filter(s => s.designation.toLowerCase().includes(catalogSearch.toLowerCase()))
                         .map((svc, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="py-2.5 px-3 text-slate-400 font-bold">{idx + 1}</td>
-                            <td className="py-2.5 px-3 font-semibold text-slate-800">{svc.designation}</td>
-                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                          <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                            <td className="py-2.5 px-3 text-neutral-400 font-bold tabular-nums">{idx + 1}</td>
+                            <td className="py-2.5 px-3 font-semibold text-[#141414] dark:text-white">{svc.designation}</td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-[#141414] dark:text-white tabular-nums">
                               {svc.defaultPrice.toLocaleString('fr-FR')} F
                             </td>
                             <td className="py-2.5 px-3 text-center">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-200">
                                 Gr. {svc.defaultGroup}
                               </span>
                             </td>
@@ -1365,7 +1281,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                                   setInvoiceItems([...invoiceItems, newItem]);
                                   setIsCatalogModalOpen(false);
                                 }}
-                                className="px-2.5 py-1 rounded-lg bg-[#1d63bf] hover:bg-[#1853a1] text-white text-[11px] font-bold transition-colors cursor-pointer"
+                                className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-[11px] font-bold transition-colors cursor-pointer"
                               >
                                 Choisir
                               </button>
@@ -1376,11 +1292,11 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   </table>
                 </div>
 
-                <div className="flex justify-end pt-2 border-t border-slate-100">
+                <div className="flex justify-end pt-2 border-t border-neutral-100 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setIsCatalogModalOpen(false)}
-                    className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold transition-colors cursor-pointer"
                   >
                     Fermer
                   </button>
@@ -1393,25 +1309,26 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           {/* MODALE 3: GÉRER LE CLIENT                                                 */}
           {/* ========================================================================= */}
           {isClientModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <User className="w-4 h-4 text-[#1d63bf]" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+              <div className="bg-white dark:bg-[#13161B] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-neutral-200 dark:border-white/10 space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/10 pb-3">
+                  <h3 className="text-base font-extrabold text-[#141414] dark:text-white flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#141414] dark:text-white" />
                     <span>Gérer le client</span>
                   </h3>
                   <button
                     type="button"
                     onClick={() => setIsClientModalOpen(false)}
-                    className="p-1 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+                    aria-label="Fermer la fenêtre client"
+                    className="p-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       Nom du prestataire (Émetteur de la facture)
                     </label>
                     <input
@@ -1419,60 +1336,60 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       value={sellerName}
                       onChange={(e) => setSellerName(e.target.value)}
                       placeholder="Ex: Didier Alvaro ABALLO"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Nom du client ou entreprise</label>
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Nom du client ou entreprise</label>
                     <input
                       type="text"
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
                       placeholder="Ex: ETCHI Odile, Société XYZ..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">IFU client (13 chiffres - optionnel)</label>
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">IFU client (13 chiffres - optionnel)</label>
                     <input
                       type="text"
                       value={clientIfu}
                       onChange={(e) => setClientIfu(e.target.value)}
                       placeholder="Ex: 0202111883391"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-mono font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Téléphone de contact</label>
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Téléphone de contact</label>
                     <input
                       type="text"
                       value={clientPhone}
                       onChange={(e) => setClientPhone(e.target.value)}
                       placeholder="+229 97 00 00 00"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Adresse géographique</label>
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Adresse géographique</label>
                     <input
                       type="text"
                       value={clientAddress}
                       onChange={(e) => setClientAddress(e.target.value)}
                       placeholder="Ex: Cotonou, Haie Vive..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1d63bf]"
+                      className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="flex justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setIsClientModalOpen(false)}
-                    className="px-5 py-2 rounded-xl bg-[#1d63bf] text-white text-xs font-bold hover:bg-[#1853a1] cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold cursor-pointer"
                   >
                     Valider les coordonnées
                   </button>
@@ -1485,24 +1402,25 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           {/* MODALE 4: DESCRIPTION SUPPLÉMENTAIRE                                      */}
           {/* ========================================================================= */}
           {isDescModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#06b6d4]" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+              <div className="bg-white dark:bg-[#13161B] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-neutral-200 dark:border-white/10 space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/10 pb-3">
+                  <h3 className="text-base font-extrabold text-[#141414] dark:text-white flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#141414] dark:text-white" />
                     <span>Description supplémentaire</span>
                   </h3>
                   <button
                     type="button"
                     onClick={() => setIsDescModalOpen(false)}
-                    className="p-1 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+                    aria-label="Fermer la description supplémentaire"
+                    className="p-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                     Mentions, références ou conditions particulières
                   </label>
                   <textarea
@@ -1510,15 +1428,15 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                     value={additionalDescription}
                     onChange={(e) => setAdditionalDescription(e.target.value)}
                     placeholder="Ex: Facture établie pour la vente de la parcelle N° 45 du lotissement Bidossessi. Modalités de paiement : 50% à la signature."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#06b6d4]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-medium text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="flex justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setIsDescModalOpen(false)}
-                    className="px-5 py-2 rounded-xl bg-[#0e7490] hover:bg-[#155e75] text-white text-xs font-bold cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold cursor-pointer"
                   >
                     Enregistrer la mention
                   </button>
@@ -1531,29 +1449,30 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           {/* MODALE 5: GÉRER LE PAIEMENT                                               */}
           {/* ========================================================================= */}
           {isPaymentModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <PaymentIcon className="w-4 h-4 text-[#1d63bf]" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+              <div className="bg-white dark:bg-[#13161B] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-neutral-200 dark:border-white/10 space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/10 pb-3">
+                  <h3 className="text-base font-extrabold text-[#141414] dark:text-white flex items-center gap-2">
+                    <PaymentIcon className="w-4 h-4 text-[#141414] dark:text-white" />
                     <span>Gérer le paiement</span>
                   </h3>
                   <button
                     type="button"
                     onClick={() => setIsPaymentModalOpen(false)}
-                    className="p-1 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+                    aria-label="Fermer la fenêtre de paiement"
+                    className="p-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Mode de paiement</label>
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Mode de paiement</label>
                     <select
                       value={paymentMode}
                       onChange={(e) => setPaymentMode(e.target.value as any)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white"
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-bold text-[#141414] dark:text-white"
                     >
                       <option value="ESPECES">ESPECES</option>
                       <option value="MOBILE_MONEY">MOBILE MONEY (MTN MoMo / Moov)</option>
@@ -1563,12 +1482,12 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-slate-700">Montant payé (FCFA)</label>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Montant payé (FCFA)</label>
                       <button
                         type="button"
                         onClick={() => setAmountPaid(invoiceTotals.totalTTC)}
-                        className="text-[10px] text-[#1d63bf] font-bold hover:underline cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white text-[10px] font-bold cursor-pointer tabular-nums"
                       >
                         Payer la totalité ({invoiceTotals.totalTTC.toLocaleString('fr-FR')} F)
                       </button>
@@ -1578,16 +1497,16 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       min={0}
                       value={amountPaid}
                       onChange={(e) => setAmountPaid(Number(e.target.value))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900"
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-mono font-bold text-[#141414] dark:text-white tabular-nums"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="flex justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setIsPaymentModalOpen(false)}
-                    className="px-5 py-2 rounded-xl bg-[#1d63bf] text-white text-xs font-bold hover:bg-[#1853a1] cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold cursor-pointer"
                   >
                     Valider le règlement
                   </button>
@@ -1597,31 +1516,32 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           )}
 
           {/* ========================================================================= */}
-          {/* MODALE 6: OPTIONS D'IMPRESSION SÉLECTIVE (Exigence spécifique)            */}
+          {/* MODALE 6: OPTIONS D'IMPRESSION SÉLECTIVE                                  */}
           {/* ========================================================================= */}
           {isPrintOptionsModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+              <div className="bg-white dark:bg-[#13161B] rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-neutral-200 dark:border-white/10 space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/10 pb-3">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <Sliders className="w-4 h-4 text-[#FA3055]" />
+                    <h3 className="text-base font-extrabold text-[#141414] dark:text-white flex items-center gap-2">
+                      <Sliders className="w-4 h-4 text-[#141414] dark:text-white" />
                       <span>Module d'impression sélectif</span>
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-neutral-500 mt-0.5">
                       Cochez les éléments et blocs à inclure lors de l'impression ou de l'exportation PDF.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsPrintOptionsModalOpen(false)}
-                    className="p-1 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+                    aria-label="Fermer les options d'impression"
+                    className="p-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-[#141414] dark:text-white">
                   {[
                     { key: 'showHeader', label: 'En-tête "Chezmoi immobilier"' },
                     { key: 'showCompanyBox', label: 'Boîte adresse, contact & e-MCF' },
@@ -1636,7 +1556,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   ].map((opt) => (
                     <label 
                       key={opt.key} 
-                      className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer"
+                      className="flex items-center gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer"
                     >
                       <input
                         type="checkbox"
@@ -1645,14 +1565,14 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                           ...printOptions,
                           [opt.key]: e.target.checked
                         })}
-                        className="rounded text-[#FA3055] focus:ring-[#FA3055] w-4 h-4"
+                        className="rounded accent-[#141414] w-4 h-4"
                       />
-                      <span className="font-semibold text-slate-800">{opt.label}</span>
+                      <span className="font-semibold text-[#141414] dark:text-neutral-200">{opt.label}</span>
                     </label>
                   ))}
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <div className="pt-2 border-t border-neutral-100 dark:border-white/10 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => setPrintOptions({
@@ -1667,14 +1587,14 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       showAmountInWords: true,
                       showSecurityBlock: true,
                     })}
-                    className="text-xs text-[#FA3055] font-semibold hover:underline cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold cursor-pointer"
                   >
                     Tout sélectionner
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsPrintOptionsModalOpen(false)}
-                    className="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold cursor-pointer"
                   >
                     Appliquer & Fermer
                   </button>
@@ -1690,20 +1610,20 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
       {/* TAB 2: REGISTER EXPENSE (Including Salaires & Rémunérations) */}
       {/* ========================================================================= */}
       {activeTab === 'new_expense' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-8 border border-slate-200/80 shadow-2xs max-w-3xl mx-auto space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-8 border border-neutral-200 dark:border-white/10 shadow-2xs max-w-3xl mx-auto space-y-6">
+          <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/10 pb-4">
             <div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FA3055]/10 text-[#FA3055] uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-[#141414] text-white uppercase tracking-wider">
                 Comptabilité analytique & caisse
               </span>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mt-1">
+              <h2 className="text-lg sm:text-xl font-extrabold text-[#141414] dark:text-white mt-1.5">
                 Enregistrer une dépense ou rémunération
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-neutral-500 mt-0.5">
                 Salaires fixes, commissions agents, carburant terrain, loyer du siège et fournitures.
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-[#FA3055] flex-shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center text-[#141414] dark:text-white flex-shrink-0">
               <TrendingDown className="w-6 h-6" />
             </div>
           </div>
@@ -1712,10 +1632,10 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
             
             {/* Category selection */}
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-2">
+              <label className="block text-xs font-bold text-[#141414] dark:text-neutral-200 mb-2">
                 Catégorie de la dépense
               </label>
-              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
                 {[
                   { id: 'SALAIRE_REMUNERATION', label: 'Salaires & rémunérations', icon: Wallet, highlight: true },
                   { id: 'DEPLACEMENT', label: 'Carburant & tournée', icon: Fuel },
@@ -1733,18 +1653,18 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       type="button"
                       key={cat.id}
                       onClick={() => setExpenseCategory(cat.id as any)}
-                      className={`p-3 rounded-2xl border text-left flex items-center sm:flex-col sm:items-start justify-between sm:justify-between transition-all cursor-pointer w-full ${
+                      className={`p-3 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-left flex items-center sm:flex-col sm:items-start justify-between transition-all cursor-pointer w-full ${
                         isSelected
-                          ? 'border-[#FA3055] bg-[#FA3055]/10 ring-1 ring-[#FA3055] text-slate-900 font-bold'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                          ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold'
+                          : 'opacity-75 hover:opacity-100'
                       }`}
                     >
                       <div className="flex items-center gap-2 sm:block">
-                        <Icon className={`w-4 h-4 sm:mb-2 ${isSelected ? 'text-[#FA3055]' : 'text-slate-400'}`} />
-                        <span className="text-xs sm:text-[11px] leading-tight">{cat.label}</span>
+                        <Icon className="w-4 h-4 sm:mb-2 text-white" />
+                        <span className="text-xs sm:text-[11px] leading-tight block">{cat.label}</span>
                       </div>
                       {cat.highlight && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#FA3055] text-white font-bold ml-2 sm:ml-0 sm:mt-1">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/15 text-white font-bold ml-2 sm:ml-0 sm:mt-1.5">
                           Prioritaire
                         </span>
                       )}
@@ -1756,21 +1676,21 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
 
             {/* Special salary fields if SALAIRE_REMUNERATION is selected */}
             {expenseCategory === 'SALAIRE_REMUNERATION' ? (
-              <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-4">
-                <div className="flex items-center gap-2 text-purple-900 font-bold text-xs">
-                  <Wallet className="w-4 h-4 text-purple-700" />
+              <div className="p-4 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-800/40 space-y-4">
+                <div className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-bold text-xs">
+                  <Wallet className="w-4 h-4 text-purple-700 dark:text-purple-400" />
                   <span>Détails de la paie & rémunération du collaborateur</span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       Collaborateur ou agent bénéficiaire
                     </label>
                     <select
                       value={expenseBeneficiary}
                       onChange={(e) => setExpenseBeneficiary(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800"
+                      className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-bold text-[#141414] dark:text-white"
                     >
                       {employees.length > 0 ? (
                         employees.map(e => (
@@ -1789,13 +1709,13 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   </div>
 
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       Nature du versement
                     </label>
                     <select
                       value={salaryType}
                       onChange={(e) => setSalaryType(e.target.value as any)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800"
+                      className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white"
                     >
                       <option value="SALAIRE_FIXE">Salaire mensuel fixe contractuel</option>
                       <option value="COMMISSION_TERRAIN">Commission sur recensements validés</option>
@@ -1807,19 +1727,19 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       Mois de référence de la paie
                     </label>
                     <input
                       type="text"
                       value={salaryMonth}
                       onChange={(e) => setSalaryMonth(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold"
+                      className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white"
                     />
                   </div>
 
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       Montant net décaissé (FCFA)
                     </label>
                     <input
@@ -1832,7 +1752,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                         setExpenseAmount(v === '' ? 0 : Number(v));
                       }}
                       placeholder="0"
-                      className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-[#FA3055]"
+                      className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-bold text-[#141414] dark:text-white tabular-nums"
                     />
                   </div>
                 </div>
@@ -1841,7 +1761,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
               /* Standard general expense fields */
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                     Motif ou libellé de la dépense
                   </label>
                   <input
@@ -1850,12 +1770,12 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                     placeholder="ex : Carburant pour tournée de recensement foncier Calavi"
                     value={expenseTitle}
                     onChange={(e) => setExpenseTitle(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#FA3055]"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#141414]"
                   />
                 </div>
 
                 <div className="w-full sm:w-48">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                     Montant décaissé (FCFA)
                   </label>
                   <input
@@ -1868,7 +1788,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                       setExpenseAmount(v === '' ? 0 : Number(v));
                     }}
                     placeholder="0"
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-bold text-[#FA3055]"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-bold text-[#141414] dark:text-white tabular-nums"
                   />
                 </div>
               </div>
@@ -1877,7 +1797,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
             {/* Beneficiary & Payment mode */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                   Bénéficiaire / Fournisseur
                 </label>
                 <input
@@ -1886,18 +1806,18 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   placeholder="ex : Station JNP, MTN Bénin, SBEE, Librairie"
                   value={expenseBeneficiary}
                   onChange={(e) => setExpenseBeneficiary(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-semibold"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white"
                 />
               </div>
 
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                   Mode de règlement
                 </label>
                 <select
                   value={expensePaymentMode}
                   onChange={(e) => setExpensePaymentMode(e.target.value as any)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-semibold"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-semibold text-[#141414] dark:text-white"
                 >
                   <option value="VIREMENT">Virement bancaire (BOA / Ecobank)</option>
                   <option value="MOBILE_MONEY">Mobile Money (MTN MoMo / Moov)</option>
@@ -1910,41 +1830,41 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
             {/* Receipt & notes */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                   Réf. pièce justificative / Reçu de caisse
                 </label>
                 <input
                   type="text"
                   value={expenseReceiptRef}
                   onChange={(e) => setExpenseReceiptRef(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs font-mono font-semibold"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs font-mono font-semibold text-[#141414] dark:text-white"
                 />
               </div>
 
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                   Notes & justificatifs
                 </label>
                 <input
                   type="text"
                   value={expenseNotes}
                   onChange={(e) => setExpenseNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#F9FAF9] border border-slate-200 text-xs"
+                  className="w-full px-3 py-2 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs text-[#141414] dark:text-white"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => setActiveTab('cashbook')}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-semibold opacity-80 hover:opacity-100 cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="submit"
-                className="w-full sm:w-auto min-h-[46px] px-6 py-2.5 rounded-full bg-[#FA3055] hover:bg-[#E02045] text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <CheckCircle className="w-4 h-4 text-white" />
                 <span>Enregistrer la dépense & imputer à la caisse</span>
@@ -1959,38 +1879,41 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
       {/* TAB 3: CASHBOOK (Journal des mouvements de caisse & dépenses) */}
       {/* ========================================================================= */}
       {activeTab === 'cashbook' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-2xs space-y-4">
+        <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-7 border border-neutral-200 dark:border-white/10 shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-extrabold text-[#141414] dark:text-white">
                 Journal des mouvements de caisse & dépenses
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-neutral-500">
                 Historique des encaissements de commissions et décaissements de la société.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 bg-[#F4F6F5] p-1 rounded-full text-xs font-semibold">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
               <button
+                type="button"
                 onClick={() => setCashFilter('ALL')}
-                className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
-                  cashFilter === 'ALL' ? 'bg-[#FA3055] text-white font-bold' : 'text-slate-600'
+                className={`px-3.5 py-1.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer transition-all ${
+                  cashFilter === 'ALL' ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-75 hover:opacity-100'
                 }`}
               >
                 Toutes ({transactions.length})
               </button>
               <button
+                type="button"
                 onClick={() => setCashFilter('ENTREE')}
-                className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
-                  cashFilter === 'ENTREE' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-600'
+                className={`px-3.5 py-1.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer transition-all ${
+                  cashFilter === 'ENTREE' ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-75 hover:opacity-100'
                 }`}
               >
                 Entrées
               </button>
               <button
+                type="button"
                 onClick={() => setCashFilter('SORTIE')}
-                className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
-                  cashFilter === 'SORTIE' ? 'bg-[#FA3055] text-white font-bold' : 'text-slate-600'
+                className={`px-3.5 py-1.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white cursor-pointer transition-all ${
+                  cashFilter === 'SORTIE' ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold' : 'opacity-75 hover:opacity-100'
                 }`}
               >
                 Dépenses & salaires
@@ -2001,7 +1924,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
+                <tr className="border-b border-neutral-200 dark:border-white/10 text-neutral-500 font-bold uppercase text-[10px]">
                   <th className="py-2.5 px-3">Date</th>
                   <th className="py-2.5 px-3">Code / Réf.</th>
                   <th className="py-2.5 px-3">Type</th>
@@ -2011,31 +1934,31 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                   <th className="py-2.5 px-3 text-right">Montant</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-neutral-100 dark:divide-white/10">
                 {filteredTransactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3 font-mono text-slate-500 whitespace-nowrap">{tx.date}</td>
-                    <td className="py-3 px-3 font-mono font-bold text-slate-800 whitespace-nowrap">{tx.code}</td>
+                  <tr key={tx.id} className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="py-3 px-3 font-mono text-neutral-500 whitespace-nowrap tabular-nums">{tx.date}</td>
+                    <td className="py-3 px-3 font-mono font-bold text-[#141414] dark:text-white whitespace-nowrap">{tx.code}</td>
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
                         tx.type === 'ENTREE' 
-                          ? 'bg-emerald-100 text-emerald-800' 
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' 
                           : tx.category === 'SALAIRE_REMUNERATION'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-rose-100 text-[#FA3055]'
+                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300'
+                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
                       }`}>
                         {tx.type === 'ENTREE' ? 'Entrée (recette)' : tx.category === 'SALAIRE_REMUNERATION' ? 'Salaire / Paie' : 'Dépense société'}
                       </span>
                     </td>
-                    <td className="py-3 px-3 font-semibold text-slate-800">{tx.description}</td>
-                    <td className="py-3 px-3 text-slate-600 whitespace-nowrap">{tx.agentOrClient}</td>
+                    <td className="py-3 px-3 font-semibold text-[#141414] dark:text-white">{tx.description}</td>
+                    <td className="py-3 px-3 text-neutral-600 dark:text-neutral-300 whitespace-nowrap">{tx.agentOrClient}</td>
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[10px]">
+                      <span className="px-2 py-0.5 rounded-lg bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-200 font-medium text-[10px]">
                         {tx.paymentMode}
                       </span>
                     </td>
-                    <td className={`py-3 px-3 text-right font-bold whitespace-nowrap ${
-                      tx.type === 'ENTREE' ? 'text-emerald-700' : 'text-[#FA3055]'
+                    <td className={`py-3 px-3 text-right font-bold whitespace-nowrap tabular-nums ${
+                      tx.type === 'ENTREE' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
                     }`}>
                       {tx.type === 'ENTREE' ? '+' : '-'}{tx.amount.toLocaleString('fr-FR')} FCFA
                     </td>
@@ -2051,23 +1974,24 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
       {/* TAB 4: ACCOUNTING REPORTS & FINANCIAL STATEMENTS (Bilans comptables) */}
       {/* ========================================================================= */}
       {activeTab === 'reports' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-8 border border-slate-200/80 shadow-2xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div className="bg-white dark:bg-[#13161B] rounded-2xl p-5 sm:p-8 border border-neutral-200 dark:border-white/10 shadow-2xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-100 dark:border-white/10 pb-4">
             <div>
-              <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#FA3055] text-white">
+              <span className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-[#141414] text-white">
                 États financiers & clôture
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#141414] dark:text-white mt-1.5">
                 Bilan comptable & situation financière
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-neutral-500">
                 Édition officielle conforme au plan comptable OHADA et normes fiscales DGI Bénin.
               </p>
             </div>
 
             <button
+              type="button"
               onClick={() => window.print()}
-              className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-2 self-start sm:self-auto"
+              className="px-5 py-2.5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-xs shadow-2xs cursor-pointer flex items-center gap-2 self-start sm:self-auto"
             >
               <Printer className="w-4 h-4 text-white" />
               <span>Imprimer le bilan officiel</span>
@@ -2075,7 +1999,7 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           </div>
 
           {/* Period Selector: Journalier, Hebdomadaire, Mensuel, Annuel */}
-          <div className="flex flex-wrap items-center gap-2 bg-[#F4F6F5] p-1.5 rounded-2xl text-xs font-semibold">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
             {[
               { id: 'DAILY', label: 'Bilan journalier' },
               { id: 'WEEKLY', label: 'Bilan hebdomadaire' },
@@ -2083,12 +2007,13 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
               { id: 'ANNUAL', label: 'Bilan annuel (Exercice)' },
             ].map(p => (
               <button
+                type="button"
                 key={p.id}
                 onClick={() => setReportPeriod(p.id as any)}
-                className={`flex-1 min-w-[130px] py-2 px-3 rounded-xl transition-all cursor-pointer text-center ${
+                className={`flex-1 min-w-[130px] py-2.5 px-3 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white transition-all cursor-pointer text-center ${
                   reportPeriod === p.id
-                    ? 'bg-[#FA3055] text-white shadow-xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'ring-2 ring-offset-2 ring-[#141414] dark:ring-white/40 font-bold'
+                    : 'opacity-75 hover:opacity-100'
                 }`}
               >
                 {p.label}
@@ -2097,18 +2022,18 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
           </div>
 
           {/* Period Configuration input */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
-            <span className="font-semibold text-slate-700">Période d’arrêté sélectionnée :</span>
+          <div className="flex flex-col sm:flex-row items-center gap-3 p-3.5 rounded-xl bg-[#FAFAFA] dark:bg-[#181C22] border border-neutral-200 dark:border-white/10 text-xs">
+            <span className="font-semibold text-neutral-700 dark:text-neutral-300">Période d’arrêté sélectionnée :</span>
             {reportPeriod === 'DAILY' && (
               <input
                 type="date"
                 value={selectedReportDate}
                 onChange={(e) => setSelectedReportDate(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 font-semibold"
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#13161B] border border-neutral-200 dark:border-white/10 font-semibold"
               />
             )}
             {reportPeriod === 'WEEKLY' && (
-              <span className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 font-semibold text-slate-800">
+              <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#13161B] border border-neutral-200 dark:border-white/10 font-semibold text-[#141414] dark:text-white">
                 Semaine 42 (12 au 18 Octobre 2026)
               </span>
             )}
@@ -2117,14 +2042,14 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
                 type="month"
                 value={selectedReportMonth}
                 onChange={(e) => setSelectedReportMonth(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 font-semibold"
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#13161B] border border-neutral-200 dark:border-white/10 font-semibold"
               />
             )}
             {reportPeriod === 'ANNUAL' && (
               <select
                 value={selectedReportYear}
                 onChange={(e) => setSelectedReportYear(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 font-bold"
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#13161B] border border-neutral-200 dark:border-white/10 font-bold"
               >
                 <option value="2026">Exercice fiscal 2026</option>
                 <option value="2025">Exercice fiscal 2025</option>
@@ -2132,8 +2057,8 @@ export const EMecefModule: React.FC<EMecefModuleProps> = ({
             )}
           </div>
 
-          {/* Financial Statement Sheet (Printable Layout) */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6 text-slate-800 font-sans">
+          {/* Financial Statement Sheet (Printable Layout — preserved crisp paper style) */}
+          <div className="printable-invoice dgi-paper-sheet p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6 text-slate-800">
             
             {/* Header Document */}
             <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b-2 border-slate-900 pb-4 gap-4">

@@ -295,108 +295,97 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   return (
-    <div 
-      className={`min-h-screen w-full flex flex-col justify-between transition-colors duration-300 font-sans select-none relative overflow-hidden ${
-        isDark ? 'bg-[#08090A] text-[#F3F4F6]' : 'bg-[#FAFAFA] text-[#0F172A]'
+    <div
+      className={`min-h-screen w-full flex flex-col justify-between transition-colors duration-200 select-none relative overflow-hidden ${
+        isDark ? 'bg-[#0B0D10] text-neutral-100' : 'bg-[#FAFAFA] text-[#141414]'
       }`}
-      style={{
-        backgroundImage: isDark
-          ? 'radial-gradient(rgba(255, 255, 255, 0.08) 1.2px, transparent 1.2px)'
-          : 'radial-gradient(rgba(15, 23, 42, 0.07) 1.2px, transparent 1.2px)',
-        backgroundSize: '24px 24px',
-      }}
     >
-      {/* Ambient luxury radial glow matching #F91942 */}
-      <div 
-        className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-          isDark 
-            ? 'opacity-100 bg-[radial-gradient(circle_at_50%_45%,rgba(249,25,66,0.08),transparent_65%)]' 
-            : 'opacity-100 bg-[radial-gradient(circle_at_50%_45%,rgba(249,25,66,0.05),transparent_65%)]'
-        }`}
-      />
+      {/* Top Bar with Minimal Theme Toggle */}
+      <header className="w-full max-w-5xl mx-auto px-6 py-6 flex items-center justify-between z-10">
+        <div className="flex items-center gap-2">
+          <img
+            src="./assets/aistudio/1_e24ebf1b.png"
+            alt="Chezmoi"
+            className="w-8 h-8 object-contain"
+          />
+          <span className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-[#141414]'}`}>
+            chezmoi <span className="font-medium text-neutral-400">administration</span>
+          </span>
+        </div>
 
-      {/* Top Bar with Discreet Theme Toggle */}
-      <header className="w-full max-w-5xl mx-auto px-6 py-6 flex items-center justify-end z-10">
         <button
           type="button"
           onClick={toggleTheme}
-          aria-label={isDark ? "Activer le mode clair" : "Activer le mode sombre"}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer backdrop-blur-md border ${
-            isDark 
-              ? 'bg-[#121417]/80 text-zinc-300 border-white/10 hover:border-white/20 hover:text-white' 
-              : 'bg-white/80 text-slate-700 border-slate-200/80 hover:border-slate-300 hover:text-slate-900 shadow-xs'
-          }`}
+          aria-label={isDark ? 'Activer le mode clair' : 'Activer le mode sombre'}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#141414] hover:bg-[#2C2C2C] text-white transition-colors cursor-pointer border border-white/10"
         >
           {isDark ? (
             <>
               <Sun className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[11px] tracking-wide">Clair</span>
+              <span>Mode clair</span>
             </>
           ) : (
             <>
-              <Moon className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="text-[11px] tracking-wide">Sombre</span>
+              <Moon className="w-3.5 h-3.5 text-neutral-200" />
+              <span>Mode sombre</span>
             </>
           )}
         </button>
       </header>
 
       {/* Main Centered Minimal Form */}
-      <main className="w-full max-w-[420px] mx-auto px-5 my-auto z-10 py-4">
-        
-        {/* Card */}
-        <div 
-          className={`rounded-3xl p-7 sm:p-9 transition-all duration-300 backdrop-blur-xl border ${
-            isDark 
-              ? 'bg-[#0E1013]/90 border-white/10 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.85)]' 
-              : 'bg-white/95 border-slate-200/80 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.07)]'
+      <main className="w-full max-w-[430px] mx-auto px-5 my-auto z-10 py-6">
+        <div
+          className={`rounded-2xl p-7 sm:p-9 transition-all border ${
+            isDark
+              ? 'bg-[#13161B] border-white/10 shadow-xl'
+              : 'bg-white border-neutral-200 shadow-2xs'
           }`}
         >
-
-          {/* Logo officiel Chezmoi (Strictement au-dessus de la saisie) */}
-          <div className="flex flex-col items-center justify-center mb-6">
-            <div className="relative group">
-              <img 
-                src="./assets/aistudio/1_e24ebf1b.png" 
-                alt="Chezmoi" 
-                className="w-24 h-24 sm:w-28 sm:h-28 object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+          {/* Logo officiel Chezmoi */}
+          <div className="flex flex-col items-center justify-center mb-7">
+            <div className="w-16 h-16 rounded-2xl bg-[#FAFAFA] dark:bg-[#1B1F27] border border-neutral-200 dark:border-white/10 flex items-center justify-center p-2.5 mb-4">
+              <img
+                src="./assets/aistudio/1_e24ebf1b.png"
+                alt="Chezmoi"
+                className="w-full h-full object-contain"
               />
             </div>
-            
-            <h1 className={`text-xl sm:text-2xl font-bold tracking-tight mt-4 text-center ${
-              isDark ? 'text-white' : 'text-slate-900'
+
+            <h1 className={`text-2xl font-extrabold tracking-tight text-center ${
+              isDark ? 'text-white' : 'text-[#141414]'
             }`}>
-              {step === 'identifier' ? 'Connexion' : 'Code de vérification'}
+              {step === 'identifier' ? 'Connexion' : 'Vérification sécurisée'}
             </h1>
-            
-            <p className={`text-xs mt-1 text-center font-normal ${
-              isDark ? 'text-zinc-400' : 'text-slate-500'
+
+            <p className={`text-xs mt-1.5 text-center font-medium ${
+              isDark ? 'text-neutral-400' : 'text-neutral-500'
             }`}>
-              {step === 'identifier' 
-                ? 'Accédez à votre espace sécurisé' 
+              {step === 'identifier'
+                ? 'Accédez à votre espace Chezmoi administration'
                 : is2FARequired
-                ? 'Code OTP e-mail ou code Google Authenticator'
-                : `Code temporaire transmis à ${maskedTarget}`}
+                ? 'Saisissez le code OTP e-mail ou Google Authenticator'
+                : `Code à 6 chiffres envoyé à ${maskedTarget}`}
             </p>
           </div>
 
           {/* Verification Success Banner */}
           {verificationSuccess && (
-            <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs flex items-center gap-2.5">
-              <Check className="w-4 h-4 flex-shrink-0 text-emerald-500" />
+            <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2.5">
+              <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span className="font-medium leading-relaxed">{verificationSuccess}</span>
             </div>
           )}
 
           {/* Pending Account Verification Block */}
           {pendingVerificationEmail && (
-            <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-3">
+            <div className="mb-5 p-4 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 space-y-3">
               <div className="flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs">
-                  <p className="font-bold text-amber-400">Compte en attente de validation</p>
-                  <p className={`mt-0.5 ${isDark ? 'text-zinc-300' : 'text-slate-600'} leading-relaxed`}>
-                    Un e-mail contenant votre code de confirmation a été envoyé à <strong>{pendingVerificationEmail}</strong>. Veuillez saisir ce code ci-dessous :
+                  <p className="font-bold text-amber-900 dark:text-amber-300">Compte en attente de validation</p>
+                  <p className={`mt-0.5 ${isDark ? 'text-neutral-300' : 'text-neutral-600'} leading-relaxed`}>
+                    Un e-mail contenant votre code de confirmation a été envoyé à <strong>{pendingVerificationEmail}</strong>.
                   </p>
                 </div>
               </div>
@@ -409,14 +398,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   onChange={(e) => setVerificationCodeInput(e.target.value.replace(/\D/g, ''))}
                   placeholder="Code à 6 chiffres"
                   className={`flex-1 px-3 py-2 rounded-xl text-center text-sm font-mono tracking-widest font-bold outline-hidden border ${
-                    isDark ? 'bg-[#14171B] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    isDark ? 'bg-[#181C22] border-white/10 text-white' : 'bg-white border-neutral-200 text-[#141414]'
                   }`}
                 />
                 <button
                   type="button"
                   onClick={handleValidateAccountCode}
                   disabled={loading || verificationCodeInput.length < 6}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF2B53] to-[#D8072E] text-white text-xs font-bold hover:brightness-105 disabled:opacity-50 transition-all cursor-pointer shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white text-xs font-bold disabled:opacity-50 transition-colors cursor-pointer shrink-0"
                 >
                   {loading ? 'Validation...' : 'Valider'}
                 </button>
@@ -426,54 +415,49 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-500" />
+            <div className="mb-5 p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
               <span className="font-medium">{error}</span>
             </div>
           )}
 
           {/* STEP 1: Identification */}
           {step === 'identifier' && (
-            <form onSubmit={(e) => { e.preventDefault(); handleRequestOtp(); }}>
-              <div className="mb-4">
-                <label 
+            <form onSubmit={(e) => { e.preventDefault(); handleRequestOtp(); }} className="space-y-4">
+              <div>
+                <label
                   htmlFor="identifier-input"
-                  className={`block text-[11px] font-medium uppercase tracking-wider mb-2 ${
-                    isDark ? 'text-zinc-400' : 'text-slate-600'
+                  className={`block text-xs font-semibold mb-1.5 ${
+                    isDark ? 'text-neutral-300' : 'text-neutral-700'
                   }`}
                 >
-                  E-mail ou Téléphone
+                  E-mail ou téléphone professionnel
                 </label>
 
-                <div className="relative">
-                  <input
-                    id="identifier-input"
-                    type="text"
-                    value={identifier}
-                    onChange={(e) => {
-                      setIdentifier(e.target.value);
-                      setError(null);
-                    }}
-                    placeholder="nom@chezmoi.bj ou +229..."
-                    required
-                    autoFocus
-                    className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all outline-hidden border ${
-                      isDark 
-                        ? 'bg-[#14171B] border-white/10 text-white placeholder-zinc-500 focus:border-[#F91942] focus:ring-1 focus:ring-[#F91942]' 
-                        : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-[#F91942] focus:ring-1 focus:ring-[#F91942]'
-                    }`}
-                  />
-                </div>
+                <input
+                  id="identifier-input"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => {
+                    setIdentifier(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="nom@chezmoi.bj ou +229..."
+                  required
+                  autoFocus
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-colors outline-hidden border ${
+                    isDark
+                      ? 'bg-[#181C22] border-white/10 text-white placeholder-neutral-500 focus:border-white/40'
+                      : 'bg-[#FAFAFA] border-neutral-200 text-[#141414] placeholder-neutral-400 focus:border-[#141414] focus:bg-white'
+                  }`}
+                />
               </div>
 
-              {/* Submit Button with #F91942 Gradient & Luxury Hover Overlay */}
               <button
                 type="submit"
                 disabled={loading}
-                className="relative overflow-hidden group w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#FF2B53] via-[#F91942] to-[#D8072E] text-white font-bold text-sm tracking-wide transition-all duration-300 cursor-pointer shadow-[0_4px_24px_rgba(249,25,66,0.38)] hover:shadow-[0_6px_32px_rgba(249,25,66,0.6)] hover:brightness-105 active:scale-[0.99] disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-sm transition-colors cursor-pointer disabled:opacity-50"
               >
-                {/* Refined light shimmer overlay on hover */}
-                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out pointer-events-none" />
                 {loading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -492,13 +476,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           {/* STEP 2: Saisie Code OTP (6 Chiffres) */}
           {step === 'otp' && (
             <div>
-              {/* Notice 2FA (if enabled) */}
               {is2FARequired && (
-                <div className={`mb-3.5 p-2 rounded-lg text-[11px] flex items-center gap-1.5 ${
-                  isDark ? 'bg-[#F91942]/10 text-[#F91942] border border-[#F91942]/20' : 'bg-rose-50 text-[#F91942] border border-rose-200'
+                <div className={`mb-4 p-2.5 rounded-xl text-xs flex items-center gap-2 border ${
+                  isDark ? 'bg-white/5 text-neutral-200 border-white/10' : 'bg-neutral-50 text-neutral-700 border-neutral-200'
                 }`}>
-                  <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>2FA Active : Code OTP e-mail ou code Google Authenticator</span>
+                  <Lock className="w-3.5 h-3.5 shrink-0" />
+                  <span>2FA active : code OTP e-mail ou Google Authenticator</span>
                 </div>
               )}
 
@@ -515,24 +498,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
                     onPaste={handlePaste}
-                    className={`w-11 h-12 sm:w-12 sm:h-13 text-center text-lg sm:text-xl font-mono font-bold rounded-xl border transition-all outline-hidden ${
-                      isDark 
-                        ? 'bg-[#14171B] border-white/10 text-white focus:border-[#F91942] focus:ring-1 focus:ring-[#F91942]' 
-                        : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[#F91942] focus:ring-1 focus:ring-[#F91942]'
+                    className={`w-11 h-12 sm:w-12 sm:h-13 text-center text-lg sm:text-xl font-mono font-bold rounded-xl border transition-colors outline-hidden tabular-nums ${
+                      isDark
+                        ? 'bg-[#181C22] border-white/10 text-white focus:border-white/40'
+                        : 'bg-[#FAFAFA] border-neutral-200 text-[#141414] focus:border-[#141414] focus:bg-white'
                     }`}
                   />
                 ))}
               </div>
 
-              {/* Submit Button with #F91942 Gradient & Luxury Hover Overlay */}
               <button
                 type="button"
                 onClick={() => handleVerifyOtp()}
                 disabled={loading || otpDigits.some(d => d === '')}
-                className="relative overflow-hidden group w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#FF2B53] via-[#F91942] to-[#D8072E] text-white font-bold text-sm tracking-wide transition-all duration-300 cursor-pointer shadow-[0_4px_24px_rgba(249,25,66,0.38)] hover:shadow-[0_6px_32px_rgba(249,25,66,0.6)] hover:brightness-105 active:scale-[0.99] disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl bg-[#141414] hover:bg-[#2C2C2C] text-white font-bold text-sm transition-colors cursor-pointer disabled:opacity-50"
               >
-                {/* Refined light shimmer overlay on hover */}
-                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out pointer-events-none" />
                 {loading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -543,31 +523,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 )}
               </button>
 
-              {/* Back & Resend */}
-              <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/5 text-xs">
+              <div className="flex items-center justify-between mt-5 pt-4 border-t border-neutral-200/80 dark:border-white/10 text-xs">
                 <button
                   type="button"
                   onClick={() => {
                     setStep('identifier');
                     setError(null);
                   }}
-                  className={`flex items-center gap-1 font-medium transition-colors cursor-pointer ${
-                    isDark ? 'text-zinc-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Retour</span>
                 </button>
 
                 {countdown > 0 ? (
-                  <span className={`font-mono text-[11px] ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+                  <span className={`font-mono text-xs tabular-nums ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                     {formatTime(countdown)}
                   </span>
                 ) : (
                   <button
                     type="button"
                     onClick={() => handleRequestOtp()}
-                    className="text-[#F91942] hover:underline cursor-pointer font-medium text-[11px]"
+                    className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2C2C2C] text-white font-semibold text-xs cursor-pointer transition-colors"
                   >
                     Renvoyer un code
                   </button>
@@ -575,19 +552,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               </div>
             </div>
           )}
-
         </div>
       </main>
 
       {/* Clean Minimal Footer */}
       <footer className="w-full max-w-5xl mx-auto px-6 py-5 text-center z-10">
-        <p className={`text-[11px] font-normal tracking-wide ${
-          isDark ? 'text-zinc-600' : 'text-slate-400'
-        }`}>
-          Chezmoi • Tous droits réservés
+        <p className={`text-xs font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+          Chezmoi administration • Tous droits réservés
         </p>
       </footer>
-
     </div>
   );
 };

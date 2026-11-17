@@ -77,8 +77,8 @@ export const ChezmoiLogo: React.FC<ChezmoiLogoProps> = ({
           y="262"
           textAnchor="middle"
           fill="#FFFFFF"
-          fontFamily="'Outfit', system-ui, -apple-system, sans-serif"
-          fontWeight="900"
+          fontFamily="'Manrope', system-ui, -apple-system, sans-serif"
+          fontWeight="800"
           fontSize="48"
           letterSpacing="-1.5px"
         >
@@ -89,12 +89,12 @@ export const ChezmoiLogo: React.FC<ChezmoiLogoProps> = ({
       {showText && (
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5">
-            <span className="text-xl font-black text-slate-900 tracking-tight">chezmoi</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FA3055] text-white font-black tracking-wider">
-              .bj ERP
+            <span className="text-xl font-extrabold text-[#141414] dark:text-white tracking-tight">chezmoi</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#141414] text-white font-bold tracking-wider">
+              .bj
             </span>
           </div>
-          <span className="text-[10px] text-slate-500 font-medium">Multilocal offline-first</span>
+          <span className="text-[10px] text-neutral-500 font-medium">Plateforme foncière</span>
         </div>
       )}
     </div>
